@@ -94,6 +94,5 @@ Source: `website-reference/src/app/page.tsx` → `src/components/home/LandingPag
 
 ## 8. Progress log (update this after every working session)
 
-| Date | Who/what tool | Done | Next |
-|---|---|---|---|
 | 2026-10-09 | Claude (planning) | Brief written, website Home analysed, sync workflow works | Run agent prompt for Phase A0–A2 |
+| 2026-10-09 | AI Studio Agent | Phase A0 (WEBSITE_ANALYSIS.md), Phase A1 (Compose theme tokens & WisdomComponents), Phase A2 (Native HomeScreen & assets copied) completed | Owner review of Home screen, then Phase A3 (Academy/Packages Hub) |

@@ -48,6 +48,8 @@ import android.content.pm.PackageManager
 import android.Manifest
 import com.wisdomtower.academy.fcm.AcademyFirebaseMessagingService
 import com.wisdomtower.academy.fcm.FcmTokenRegistrar
+import com.wisdomtower.academy.ui.home.HomeScreen
+import com.wisdomtower.academy.ui.theme.WisdomNavy
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -2665,13 +2667,34 @@ fun MainScreen(
                     modifier = Modifier.fillMaxSize()
                 )
 
+                // Native Home Screen (Phase A2)
+                if (selectedIndex == 0) {
+                    HomeScreen(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(WisdomNavy)
+                            .zIndex(10f),
+                        isLoggedIn = false,
+                        userName = null,
+                        onNavigateToUrl = { targetPathOrUrl ->
+                            val fullUrl = if (targetPathOrUrl.startsWith("http")) {
+                                targetPathOrUrl
+                            } else {
+                                "https://www.wisdom-tower-academy.live$targetPathOrUrl"
+                            }
+                            val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
+                            navigateTo(fullUrl, targetTab)
+                        }
+                    )
+                }
+
                 // Restored & Fixed Custom Animated Loader Overlay:
                 // - Transparent background only (solid BarBg only on initial cold splash)
                 // - NO text at all (no titles, no captions)
                 // - NO percent (no 20%, 80%, etc.)
                 // - NO card, NO panel, NO dim box
                 // - ONE continuous stable animation (same 110.dp scale, same center, zero size jumps)
-                val isLoaderVisible = isInitialLoading || isNavigating
+                val isLoaderVisible = (isInitialLoading || isNavigating) && (!minSplashElapsed || selectedIndex != 0)
                 AnimatedVisibility(
                     visible = isLoaderVisible,
                     enter = fadeIn(tween(140, easing = FastOutSlowInEasing)),
