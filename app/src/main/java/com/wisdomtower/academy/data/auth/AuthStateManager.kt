@@ -107,16 +107,16 @@ object AuthStateManager {
                 return
             }
 
-            val email = userObj.optString("email", null)
+            val email = userObj.optNullableString("email")
             val meta = userObj.optJSONObject("user_metadata")
-            val fullName = meta?.optString("full_name")?.takeIf { it.isNotBlank() }
-                ?: meta?.optString("name")?.takeIf { it.isNotBlank() }
+            val fullName = meta?.optNullableString("full_name")
+                ?: meta?.optNullableString("name")
                 ?: email?.substringBefore("@")
                 ?: "Student Scholar"
 
-            val accessToken = obj.optString("access_token", null)
-            val refreshToken = obj.optString("refresh_token", null)
-            val createdAt = userObj.optString("created_at", null)
+            val accessToken = obj.optNullableString("access_token")
+            val refreshToken = obj.optNullableString("refresh_token")
+            val createdAt = userObj.optNullableString("created_at")
 
             val authUser = AuthUser(
                 id = uid,
@@ -133,13 +133,13 @@ object AuthStateManager {
                 id = uid,
                 email = email,
                 fullName = fullName,
-                educationLevel = existing?.educationLevel ?: meta?.optString("education_level", null),
-                stream = existing?.stream ?: meta?.optString("stream", null),
-                schoolName = existing?.schoolName ?: meta?.optString("school_name", null),
-                townRegion = existing?.townRegion ?: meta?.optString("town_region", null),
-                avatarPreset = existing?.avatarPreset ?: meta?.optString("avatar_preset", null),
-                avatarUrl = existing?.avatarUrl ?: meta?.optString("avatar_url", null),
-                studentIdNumber = existing?.studentIdNumber ?: meta?.optString("student_id_number", null),
+                educationLevel = existing?.educationLevel ?: meta?.optNullableString("education_level"),
+                stream = existing?.stream ?: meta?.optNullableString("stream"),
+                schoolName = existing?.schoolName ?: meta?.optNullableString("school_name"),
+                townRegion = existing?.townRegion ?: meta?.optNullableString("town_region"),
+                avatarPreset = existing?.avatarPreset ?: meta?.optNullableString("avatar_preset"),
+                avatarUrl = existing?.avatarUrl ?: meta?.optNullableString("avatar_url"),
+                studentIdNumber = existing?.studentIdNumber ?: meta?.optNullableString("student_id_number"),
                 createdAt = createdAt
             )
 
@@ -221,23 +221,23 @@ object AuthStateManager {
                     val pObj = root.optJSONObject("profile") ?: root
                     val updated = UserProfile(
                         id = userId,
-                        email = pObj.optString("email", _currentProfile.value?.email),
-                        fullName = pObj.optString("full_name", _currentProfile.value?.fullName),
-                        firstName = pObj.optString("first_name", null),
-                        lastName = pObj.optString("last_name", null),
-                        phone = pObj.optString("phone", null),
-                        educationLevel = pObj.optString("education_level", _currentProfile.value?.educationLevel),
-                        schoolName = pObj.optString("school_name", _currentProfile.value?.schoolName),
-                        townRegion = pObj.optString("town_region", _currentProfile.value?.townRegion),
-                        stream = pObj.optString("stream", _currentProfile.value?.stream),
-                        bio = pObj.optString("bio", null),
-                        targetExam = pObj.optString("target_exam", null),
-                        targetScore = pObj.optString("target_score", null),
+                        email = pObj.optNullableString("email", _currentProfile.value?.email),
+                        fullName = pObj.optNullableString("full_name", _currentProfile.value?.fullName),
+                        firstName = pObj.optNullableString("first_name"),
+                        lastName = pObj.optNullableString("last_name"),
+                        phone = pObj.optNullableString("phone"),
+                        educationLevel = pObj.optNullableString("education_level", _currentProfile.value?.educationLevel),
+                        schoolName = pObj.optNullableString("school_name", _currentProfile.value?.schoolName),
+                        townRegion = pObj.optNullableString("town_region", _currentProfile.value?.townRegion),
+                        stream = pObj.optNullableString("stream", _currentProfile.value?.stream),
+                        bio = pObj.optNullableString("bio"),
+                        targetExam = pObj.optNullableString("target_exam"),
+                        targetScore = pObj.optNullableString("target_score"),
                         dailyStudyGoalMinutes = pObj.optInt("daily_study_goal_minutes", 45),
-                        avatarPreset = pObj.optString("avatar_preset", _currentProfile.value?.avatarPreset),
-                        avatarUrl = pObj.optString("avatar_url", _currentProfile.value?.avatarUrl),
-                        studentIdNumber = pObj.optString("student_id_number", _currentProfile.value?.studentIdNumber),
-                        createdAt = pObj.optString("created_at", _currentUser.value?.createdAt)
+                        avatarPreset = pObj.optNullableString("avatar_preset", _currentProfile.value?.avatarPreset),
+                        avatarUrl = pObj.optNullableString("avatar_url", _currentProfile.value?.avatarUrl),
+                        studentIdNumber = pObj.optNullableString("student_id_number", _currentProfile.value?.studentIdNumber),
+                        createdAt = pObj.optNullableString("created_at", _currentUser.value?.createdAt)
                     )
                     _currentProfile.value = updated
                     _currentUser.value?.let { saveToPrefs(it, updated) }
@@ -256,5 +256,11 @@ object AuthStateManager {
             profile = profile,
             createdAtStr = user?.createdAt
         )
+    }
+
+    private fun JSONObject.optNullableString(key: String, fallback: String? = null): String? {
+        if (!has(key) || isNull(key)) return fallback
+        val v = optString(key)
+        return if (v.isBlank() || v == "null") fallback else v
     }
 }

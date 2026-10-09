@@ -89,9 +89,9 @@ object AcademyRepository {
                                     title = obj.optString("title"),
                                     chapter = if (obj.has("chapter") && !obj.isNull("chapter")) obj.optInt("chapter") else null,
                                     sortOrder = obj.optInt("sortOrder", 0),
-                                    contentType = obj.optString("contentType", null),
-                                    storagePath = obj.optString("storagePath", null),
-                                    bodyMd = obj.optString("bodyMd", null),
+                                    contentType = obj.optNullableString("contentType"),
+                                    storagePath = obj.optNullableString("storagePath"),
+                                    bodyMd = obj.optNullableString("bodyMd"),
                                     published = obj.optBoolean("published", true)
                                 )
                             )
@@ -110,7 +110,7 @@ object AcademyRepository {
         if (storagePath.isNullOrBlank()) return null
         if (!storagePath.startsWith("appwrite:")) return storagePath
         val fileId = storagePath.removePrefix("appwrite:").substringBefore("|")
-        return "https://www.wisdom-tower-academy.live/api/content/pdf?fileId=$fileId"
+        return "https://www.wisdom-tower-academy.live/api/content/pdf?path=appwrite:$fileId"
     }
 
     fun getEnrolledPackages(isLoggedIn: Boolean): List<EnrolledPackageRecord> {
@@ -124,5 +124,11 @@ object AcademyRepository {
             EnrolledPackageRecord("uat", "University Admission Test (UAT)", "Free Academic Mode", true),
             EnrolledPackageRecord("exit-exam", "National University Exit Exam", "Free Academic Mode", true)
         )
+    }
+
+    private fun JSONObject.optNullableString(key: String, fallback: String? = null): String? {
+        if (!has(key) || isNull(key)) return fallback
+        val v = optString(key)
+        return if (v.isBlank() || v == "null") fallback else v
     }
 }

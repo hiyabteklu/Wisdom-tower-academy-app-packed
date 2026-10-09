@@ -28,15 +28,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
@@ -158,7 +158,7 @@ fun AccountScreen(
                         ) {
                             AccountPillButton(
                                 label = "Your Status",
-                                icon = Icons.Default.TrendingUp,
+                                icon = Icons.AutoMirrored.Filled.TrendingUp,
                                 tint = WisdomCyan,
                                 modifier = Modifier.weight(1f),
                                 onClick = { onNavigateToUrl("/learning?tool=status") }
@@ -166,7 +166,7 @@ fun AccountScreen(
 
                             AccountPillButton(
                                 label = "Learning Hub",
-                                icon = Icons.Default.MenuBook,
+                                icon = Icons.AutoMirrored.Filled.MenuBook,
                                 tint = WisdomAccentEmerald,
                                 modifier = Modifier.weight(1f),
                                 onClick = { onNavigateToUrl("/learning") }

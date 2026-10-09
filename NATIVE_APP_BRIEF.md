@@ -60,6 +60,8 @@ Rule of thumb: if the screen only arranges items and shows images/titles, build 
 11. **Small commits**, one screen per commit, clear messages. After each commit, say what could affect tab-switch speed.
 12. The **Build Production AAB & APK** GitHub Action must stay green.
 13. **Read docs/BUILD_PITFALLS.md before writing code and never repeat a listed mistake.**
+14. **Never put a secret or server key in the Android app.** Anything that needs a secret key (Explain with AI, SMS/email, push sending, admin) must call the website API routes in `website-reference/src/app/api/` or open the website.
+15. **Only the 6 public keys above may exist in the app.** Only `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APPWRITE_ENDPOINT`, `NEXT_PUBLIC_APPWRITE_PROJECT_ID`, and `NEXT_PUBLIC_APPWRITE_BUCKET_ID` may exist in `.env.example` and BuildConfig. Every key must have a non-empty value so no BuildConfig field is empty. Signing keys exist strictly as GitHub Actions secrets read via `System.getenv`.
 
 ## 6. Known facts about the website Home page (already analysed)
 

@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EmojiEvents
@@ -31,7 +32,6 @@ import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Timer
@@ -234,14 +234,14 @@ private fun StudyTechniquesSection() {
         TechniqueCard(
             title = "Closed-Book Practice Testing",
             description = "Simulate real exam conditions: strict time limits, zero notes, and mixed topics. Testing is not merely an assessment—it is an active learning mechanism that highlights critical knowledge gaps.",
-            icon = Icons.Default.MenuBook,
+            icon = Icons.AutoMirrored.Filled.MenuBook,
             accentColor = WisdomAccentEmerald
         )
 
         TechniqueCard(
             title = "Interleaving Topics",
             description = "Avoid blocking 6 hours on a single formula type. Mix related subjects (e.g., alternating between mechanics and calculus problems) to train problem classification under pressure.",
-            icon = Icons.Default.MenuBook,
+            icon = Icons.AutoMirrored.Filled.MenuBook,
             accentColor = WisdomAccentPurple
         )
     }
@@ -543,7 +543,7 @@ private fun ScholarshipsSection() {
         TechniqueCard(
             title = "Crafting a Compelling Motivation Essay",
             description = "Focus on specific problems you aim to solve. Connect your department coursework directly to tangible development challenges in healthcare, software, energy, or economic policy.",
-            icon = Icons.Default.MenuBook,
+            icon = Icons.AutoMirrored.Filled.MenuBook,
             accentColor = WisdomAccentAmber
         )
 

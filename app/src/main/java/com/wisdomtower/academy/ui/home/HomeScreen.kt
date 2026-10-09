@@ -30,10 +30,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Icon
@@ -169,7 +169,7 @@ val OTHER_RESOURCES = listOf(
     ResourceGuide("Study Techniques", "/academy/study-techniques", Icons.Default.Lightbulb, WisdomCyan),
     ResourceGuide("Campus Life", "/academy/campus-life", Icons.Default.Park, WisdomAccentSky),
     ResourceGuide("Universities Directory", "/academy/universities", Icons.Default.Apartment, WisdomAccentViolet),
-    ResourceGuide("Departments Guide", "/academy/departments", Icons.Default.MenuBook, WisdomAccentOrange),
+    ResourceGuide("Departments Guide", "/academy/departments", Icons.AutoMirrored.Filled.MenuBook, WisdomAccentOrange),
     ResourceGuide("Scholarships Guide", "/academy/scholarships", Icons.Default.School, WisdomAccentRose)
 )
 

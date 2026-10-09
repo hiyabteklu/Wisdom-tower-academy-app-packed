@@ -25,7 +25,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Calculate
@@ -33,7 +34,6 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Timer
@@ -101,7 +101,7 @@ val STUDY_HUBS = listOf(
         title = "Official Textbooks",
         description = "Read curriculum & reference books offline",
         path = "/learning?hub=books",
-        icon = Icons.Default.MenuBook,
+        icon = Icons.AutoMirrored.Filled.MenuBook,
         accentColor = WisdomCyan
     ),
     StudyModeHub(
@@ -122,7 +122,7 @@ val STUDY_HUBS = listOf(
         title = "Practice Exams",
         description = "Model & timed exams with full solutions",
         path = "/learning?hub=exams",
-        icon = Icons.Default.Assignment,
+        icon = Icons.AutoMirrored.Filled.Assignment,
         accentColor = WisdomAccentEmerald
     ),
     StudyModeHub(

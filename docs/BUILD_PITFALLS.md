@@ -14,10 +14,22 @@
 5. **Rule (e) – Full Project Grep on Fix:** Whenever fixing a compile mistake or deprecation, grep the entire project (`app/src`) for the exact same pattern and fix every occurrence.
 6. **Rule (f) – Isolate Release Configuration:** Never touch release signing, ProGuard/R8 release configs, Gradle wrapper 9.3.1, JDK 21, or workflow files to patch or work around UI compilation errors.
 7. **Rule (g) – Keep the CI Pipeline Green:** Maintain a green state for the "Build Production AAB & APK" GitHub Actions workflow at all times.
+8. **Rule (h) – Zero Secrets in BuildConfig / Non-Empty .env.example:** Never add a secret to .env.example or BuildConfig; empty .env.example values break the Java build. Only public, non-empty values may exist in .env.example. All secrets stay strictly on the website server or as GitHub Actions signing secrets read via `System.getenv`.
 
 ---
 
 ## Build Failure Log
+
+### 2026-10-09 – Run #7 failed (`compileReleaseJavaWithJavac`)
+
+#### Problem: Secrets in `.env.example` and empty values breaking `BuildConfig.java`
+* **Cause:** `.env.example` contained server environment variables (`SUPABASE_SERVICE_ROLE_KEY`, `FIREBASE_PRIVATE_KEY`, `GROQ_API_KEY`, `TWILIO_AUTH_TOKEN`, `RESEND_API_KEY`, etc.) from the website. The `secrets-gradle-plugin` transforms every entry in `.env.example` into a `BuildConfig` field. Empty values (`KEY=`) generated invalid Java syntax (`String KEY = ;`), causing `compileReleaseJavaWithJavac` to fail. Even if non-empty, secrets would be compiled into the release APK, creating a security violation.
+* **Fix:**
+  1. Pruned `.env.example` to strictly the 6 public keys with non-empty live values: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_APPWRITE_ENDPOINT`, `NEXT_PUBLIC_APPWRITE_PROJECT_ID`, and `NEXT_PUBLIC_APPWRITE_BUCKET_ID`.
+  2. Deleted all server secrets and signing keys from `.env.example`. Keystore signing keys remain exclusively in GitHub Actions secrets read via `System.getenv`.
+  3. Replaced deprecated `Icons.Filled.MenuBook`, `Icons.Filled.TrendingUp`, and `Icons.Filled.Assignment` with modern `Icons.AutoMirrored.Filled.*` across all UI screens.
+  4. Fixed nullable String mismatch warnings in `AuthStateManager.kt` and `AcademyRepository.kt` by introducing safe `optNullableString` parser extensions on `JSONObject`.
+* **DO NOT:** **Never add a secret to .env.example or BuildConfig; empty .env.example values break the Java build.**
 
 ### 2026-10-09 – Run #5 failed (`:app:compileReleaseKotlin`)
 
