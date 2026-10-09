@@ -33,6 +33,7 @@ import {
   Gamepad2,
   Crosshair,
   Trophy,
+  LifeBuoy,
 } from "lucide-react";
 import NotesViewer from "@/components/learning/NotesViewer";
 import QuizExamViewer from "@/components/learning/QuizExamViewer";
@@ -70,6 +71,7 @@ function hubIcon(hub: HubId, className = "w-7 h-7") {
   if (hub === "flashcards") return <Layers className={`${className} text-violet-400`} />;
   if (hub === "videos") return <Play className={`${className} text-rose-400`} />;
   if (hub === "short-notes") return <FileText className={`${className} text-sky-400`} />;
+  if (hub === "life-savers") return <LifeBuoy className={`${className} text-rose-400`} />;
   return <BookOpen className={`${className} text-amber-400`} />;
 }
 
@@ -79,6 +81,7 @@ function hubAccentClass(hub: HubId) {
   if (hub === "flashcards") return "text-violet-300";
   if (hub === "videos") return "text-rose-300";
   if (hub === "short-notes") return "text-sky-300";
+  if (hub === "life-savers") return "text-rose-300";
   return "text-amber-300";
 }
 
@@ -89,6 +92,7 @@ function hubItemsLabel(hub: HubId) {
   if (hub === "flashcards") return "all decks";
   if (hub === "question-banks") return "all question banks";
   if (hub === "exams") return "all exams";
+  if (hub === "life-savers") return "all life savers";
   return "all items";
 }
 
@@ -333,7 +337,7 @@ export default function HubContentView({
     const quiz = progMeta.quiz;
     const fc = progMeta.flashcards;
     const vid = progMeta.video;
-    const isBookLike = hub === "books" || active.contentType === "pdf";
+    const isBookLike = hub === "books" || hub === "life-savers" || active.contentType === "pdf";
     const isNotes = hub === "short-notes" || active.contentType === "markdown";
     const focusNow = focusStatusLabel(focusSeconds, seconds);
     const isQuizOrExam =

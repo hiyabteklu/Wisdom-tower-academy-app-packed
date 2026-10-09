@@ -126,6 +126,10 @@ export const HUB_CONTENT_DEFAULTS: Record<
     contentType: "exam",
     hint: "JSON in meta only (Supabase DB). For rich solutions with images, put markdown image URLs in solution text.",
   },
+  "life-savers": {
+    contentType: "pdf",
+    hint: "Upload a PDF (Appwrite). Large files: paste File ID from Appwrite Console.",
+  },
 };
 
 /**

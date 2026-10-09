@@ -8,6 +8,7 @@ import {
   HelpCircle,
   ClipboardList,
   Play,
+  LifeBuoy,
   type LucideIcon,
 } from "lucide-react";
 import { resourceHubs } from "@/data/academy";
@@ -19,6 +20,7 @@ const ICONS: Record<string, LucideIcon> = {
   "question-banks": HelpCircle,
   exams: ClipboardList,
   videos: Play,
+  "life-savers": LifeBuoy,
 };
 
 type Props = {

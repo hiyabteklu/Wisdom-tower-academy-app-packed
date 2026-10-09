@@ -62,6 +62,7 @@ export default function ContentPanel() {
     "flashcards",
     "question-banks",
     "exams",
+    "life-savers",
   ];
   const isOnHub =
     Boolean(scopePath) && hubIds.includes(current?.id || "") && Boolean(hub);
@@ -381,10 +382,10 @@ export default function ContentPanel() {
                   className="mt-1 w-full rounded-xl border border-white/15 bg-wisdom-dark/50 px-3 py-2 text-sm text-white"
                 />
               </label>
-              {(hub === "books" || hub === "videos") && (
+              {(hub === "books" || hub === "life-savers" || hub === "videos") && (
                 <>
                   <label className="block text-xs text-wisdom-muted">
-                    {hub === "books" ? "PDF file" : "Optional file"}
+                    {hub === "books" || hub === "life-savers" ? "PDF file" : "Optional file"}
                     {onAppwrite && (
                       <span className="ml-1 text-cyan-300">(Appwrite · max ~4 MB via site)</span>
                     )}
@@ -394,7 +395,7 @@ export default function ContentPanel() {
                         {file ? file.name : "Choose file"}
                         <input
                           type="file"
-                          accept={hub === "books" ? "application/pdf" : "*/*"}
+                          accept={hub === "books" || hub === "life-savers" ? "application/pdf" : "*/*"}
                           className="hidden"
                           onChange={(e) => setFile(e.target.files?.[0] || null)}
                         />
@@ -403,7 +404,7 @@ export default function ContentPanel() {
                   </label>
                   {onAppwrite && (
                     <label className="block text-xs text-wisdom-muted">
-                      Appwrite File ID (for large textbooks)
+                      Appwrite File ID {hub === "life-savers" ? "(for Life Saver PDFs)" : "(for large textbooks)"}
                       <input
                         value={appwriteFileId}
                         onChange={(e) => setAppwriteFileId(e.target.value)}

@@ -9,7 +9,7 @@ create table if not exists public.learning_resources (
   package_id text not null,
   scope_path text not null,
   hub text not null check (hub in (
-    'books','short-notes','videos','flashcards','question-banks','exams'
+    'books','short-notes','videos','flashcards','question-banks','exams','life-savers'
   )),
   title text not null,
   chapter int,

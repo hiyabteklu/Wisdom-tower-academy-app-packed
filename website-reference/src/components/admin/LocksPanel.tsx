@@ -63,6 +63,7 @@ const HUB_IDS = [
   "flashcards",
   "question-banks",
   "exams",
+  "life-savers",
 ];
 
 function modeBadge(mode: LockMode | undefined) {

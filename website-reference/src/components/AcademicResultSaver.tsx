@@ -313,7 +313,7 @@ export default function AcademicResultSaver({
     };
   }, [results]);
 
-  const isBooks = hub === "books" || hub === "short-notes";
+  const isBooks = hub === "books" || hub === "short-notes" || hub === "life-savers";
   const isFlash = hub === "flashcards";
   const isQuizHub = hub === "question-banks" || hub === "exams";
   const isVideo = hub === "videos";
@@ -356,7 +356,7 @@ export default function AcademicResultSaver({
   }, [effectiveStudy, examAvgForScore, hasAttempts]);
 
   const hubLabel =
-    hub === "short-notes" ? "short notes" : hub ? hub.replace(/-/g, " ") : "all hubs";
+    hub === "short-notes" ? "short notes" : hub === "life-savers" ? "life savers" : hub ? hub.replace(/-/g, " ") : "all hubs";
 
   return (
     <section className="relative overflow-hidden w-full max-w-full rounded-2xl sm:rounded-3xl border border-white/[0.08] bg-[#0c1328]/75 backdrop-blur-xl shadow-[0_8px_30px_rgb(0_0_0/0.18)] transition-all">

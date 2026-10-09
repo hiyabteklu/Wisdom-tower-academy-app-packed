@@ -13,7 +13,8 @@ export type HubId =
   | "videos"
   | "flashcards"
   | "question-banks"
-  | "exams";
+  | "exams"
+  | "life-savers";
 
 export type ContentType =
   | "pdf"

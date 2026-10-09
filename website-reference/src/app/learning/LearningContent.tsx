@@ -30,6 +30,7 @@ import {
   ChevronRight,
   Calculator as CalcIcon,
   Sparkles,
+  LifeBuoy,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { packageImages } from "@/data/packages";
@@ -1723,7 +1724,7 @@ export default function LearningContent({
 
                     <div>
                       {/* Fast Navigation Hub Links */}
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-3 border-t border-white/[0.08]">
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 pt-3 border-t border-white/[0.08]">
                         <Link
                           href={`${course.path}/books`}
                           className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-full font-semibold text-[11px] bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-slate-200 hover:text-white border border-white/[0.08] transition-all text-center"
@@ -1754,10 +1755,17 @@ export default function LearningContent({
                         </Link>
                         <Link
                           href={`${course.path}/exams`}
-                          className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1 py-1.5 px-1 rounded-full font-semibold text-[11px] bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-slate-200 hover:text-white border border-white/[0.08] transition-all text-center"
+                          className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-full font-semibold text-[11px] bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-slate-200 hover:text-white border border-white/[0.08] transition-all text-center"
                         >
                           <Award className="w-3 h-3 shrink-0" />
                           <span>Exams</span>
+                        </Link>
+                        <Link
+                          href={`${course.path}/life-savers`}
+                          className="flex items-center justify-center gap-1 py-1.5 px-1 rounded-full font-semibold text-[11px] bg-white/[0.06] hover:bg-white/[0.12] active:scale-95 text-slate-200 hover:text-white border border-white/[0.08] transition-all text-center"
+                        >
+                          <LifeBuoy className="w-3 h-3 shrink-0 text-rose-400" />
+                          <span>Life Savers</span>
                         </Link>
                       </div>
                     </div>

@@ -114,6 +114,7 @@ export default function ResourceHubGrid({
       flashcards: 0,
       "question-banks": 0,
       exams: 0,
+      "life-savers": 0,
     };
     if (res.items) {
       for (const item of res.items) {

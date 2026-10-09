@@ -6,7 +6,8 @@ export type ResourceType =
   | "videos"
   | "flashcards"
   | "question-banks"
-  | "exams";
+  | "exams"
+  | "life-savers";
 
 export interface ResourceHub {
   id: ResourceType;
@@ -36,6 +37,10 @@ export const HUB_ALIASES: Record<string, ResourceType> = {
   "question-bank": "question-banks",
   questions: "question-banks",
   exam: "exams",
+  "life-saver": "life-savers",
+  lifesaver: "life-savers",
+  lifesavers: "life-savers",
+  "life-savers": "life-savers",
 };
 
 export function resolveHubId(id: string): string {
@@ -146,6 +151,15 @@ export const resourceHubs: ResourceHub[] = [
     glow: "group-hover:shadow-emerald-500/20",
     icon: "clipboard",
     image: hubImg("exams"),
+  },
+  {
+    id: "life-savers",
+    name: "Life Savers",
+    description: "High-yield summaries, cheat sheets, and exam lifesavers",
+    accent: "text-rose-400",
+    glow: "group-hover:shadow-rose-500/20",
+    icon: "life-buoy",
+    image: hubImg("life-savers"),
   },
 ];
 

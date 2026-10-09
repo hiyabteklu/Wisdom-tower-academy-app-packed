@@ -68,6 +68,7 @@ function matchesHub(item: unknown, targetHub: string): boolean {
   if (targetHub === "short-notes" && (h === "references" || it.contentType === "markdown")) return true;
   if (targetHub === "references" && (h === "short-notes" || it.contentType === "markdown")) return true;
   if (targetHub === "books" && (h === "books" || it.contentType === "pdf")) return true;
+  if (targetHub === "life-savers" && (h === "life-savers" || it.contentType === "pdf")) return true;
   if (targetHub === "flashcards" && (h === "flashcards" || it.contentType === "flashcard_deck")) return true;
   if (targetHub === "question-banks" && (h === "question-banks" || it.contentType === "quiz")) return true;
   if (targetHub === "exams" && (h === "exams" || it.contentType === "exam")) return true;

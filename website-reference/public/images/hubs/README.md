@@ -9,6 +9,7 @@ videos.jpg
 flashcards.jpg
 question-banks.jpg
 exams.jpg
+life-savers.jpg
 ```
 
 App URL: `/images/hubs/short-notes.jpg`
