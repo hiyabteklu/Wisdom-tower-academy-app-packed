@@ -48,7 +48,15 @@ import android.content.pm.PackageManager
 import android.Manifest
 import com.wisdomtower.academy.fcm.AcademyFirebaseMessagingService
 import com.wisdomtower.academy.fcm.FcmTokenRegistrar
+import com.wisdomtower.academy.ui.account.AccountScreen
+import com.wisdomtower.academy.ui.guides.GuidesScreen
 import com.wisdomtower.academy.ui.home.HomeScreen
+import com.wisdomtower.academy.ui.learning.LearningScreen
+import com.wisdomtower.academy.ui.packages.PackagesScreen
+import com.wisdomtower.academy.ui.packages.PackageDetailScreen
+import com.wisdomtower.academy.ui.packages.NativePackage
+import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
+import com.wisdomtower.academy.ui.settings.SettingsScreen
 import com.wisdomtower.academy.ui.theme.WisdomNavy
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -940,6 +948,9 @@ fun MainScreen(
     }
 
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
+    var selectedPackage by remember { mutableStateOf<NativePackage?>(null) }
+    var activeStudyUrl by remember { mutableStateOf<String?>(null) }
+    var activeGuideSlug by remember { mutableStateOf<String?>(null) }
     var webView: WebView? by remember { mutableStateOf(null) }
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -1393,6 +1404,26 @@ fun MainScreen(
             menuExpanded = false
             return@BackHandler
         }
+        if (activeGuideSlug != null) {
+            activeGuideSlug = null
+            return@BackHandler
+        }
+        if (selectedPackage != null) {
+            selectedPackage = null
+            return@BackHandler
+        }
+        if (activeStudyUrl != null) {
+            val wv = webView
+            if (wv != null && wv.canGoBack()) {
+                val list = wv.copyBackForwardList()
+                if (list.currentIndex > 0) {
+                    wv.goBack()
+                    return@BackHandler
+                }
+            }
+            activeStudyUrl = null
+            return@BackHandler
+        }
         if (activeToolOverlayUrl != null) {
             val twv = toolOverlayWebView
             if (twv != null && twv.canGoBack()) {
@@ -1720,6 +1751,11 @@ fun MainScreen(
                         items = items,
                         selectedIndex = selectedIndex,
                         onItemSelected = { index, item ->
+                            if (index != selectedIndex) {
+                                selectedPackage = null
+                                activeStudyUrl = null
+                                activeGuideSlug = null
+                            }
                             selectedIndex = index
                             navigateTo(item.url, index)
                         }
@@ -2677,14 +2713,149 @@ fun MainScreen(
                         isLoggedIn = false,
                         userName = null,
                         onNavigateToUrl = { targetPathOrUrl ->
-                            val fullUrl = if (targetPathOrUrl.startsWith("http")) {
-                                targetPathOrUrl
+                            val clean = targetPathOrUrl.trim()
+                            if (clean.contains("/academy/success-stories")) {
+                                activeGuideSlug = "success-stories"
+                            } else if (clean.contains("/academy/study-techniques")) {
+                                activeGuideSlug = "study-techniques"
+                            } else if (clean.contains("/academy/campus-life")) {
+                                activeGuideSlug = "campus-life"
+                            } else if (clean.contains("/academy/universities")) {
+                                activeGuideSlug = "universities"
+                            } else if (clean.contains("/academy/departments")) {
+                                activeGuideSlug = "departments"
+                            } else if (clean.contains("/academy/scholarships")) {
+                                activeGuideSlug = "scholarships"
                             } else {
-                                "https://www.wisdom-tower-academy.live$targetPathOrUrl"
+                                val matchedPkg = CATALOG_PACKAGES.find {
+                                    it.path.equals(clean, ignoreCase = true) ||
+                                    it.id.equals(clean.removePrefix("/academy/"), ignoreCase = true)
+                                }
+                                if (matchedPkg != null) {
+                                    selectedPackage = matchedPkg
+                                    selectedIndex = 2
+                                } else if (clean == "/academy" || clean == "/packages") {
+                                    selectedPackage = null
+                                    selectedIndex = 2
+                                } else {
+                                    val fullUrl = if (targetPathOrUrl.startsWith("http")) {
+                                        targetPathOrUrl
+                                    } else {
+                                        "https://www.wisdom-tower-academy.live$targetPathOrUrl"
+                                    }
+                                    val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
+                                    navigateTo(fullUrl, targetTab)
+                                }
                             }
+                        }
+                    )
+                }
+
+                // Native Learning Landing Shell (Phase A4)
+                if (selectedIndex == 1 && activeStudyUrl == null) {
+                    LearningScreen(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(WisdomNavy)
+                            .zIndex(10f),
+                        onOpenTool = { toolUrl ->
+                            navigateTo("https://www.wisdom-tower-academy.live$toolUrl")
+                        },
+                        onOpenHub = { hubPath ->
+                            val fullUrl = "https://www.wisdom-tower-academy.live$hubPath"
+                            activeStudyUrl = fullUrl
+                            navigateTo(fullUrl, 1)
+                        },
+                        onSelectCourse = { pkg ->
+                            selectedPackage = pkg
+                            selectedIndex = 2
+                        }
+                    )
+                }
+
+                // Native Packages Catalog & Landing Screens (Phase A3)
+                if (selectedIndex == 2) {
+                    val currentPkg = selectedPackage
+                    if (currentPkg != null) {
+                        PackageDetailScreen(
+                            pkg = currentPkg,
+                            onBack = { selectedPackage = null },
+                            onStartLearning = { studyPath ->
+                                selectedPackage = null
+                                val fullUrl = if (studyPath.startsWith("http")) studyPath else "https://www.wisdom-tower-academy.live$studyPath"
+                                activeStudyUrl = fullUrl
+                                navigateTo(fullUrl, 1) // Switch to Learning tab
+                            },
+                            onUnlock = { checkoutPath ->
+                                val fullUrl = if (checkoutPath.startsWith("http")) checkoutPath else "https://www.wisdom-tower-academy.live$checkoutPath"
+                                navigateTo(fullUrl, 2)
+                                selectedPackage = null
+                            },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(10f)
+                        )
+                    } else {
+                        PackagesScreen(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(10f),
+                            onSelectPackage = { pkg ->
+                                selectedPackage = pkg
+                            },
+                            onNavigateToUrl = { targetPathOrUrl ->
+                                val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
+                                val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
+                                navigateTo(fullUrl, targetTab)
+                            }
+                        )
+                    }
+                }
+
+                // Native Account Command Center Shell (Phase A5)
+                if (selectedIndex == 3) {
+                    AccountScreen(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(WisdomNavy)
+                            .zIndex(10f),
+                        isLoggedIn = false,
+                        userName = null,
+                        userEmail = null,
+                        onNavigateToUrl = { targetPathOrUrl ->
+                            val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
                             val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
                             navigateTo(fullUrl, targetTab)
                         }
+                    )
+                }
+
+                // Native Preferences & Settings Shell (Phase A5)
+                if (selectedIndex == 4) {
+                    SettingsScreen(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(WisdomNavy)
+                            .zIndex(10f),
+                        onNavigateToUrl = { targetPathOrUrl ->
+                            val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
+                            val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
+                            navigateTo(fullUrl, targetTab)
+                        }
+                    )
+                }
+
+                // Native Guides & Static Resources (Phase A6)
+                if (activeGuideSlug != null) {
+                    GuidesScreen(
+                        initialSlug = activeGuideSlug ?: "study-techniques",
+                        onBack = { activeGuideSlug = null },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(WisdomNavy)
+                            .zIndex(15f)
                     )
                 }
 
@@ -2694,7 +2865,7 @@ fun MainScreen(
                 // - NO percent (no 20%, 80%, etc.)
                 // - NO card, NO panel, NO dim box
                 // - ONE continuous stable animation (same 110.dp scale, same center, zero size jumps)
-                val isLoaderVisible = (isInitialLoading || isNavigating) && (!minSplashElapsed || selectedIndex != 0)
+                val isLoaderVisible = (isInitialLoading || isNavigating) && (!minSplashElapsed || (selectedIndex == 1 && activeStudyUrl != null))
                 AnimatedVisibility(
                     visible = isLoaderVisible,
                     enter = fadeIn(tween(140, easing = FastOutSlowInEasing)),
