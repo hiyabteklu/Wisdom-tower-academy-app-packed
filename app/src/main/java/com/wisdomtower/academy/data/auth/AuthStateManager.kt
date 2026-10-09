@@ -87,9 +87,11 @@ object AuthStateManager {
     /**
      * Called by the WebView JS bridge when localStorage['wt-academy-auth-v1'] changes
      */
-    fun syncAuthSession(rawJson: String?) {
+    fun syncAuthSession(rawJson: String?, isExplicitSignOut: Boolean = false) {
         if (rawJson.isNullOrBlank() || rawJson == "null" || rawJson == "undefined" || rawJson == "{}") {
-            clearSession()
+            if (isExplicitSignOut) {
+                clearSession()
+            }
             return
         }
 
@@ -97,13 +99,13 @@ object AuthStateManager {
             val obj = JSONObject(rawJson)
             val userObj = obj.optJSONObject("user")
             if (userObj == null) {
-                clearSession()
+                if (isExplicitSignOut) clearSession()
                 return
             }
 
             val uid = userObj.optString("id")
             if (uid.isBlank()) {
-                clearSession()
+                if (isExplicitSignOut) clearSession()
                 return
             }
 
@@ -155,6 +157,84 @@ object AuthStateManager {
             }
         } catch (_: Exception) {
             // Non-fatal parse error; keep current state
+        }
+    }
+
+    /**
+     * Generates a valid JSON session string matching Supabase wt-academy-auth-v1 format
+     * for injection into the WebView so web handoffs inherit the authenticated session.
+     */
+    fun getAuthSessionJson(): String {
+        val user = _currentUser.value ?: return ""
+        val profile = _currentProfile.value
+        return try {
+            val userMeta = JSONObject().apply {
+                put("full_name", user.fullName ?: profile?.fullName ?: "Student Scholar")
+                put("name", user.fullName ?: profile?.fullName ?: "Student Scholar")
+                profile?.educationLevel?.let { put("education_level", it) }
+                profile?.stream?.let { put("stream", it) }
+                profile?.schoolName?.let { put("school_name", it) }
+                profile?.townRegion?.let { put("town_region", it) }
+                profile?.avatarPreset?.let { put("avatar_preset", it) }
+                profile?.avatarUrl?.let { put("avatar_url", it) }
+                profile?.studentIdNumber?.let { put("student_id_number", it) }
+            }
+            val userObj = JSONObject().apply {
+                put("id", user.id)
+                put("email", user.email ?: "")
+                put("created_at", user.createdAt ?: "")
+                put("user_metadata", userMeta)
+            }
+            val root = JSONObject().apply {
+                put("access_token", user.accessToken ?: "")
+                put("refresh_token", user.refreshToken ?: "")
+                put("user", userObj)
+            }
+            root.toString()
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
+    /**
+     * Injects the active native session into the WebView localStorage so handoffs are already signed in.
+     */
+    fun injectSessionIntoWebView(webView: WebView?) {
+        val json = getAuthSessionJson()
+        if (json.isBlank()) return
+        val escaped = JSONObject.quote(json)
+        val profile = _currentProfile.value
+        val user = _currentUser.value
+        val eduLevel = JSONObject.quote(profile?.educationLevel ?: "")
+        val stream = JSONObject.quote(profile?.stream ?: "")
+        val fullName = JSONObject.quote(profile?.fullName ?: user?.fullName ?: "")
+        val email = JSONObject.quote(profile?.email ?: user?.email ?: "")
+        val studentId = JSONObject.quote(profile?.studentIdNumber ?: "")
+        val js = """
+            (function(){
+              try {
+                var cur = localStorage.getItem('wt-academy-auth-v1');
+                var shouldSet = !cur || cur === 'null' || cur === '{}' || cur.length < 15;
+                if (!shouldSet) {
+                  try {
+                    var parsed = JSON.parse(cur);
+                    if (!parsed.access_token || !parsed.user) shouldSet = true;
+                  } catch(e) { shouldSet = true; }
+                }
+                if (shouldSet) {
+                  localStorage.setItem('wt-academy-auth-v1', $escaped);
+                  if ($eduLevel && $eduLevel !== '""') localStorage.setItem('wt_student_academic_level', $eduLevel);
+                  if ($stream && $stream !== '""') localStorage.setItem('wt_student_academic_stream', $stream);
+                  if ($fullName && $fullName !== '""') localStorage.setItem('wt_user_name', $fullName);
+                  if ($email && $email !== '""') localStorage.setItem('wt_user_email', $email);
+                  if ($studentId && $studentId !== '""') localStorage.setItem('wt_student_id', $studentId);
+                  window.dispatchEvent(new CustomEvent('wta-auth-change'));
+                }
+              } catch(e) {}
+            })();
+        """.trimIndent()
+        webView?.post {
+            webView.evaluateJavascript(js, null)
         }
     }
 

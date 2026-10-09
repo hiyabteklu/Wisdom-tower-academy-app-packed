@@ -140,6 +140,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
@@ -1156,9 +1157,28 @@ fun MainScreen(
                 targetUrl.contains("tool=note") -> "Study Notebook"
                 targetUrl.contains("tool=time") -> "Study Timer"
                 targetUrl.contains("tool=plan") -> "Study Planner"
+                targetUrl.contains("tool=status") || targetUrl.contains("tool=analytics") -> "Progress Tracker & Analytics"
+                targetUrl.contains("tool=goals") -> "Study Goals & Targets"
+                targetUrl.contains("tool=courses") -> "Curriculum Manager"
                 else -> "Study Tool"
             }
             openToolOverlay(targetUrl, toolTitle)
+            return
+        }
+        if (targetUrl.contains("/login") || targetUrl.contains("/signin")) {
+            openToolOverlay(targetUrl, "Scholar Sign In")
+            return
+        }
+        if (targetUrl.contains("/signup") || targetUrl.contains("/register")) {
+            openToolOverlay(targetUrl, "Create Scholar Account")
+            return
+        }
+        if (targetUrl.contains("/checkout")) {
+            openToolOverlay(targetUrl, "Package Checkout")
+            return
+        }
+        if (targetUrl.contains("/orders") || targetUrl.contains("/cart")) {
+            openToolOverlay(targetUrl, "Order History & Verification")
             return
         }
         val wv = webView
@@ -1623,20 +1643,45 @@ fun MainScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Left: Hamburger menu button
-                        IconButton(
-                            onClick = {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                menuExpanded = true
-                            },
-                            modifier = Modifier.size(46.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Menu,
-                                contentDescription = "Menu",
-                                tint = Accent,
-                                modifier = Modifier.size(24.dp)
-                            )
+                        // Left: Back button (when studying in WebView) or Hamburger menu button
+                        if (activeStudyUrl != null) {
+                            IconButton(
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                    val wv = webView
+                                    if (wv != null && wv.canGoBack()) {
+                                        val list = wv.copyBackForwardList()
+                                        if (list.currentIndex > 0) {
+                                            wv.goBack()
+                                            return@IconButton
+                                        }
+                                    }
+                                    activeStudyUrl = null
+                                },
+                                modifier = Modifier.size(46.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back to Learning Suite",
+                                    tint = Accent,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        } else {
+                            IconButton(
+                                onClick = {
+                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                    menuExpanded = true
+                                },
+                                modifier = Modifier.size(46.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Menu,
+                                    contentDescription = "Menu",
+                                    tint = Accent,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
 
                         // Center: Brand Logo and Title
@@ -1656,7 +1701,7 @@ fun MainScreen(
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
-                                text = "Wisdom Tower Academy",
+                                text = if (activeStudyUrl != null) "Study Workspace" else "Wisdom Tower Academy",
                                 color = Color.White,
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
@@ -2202,6 +2247,7 @@ fun MainScreen(
                                     }
                                     wv.settings.cacheMode = if (isOnline(ctx)) WebSettings.LOAD_DEFAULT else WebSettings.LOAD_CACHE_ELSE_NETWORK
                                     if (url != null && !url.startsWith("file://")) {
+                                        AuthStateManager.injectSessionIntoWebView(wv)
                                         // Early hide-chrome CSS injection at onPageStarted (before first paint)
                                         wv.evaluateJavascript(EARLY_HIDE_CHROME_JS, null)
 
@@ -2295,6 +2341,7 @@ fun MainScreen(
                                     }
                                     stopNavigationLoading()
                                     if (!u.startsWith("file://")) {
+                                        AuthStateManager.injectSessionIntoWebView(wv)
                                         wv.evaluateJavascript(NATIVE_CHROME_JS, null)
                                         wv.evaluateJavascript(AI_TUTOR_CHROME_JS, null)
                                         wv.evaluateJavascript(PRECACHE_AND_UNBLOCK_JS, null)
@@ -2795,14 +2842,22 @@ fun MainScreen(
                                 } else if (clean == "/academy" || clean == "/packages") {
                                     selectedPackage = null
                                     selectedIndex = 2
+                                } else if (clean == "/learning" || clean == "/my-learning") {
+                                    activeStudyUrl = null
+                                    selectedIndex = 1
                                 } else {
                                     val fullUrl = if (targetPathOrUrl.startsWith("http")) {
                                         targetPathOrUrl
                                     } else {
                                         "https://www.wisdom-tower-academy.live$targetPathOrUrl"
                                     }
-                                    val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
-                                    navigateTo(fullUrl, targetTab)
+                                    if (fullUrl.contains("/books") || fullUrl.contains("/short-notes") || fullUrl.contains("/flashcards") || fullUrl.contains("/question-banks") || fullUrl.contains("/exams") || fullUrl.contains("/life-savers")) {
+                                        activeStudyUrl = fullUrl
+                                        navigateTo(fullUrl, 1)
+                                    } else {
+                                        val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
+                                        navigateTo(fullUrl, targetTab)
+                                    }
                                 }
                             }
                         }
@@ -2842,15 +2897,18 @@ fun MainScreen(
                             pkg = currentPkg,
                             onBack = { selectedPackage = null },
                             onStartLearning = { studyPath ->
-                                selectedPackage = null
                                 val fullUrl = if (studyPath.startsWith("http")) studyPath else "https://www.wisdom-tower-academy.live$studyPath"
-                                activeStudyUrl = fullUrl
-                                navigateTo(fullUrl, 1) // Switch to Learning tab
+                                if (fullUrl.contains("tool=")) {
+                                    navigateTo(fullUrl)
+                                } else {
+                                    selectedPackage = null
+                                    activeStudyUrl = fullUrl
+                                    navigateTo(fullUrl, 1) // Switch to Learning tab
+                                }
                             },
                             onUnlock = { checkoutPath ->
                                 val fullUrl = if (checkoutPath.startsWith("http")) checkoutPath else "https://www.wisdom-tower-academy.live$checkoutPath"
-                                navigateTo(fullUrl, 2)
-                                selectedPackage = null
+                                openToolOverlay(fullUrl, "Package Checkout")
                             },
                             isLoggedIn = isLoggedIn,
                             modifier = Modifier
@@ -2892,9 +2950,23 @@ fun MainScreen(
                             AuthStateManager.signOut(webView)
                         },
                         onNavigateToUrl = { targetPathOrUrl ->
-                            val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
-                            val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
-                            navigateTo(fullUrl, targetTab)
+                            val clean = targetPathOrUrl.trim()
+                            val matchedPkg = catalogPackages.find {
+                                it.path.equals(clean, ignoreCase = true) ||
+                                it.id.equals(clean.removePrefix("/academy/"), ignoreCase = true)
+                            }
+                            if (matchedPkg != null) {
+                                selectedPackage = matchedPkg
+                                selectedIndex = 2
+                            } else if (clean.contains("/learning") || clean.contains("/books") || clean.contains("/short-notes") || clean.contains("/flashcards") || clean.contains("/question-banks") || clean.contains("/exams")) {
+                                val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
+                                activeStudyUrl = fullUrl
+                                navigateTo(fullUrl, 1)
+                            } else {
+                                val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
+                                val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
+                                navigateTo(fullUrl, targetTab)
+                            }
                         }
                     )
                 }
@@ -3132,6 +3204,19 @@ fun MainScreen(
                                             }
                                         }
                                         @JavascriptInterface
+                                        fun syncAuthSession(sessionJson: String?) {
+                                            mainHandler.post {
+                                                AuthStateManager.syncAuthSession(sessionJson)
+                                                if (!sessionJson.isNullOrBlank() && sessionJson != "null" && sessionJson.length > 20) {
+                                                    val curUrl = toolOverlayWebView?.url.orEmpty()
+                                                    if (curUrl.contains("/login") || curUrl.contains("/signup")) {
+                                                        Toast.makeText(ctx, "Signed in successfully — Welcome back!", Toast.LENGTH_SHORT).show()
+                                                        closeToolOverlay()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        @JavascriptInterface
                                         fun returnToStudyPage() {
                                             mainHandler.post { closeToolOverlay() }
                                         }
@@ -3167,6 +3252,7 @@ fun MainScreen(
                                             if (newProgress >= 70 && !isOfflinePage) {
                                                 view?.evaluateJavascript("document.documentElement.classList.add('wta-native-app');document.documentElement.classList.add('wta-tool-overlay');", null)
                                                 view?.evaluateJavascript(AI_TUTOR_CHROME_JS, null)
+                                                view?.evaluateJavascript(AUTH_BRIDGE_JS, null)
                                             }
                                             if (newProgress >= 85) {
                                                 activeToolOverlayLoading = false
@@ -3180,9 +3266,11 @@ fun MainScreen(
                                             if (!isOfflinePage) {
                                                 overlayShowingOffline = false
                                                 activeToolOverlayLoading = true
+                                                AuthStateManager.injectSessionIntoWebView(view)
                                                 view?.evaluateJavascript("document.documentElement.classList.add('wta-native-app');document.documentElement.classList.add('wta-tool-overlay');", null)
                                                 view?.evaluateJavascript(EARLY_HIDE_CHROME_JS, null)
                                                 view?.evaluateJavascript(AI_TUTOR_CHROME_JS, null)
+                                                view?.evaluateJavascript(AUTH_BRIDGE_JS, null)
                                             } else {
                                                 overlayShowingOffline = true
                                                 activeToolOverlayLoading = false
@@ -3195,11 +3283,13 @@ fun MainScreen(
                                             activeToolOverlayLoading = false
                                             if (!isOfflinePage) {
                                                 overlayShowingOffline = false
+                                                AuthStateManager.injectSessionIntoWebView(view)
                                                 view?.evaluateJavascript("document.documentElement.classList.add('wta-native-app');document.documentElement.classList.add('wta-tool-overlay');", null)
                                                 view?.evaluateJavascript(EARLY_HIDE_CHROME_JS, null)
                                                 view?.evaluateJavascript(NATIVE_CHROME_JS, null)
                                                 view?.evaluateJavascript(AI_TUTOR_CHROME_JS, null)
                                                 view?.evaluateJavascript(PRECACHE_AND_UNBLOCK_JS, null)
+                                                view?.evaluateJavascript(AUTH_BRIDGE_JS, null)
                                             }
                                         }
 

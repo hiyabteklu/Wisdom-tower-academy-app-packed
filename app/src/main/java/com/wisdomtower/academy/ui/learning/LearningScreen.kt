@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Layers
@@ -93,44 +94,52 @@ val STUDY_TOOLS = listOf(
     StudyTool("notes", "Notebook", "tool=note", Icons.Default.EditNote, WisdomAccentAmber),
     StudyTool("timer", "Pomodoro", "tool=time", Icons.Default.Timer, WisdomAccentEmerald),
     StudyTool("planner", "Planner", "tool=plan", Icons.Default.CalendarMonth, WisdomAccentSky),
-    StudyTool("analytics", "Status", "tool=status", Icons.Default.BarChart, WisdomAccentRose)
+    StudyTool("analytics", "Tracker", "tool=analytics", Icons.Default.BarChart, WisdomAccentRose),
+    StudyTool("goals", "Targets", "tool=goals", Icons.Default.CheckCircle, WisdomAccentEmerald)
 )
 
 val STUDY_HUBS = listOf(
     StudyModeHub(
         title = "Official Textbooks",
         description = "Read curriculum & reference books offline",
-        path = "/learning?hub=books",
+        path = "/academy/freshman/books",
         icon = Icons.AutoMirrored.Filled.MenuBook,
         accentColor = WisdomCyan
     ),
     StudyModeHub(
         title = "Short Notes",
         description = "Chapter-by-chapter summaries & formulas",
-        path = "/learning?hub=notes",
+        path = "/academy/freshman/short-notes",
         icon = Icons.Default.Description,
         accentColor = WisdomAccentAmber
     ),
     StudyModeHub(
         title = "Question Banks",
         description = "Targeted drills with AI explanations",
-        path = "/learning?hub=questions",
+        path = "/academy/freshman/question-banks",
         icon = Icons.Default.Quiz,
         accentColor = WisdomAccentPurple
     ),
     StudyModeHub(
         title = "Practice Exams",
         description = "Model & timed exams with full solutions",
-        path = "/learning?hub=exams",
+        path = "/academy/freshman/exams",
         icon = Icons.AutoMirrored.Filled.Assignment,
         accentColor = WisdomAccentEmerald
     ),
     StudyModeHub(
         title = "Flashcard Decks",
         description = "Rapid active recall & spaced repetition",
-        path = "/learning?hub=flashcards",
+        path = "/academy/freshman/flashcards",
         icon = Icons.Default.Layers,
         accentColor = WisdomAccentRose
+    ),
+    StudyModeHub(
+        title = "Life Savers",
+        description = "High-yield formulas, cheat sheets & quick recall",
+        path = "/academy/freshman/life-savers",
+        icon = Icons.Default.School,
+        accentColor = WisdomAccentSky
     )
 )
 
@@ -172,6 +181,61 @@ fun LearningScreen(
                         color = if (isLoggedIn) WisdomCyan else WisdomMuted,
                         lineHeight = 18.sp
                     )
+                }
+            }
+
+            // Academic Progress Tracker & Analytics (Phase C)
+            item(key = "progress_tracker_card") {
+                WisdomModernCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadius = 16.dp,
+                    borderColor = WisdomCyan.copy(alpha = 0.4f),
+                    onClick = { onOpenTool("/learning?tool=analytics") }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(WisdomAccentRose.copy(alpha = 0.16f))
+                                    .border(BorderStroke(1.dp, WisdomAccentRose.copy(alpha = 0.45f)), RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.BarChart,
+                                    contentDescription = null,
+                                    tint = WisdomAccentRose,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Academic Progress Tracker",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = if (isLoggedIn) "Live sync with your study records & scores" else "Track streak, targets & tested exam scores",
+                                    fontSize = 11.sp,
+                                    color = WisdomMuted
+                                )
+                            }
+                        }
+
+                        WisdomOpenButton(onClick = { onOpenTool("/learning?tool=analytics") })
+                    }
                 }
             }
 

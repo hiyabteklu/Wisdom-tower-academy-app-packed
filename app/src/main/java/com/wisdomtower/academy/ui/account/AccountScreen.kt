@@ -228,7 +228,8 @@ fun AccountScreen(
                                 WisdomModernCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     cornerRadius = 14.dp,
-                                    borderColor = WisdomBorderWhite
+                                    borderColor = WisdomBorderWhite,
+                                    onClick = { onNavigateToUrl(pass.packagePath) }
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -271,18 +272,28 @@ fun AccountScreen(
                                             }
                                         }
 
-                                        Box(
-                                            modifier = Modifier
-                                                .clip(CircleShape)
-                                                .background(WisdomAccentEmerald.copy(alpha = 0.15f))
-                                                .border(BorderStroke(1.dp, WisdomAccentEmerald.copy(alpha = 0.4f)), CircleShape)
-                                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
-                                            Text(
-                                                text = "Active",
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = WisdomAccentEmerald
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(CircleShape)
+                                                    .background(WisdomAccentEmerald.copy(alpha = 0.15f))
+                                                    .border(BorderStroke(1.dp, WisdomAccentEmerald.copy(alpha = 0.4f)), CircleShape)
+                                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Active",
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = WisdomAccentEmerald
+                                                )
+                                            }
+
+                                            WisdomOpenButton(
+                                                onClick = { onNavigateToUrl(pass.packagePath) },
+                                                label = "Study →"
                                             )
                                         }
                                     }

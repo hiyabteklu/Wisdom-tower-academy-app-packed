@@ -19,14 +19,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Assignment
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
@@ -47,7 +55,12 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
+import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
+import com.wisdomtower.academy.ui.theme.WisdomAccentPurple
+import com.wisdomtower.academy.ui.theme.WisdomAccentRose
+import com.wisdomtower.academy.ui.theme.WisdomAccentSky
+import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCardBorderSubtle
 import com.wisdomtower.academy.ui.theme.WisdomCyan
@@ -262,6 +275,80 @@ fun PackageDetailScreen(
                 }
             }
 
+            // Quick Study Hub Launchers (Phase C Handoffs: Textbooks, Notes, Flashcards, Questions, Exams, Tutor, Progress)
+            item(key = "study_hubs_launchers") {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Study Resources & Handoffs",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
+                    )
+
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        item {
+                            PackageResourceChip(
+                                title = "Textbooks",
+                                icon = Icons.AutoMirrored.Filled.MenuBook,
+                                color = WisdomCyan,
+                                onClick = { onStartLearning("${pkg.path}/books") }
+                            )
+                        }
+                        item {
+                            PackageResourceChip(
+                                title = "Short Notes",
+                                icon = Icons.Default.Description,
+                                color = WisdomAccentAmber,
+                                onClick = { onStartLearning("${pkg.path}/short-notes") }
+                            )
+                        }
+                        item {
+                            PackageResourceChip(
+                                title = "Flashcards",
+                                icon = Icons.Default.Layers,
+                                color = WisdomAccentRose,
+                                onClick = { onStartLearning("${pkg.path}/flashcards") }
+                            )
+                        }
+                        item {
+                            PackageResourceChip(
+                                title = "Question Banks",
+                                icon = Icons.Default.Quiz,
+                                color = WisdomAccentPurple,
+                                onClick = { onStartLearning("${pkg.path}/question-banks") }
+                            )
+                        }
+                        item {
+                            PackageResourceChip(
+                                title = "Practice Exams",
+                                icon = Icons.AutoMirrored.Filled.Assignment,
+                                color = WisdomAccentEmerald,
+                                onClick = { onStartLearning("${pkg.path}/exams") }
+                            )
+                        }
+                        item {
+                            PackageResourceChip(
+                                title = "AI Tutor",
+                                icon = Icons.Default.AutoAwesome,
+                                color = WisdomCyan,
+                                onClick = { onStartLearning("/learning?tool=tutor") }
+                            )
+                        }
+                        item {
+                            PackageResourceChip(
+                                title = "Progress Tracker",
+                                icon = Icons.Default.BarChart,
+                                color = WisdomAccentSky,
+                                onClick = { onStartLearning("/learning?tool=analytics") }
+                            )
+                        }
+                    }
+                }
+            }
+
             // What's Included Section
             item(key = "includes_header") {
                 Text(
@@ -384,6 +471,54 @@ fun SubjectRowCard(
 
             // Open Action
             WisdomOpenButton(onClick = onClick, label = "Study →")
+        }
+    }
+}
+
+@Composable
+private fun PackageResourceChip(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    color: Color,
+    onClick: () -> Unit
+) {
+    WisdomModernCard(
+        modifier = Modifier.width(112.dp),
+        cornerRadius = 14.dp,
+        borderColor = WisdomBorderWhite,
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .clip(CircleShape)
+                    .background(color.copy(alpha = 0.14f))
+                    .border(BorderStroke(1.dp, color.copy(alpha = 0.45f)), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = color,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = title,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
