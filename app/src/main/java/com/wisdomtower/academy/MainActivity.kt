@@ -58,6 +58,10 @@ import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.settings.SettingsScreen
 import com.wisdomtower.academy.ui.theme.WisdomNavy
+import com.wisdomtower.academy.data.auth.AuthStateManager
+import com.wisdomtower.academy.data.repository.AcademyRepository
+import com.wisdomtower.academy.data.repository.NotificationRepository
+import androidx.compose.runtime.collectAsState
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -736,6 +740,27 @@ private const val STUDY_TIMER_BRIDGE_JS =
         "checkFocusTimer();" +
     "}catch(e){}})();"
 
+private const val AUTH_BRIDGE_JS =
+    "(function(){try{" +
+        "function syncAuth(){" +
+            "try{" +
+                "var raw=localStorage.getItem('wt-academy-auth-v1');" +
+                "if(window.AndroidOfflineVault&&typeof window.AndroidOfflineVault.syncAuthSession==='function'){" +
+                    "window.AndroidOfflineVault.syncAuthSession(raw||'');" +
+                "}else if(window.AndroidBridge&&typeof window.AndroidBridge.syncAuthSession==='function'){" +
+                    "window.AndroidBridge.syncAuthSession(raw||'');" +
+                "}" +
+            "}catch(_){}" +
+        "}" +
+        "syncAuth();" +
+        "if(!window.__wta_auth_bridge_bound){" +
+            "window.__wta_auth_bridge_bound=true;" +
+            "window.addEventListener('storage',function(e){if(e.key==='wt-academy-auth-v1'||e.key===null)syncAuth();});" +
+            "window.addEventListener('wta-auth-change',syncAuth);" +
+            "setInterval(syncAuth,2000);" +
+        "}" +
+    "}catch(e){}})();"
+
 class MainActivity : ComponentActivity() {
 
     private val pendingNotificationUrl = mutableStateOf<String?>(null)
@@ -746,6 +771,9 @@ class MainActivity : ComponentActivity() {
         var keepSplash = true
         splash.setKeepOnScreenCondition { keepSplash }
         super.onCreate(savedInstanceState)
+        AuthStateManager.init(this)
+        NotificationRepository.refreshNotifications()
+        AcademyRepository.refreshCatalog()
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         // TODO: Re-enable FLAG_SECURE before final production release to prevent unauthorized screen captures
         // window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
@@ -953,6 +981,16 @@ fun MainScreen(
     var activeGuideSlug by remember { mutableStateOf<String?>(null) }
     var webView: WebView? by remember { mutableStateOf(null) }
     var menuExpanded by remember { mutableStateOf(false) }
+
+    val currentUser by AuthStateManager.currentUser.collectAsState()
+    val currentProfile by AuthStateManager.currentProfile.collectAsState()
+    val isLoggedIn by AuthStateManager.isLoggedIn.collectAsState()
+    val catalogPackages by AcademyRepository.packages.collectAsState()
+    val unreadNotifCount by NotificationRepository.unreadCount.collectAsState()
+
+    LaunchedEffect(isLoggedIn, currentUser?.id) {
+        NotificationRepository.refreshNotifications(currentUser?.id, currentUser?.email)
+    }
 
     // Instant cold-start and process-death network validation
     val isInitiallyOnline = isOnline(context)
@@ -1723,16 +1761,27 @@ fun MainScreen(
                                 onClick = {
                                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                     requestNotificationPermission()
+                                    NotificationRepository.markAllRead()
                                     navigateTo("https://www.wisdom-tower-academy.live/notifications", null)
                                 },
                                 modifier = Modifier.size(44.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Notifications,
-                                    contentDescription = "Notifications",
-                                    tint = Accent,
-                                    modifier = Modifier.size(22.dp)
-                                )
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Notifications,
+                                        contentDescription = "Notifications",
+                                        tint = Accent,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    if (unreadNotifCount > 0) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(8.dp)
+                                                .align(Alignment.TopEnd)
+                                                .background(Color(0xFFEF4444), CircleShape)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -2090,6 +2139,13 @@ fun MainScreen(
                                 }
 
                                 @JavascriptInterface
+                                fun syncAuthSession(sessionJson: String?) {
+                                    mainHandler.post {
+                                        AuthStateManager.syncAuthSession(sessionJson)
+                                    }
+                                }
+
+                                @JavascriptInterface
                                 fun returnToStudyPage() {
                                     mainHandler.post {
                                         if (activeToolOverlayUrl != null) {
@@ -2192,6 +2248,7 @@ fun MainScreen(
                                         view?.evaluateJavascript(BOOK_PAGE_HELPERS_JS, null)
                                         view?.evaluateJavascript(STUDY_TIMER_BRIDGE_JS, null)
                                         view?.evaluateJavascript(DETECT_AND_RECOVER_JS, null)
+                                        view?.evaluateJavascript(AUTH_BRIDGE_JS, null)
                                     }
                                 }
 
@@ -2244,6 +2301,7 @@ fun MainScreen(
                                         wv.evaluateJavascript(BOOK_PAGE_HELPERS_JS, null)
                                         wv.evaluateJavascript(STUDY_TIMER_BRIDGE_JS, null)
                                         wv.evaluateJavascript(DETECT_AND_RECOVER_JS, null)
+                                        wv.evaluateJavascript(AUTH_BRIDGE_JS, null)
                                         mainHandler.postDelayed({
                                             val cur = wv.url ?: ""
                                             if (!cur.startsWith("file://")) {
@@ -2703,15 +2761,15 @@ fun MainScreen(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Native Home Screen (Phase A2)
+                // Native Home Screen (Phase A2 / B)
                 if (selectedIndex == 0) {
                     HomeScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(WisdomNavy)
                             .zIndex(10f),
-                        isLoggedIn = false,
-                        userName = null,
+                        isLoggedIn = isLoggedIn,
+                        userName = currentProfile?.fullName ?: currentUser?.fullName,
                         onNavigateToUrl = { targetPathOrUrl ->
                             val clean = targetPathOrUrl.trim()
                             if (clean.contains("/academy/success-stories")) {
@@ -2727,7 +2785,7 @@ fun MainScreen(
                             } else if (clean.contains("/academy/scholarships")) {
                                 activeGuideSlug = "scholarships"
                             } else {
-                                val matchedPkg = CATALOG_PACKAGES.find {
+                                val matchedPkg = catalogPackages.find {
                                     it.path.equals(clean, ignoreCase = true) ||
                                     it.id.equals(clean.removePrefix("/academy/"), ignoreCase = true)
                                 }
@@ -2751,13 +2809,16 @@ fun MainScreen(
                     )
                 }
 
-                // Native Learning Landing Shell (Phase A4)
+                // Native Learning Landing Shell (Phase A4 / B)
                 if (selectedIndex == 1 && activeStudyUrl == null) {
                     LearningScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(WisdomNavy)
                             .zIndex(10f),
+                        isLoggedIn = isLoggedIn,
+                        userProfile = currentProfile,
+                        packageList = catalogPackages,
                         onOpenTool = { toolUrl ->
                             navigateTo("https://www.wisdom-tower-academy.live$toolUrl")
                         },
@@ -2773,7 +2834,7 @@ fun MainScreen(
                     )
                 }
 
-                // Native Packages Catalog & Landing Screens (Phase A3)
+                // Native Packages Catalog & Landing Screens (Phase A3 / B)
                 if (selectedIndex == 2) {
                     val currentPkg = selectedPackage
                     if (currentPkg != null) {
@@ -2791,6 +2852,7 @@ fun MainScreen(
                                 navigateTo(fullUrl, 2)
                                 selectedPackage = null
                             },
+                            isLoggedIn = isLoggedIn,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(WisdomNavy)
@@ -2802,6 +2864,7 @@ fun MainScreen(
                                 .fillMaxSize()
                                 .background(WisdomNavy)
                                 .zIndex(10f),
+                            packageList = catalogPackages,
                             onSelectPackage = { pkg ->
                                 selectedPackage = pkg
                             },
@@ -2814,16 +2877,20 @@ fun MainScreen(
                     }
                 }
 
-                // Native Account Command Center Shell (Phase A5)
+                // Native Account Command Center Shell (Phase A5 / B)
                 if (selectedIndex == 3) {
                     AccountScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(WisdomNavy)
                             .zIndex(10f),
-                        isLoggedIn = false,
-                        userName = null,
-                        userEmail = null,
+                        isLoggedIn = isLoggedIn,
+                        userName = currentProfile?.fullName ?: currentUser?.fullName,
+                        userEmail = currentProfile?.email ?: currentUser?.email,
+                        userProfile = currentProfile,
+                        onSignOut = {
+                            AuthStateManager.signOut(webView)
+                        },
                         onNavigateToUrl = { targetPathOrUrl ->
                             val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
                             val targetTab = tabIndexForUrl(fullUrl, selectedIndex)

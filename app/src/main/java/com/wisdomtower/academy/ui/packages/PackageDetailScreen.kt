@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
+import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCardBorderSubtle
 import com.wisdomtower.academy.ui.theme.WisdomCyan
@@ -65,6 +66,7 @@ fun PackageDetailScreen(
     onBack: () -> Unit,
     onStartLearning: (String) -> Unit,
     onUnlock: (String) -> Unit,
+    isLoggedIn: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -223,7 +225,23 @@ fun PackageDetailScreen(
                             }
                         )
 
-                        if (pkg.priceEtb > 0) {
+                        if (isLoggedIn) {
+                            WisdomSecondaryButton(
+                                text = "Access Granted",
+                                onClick = { onStartLearning(pkg.path) },
+                                modifier = Modifier.weight(1f),
+                                borderColor = WisdomAccentEmerald.copy(alpha = 0.6f),
+                                textColor = WisdomAccentEmerald,
+                                icon = {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = WisdomAccentEmerald,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            )
+                        } else if (pkg.priceEtb > 0) {
                             WisdomSecondaryButton(
                                 text = "Unlock Package",
                                 onClick = { onUnlock("/checkout?package=${pkg.id}") },

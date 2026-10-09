@@ -70,6 +70,10 @@ import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import com.wisdomtower.academy.ui.theme.WisdomPrimaryButton
 import com.wisdomtower.academy.ui.theme.WisdomSecondaryButton
+import com.wisdomtower.academy.data.model.StudentIdData
+import com.wisdomtower.academy.data.model.StudentIdGenerator
+import com.wisdomtower.academy.data.model.UserProfile
+import com.wisdomtower.academy.data.repository.AcademyRepository
 
 @Composable
 fun AccountScreen(
@@ -77,12 +81,18 @@ fun AccountScreen(
     isLoggedIn: Boolean = false,
     userName: String? = null,
     userEmail: String? = null,
+    userProfile: UserProfile? = null,
+    onSignOut: () -> Unit = {},
     onNavigateToUrl: (String) -> Unit
 ) {
     val context = LocalContext.current
     var copiedFolio by remember { mutableStateOf(false) }
-    val studentFolio = remember { "WTA-84920-ET" }
-    val displayName = userName ?: if (isLoggedIn) "Student Scholar" else "Guest Scholar"
+    val studentIdData = remember(userProfile, isLoggedIn) {
+        StudentIdGenerator.computeStudentId(userProfile?.id, userProfile)
+    }
+    val studentFolio = studentIdData.folioNumber
+    val displayName = userProfile?.fullName ?: userName ?: if (isLoggedIn) "Student Scholar" else "Guest Scholar"
+    val email = userProfile?.email ?: userEmail
 
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
@@ -115,9 +125,10 @@ fun AccountScreen(
             item(key = "student_id_card") {
                 DigitalStudentIdCard(
                     displayName = displayName,
-                    folio = studentFolio,
+                    idData = studentIdData,
                     isLoggedIn = isLoggedIn,
-                    userEmail = userEmail,
+                    userEmail = email,
+                    userProfile = userProfile,
                     onCopyFolio = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         clipboard.setPrimaryClip(ClipData.newPlainText("Student Folio", studentFolio))
@@ -180,7 +191,7 @@ fun AccountScreen(
                                     icon = Icons.AutoMirrored.Filled.Logout,
                                     tint = WisdomAccentRose,
                                     modifier = Modifier.weight(1f),
-                                    onClick = { onNavigateToUrl("/logout") }
+                                    onClick = onSignOut
                                 )
                             } else {
                                 AccountPillButton(
@@ -198,6 +209,10 @@ fun AccountScreen(
 
             // Enrolled Packages / Active Passes
             item(key = "enrolled_section") {
+                val enrolledPasses = remember(isLoggedIn) {
+                    AcademyRepository.getEnrolledPackages(isLoggedIn)
+                }
+
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
                         text = "Active Course Access",
@@ -207,69 +222,97 @@ fun AccountScreen(
                         modifier = Modifier.padding(bottom = 10.dp)
                     )
 
-                    WisdomModernCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        cornerRadius = 14.dp,
-                        borderColor = WisdomBorderWhite
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    if (enrolledPasses.isNotEmpty()) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            enrolledPasses.forEach { pass ->
+                                WisdomModernCard(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    cornerRadius = 14.dp,
+                                    borderColor = WisdomBorderWhite
                                 ) {
-                                    Box(
+                                    Row(
                                         modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(WisdomCyan.copy(alpha = 0.15f)),
-                                        contentAlignment = Alignment.Center
+                                            .fillMaxWidth()
+                                            .padding(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.School,
-                                            contentDescription = null,
-                                            tint = WisdomCyan,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                    Column {
-                                        Text(
-                                            text = "Freshman University Pass",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                        Text(
-                                            text = "21 Subjects · All notes, questions & exams",
-                                            fontSize = 11.sp,
-                                            color = WisdomMuted
-                                        )
-                                    }
-                                }
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(WisdomCyan.copy(alpha = 0.15f)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.School,
+                                                    contentDescription = null,
+                                                    tint = WisdomCyan,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                            Column {
+                                                Text(
+                                                    text = pass.packageName,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White
+                                                )
+                                                Text(
+                                                    text = pass.source,
+                                                    fontSize = 11.sp,
+                                                    color = WisdomMuted
+                                                )
+                                            }
+                                        }
 
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(WisdomAccentEmerald.copy(alpha = 0.15f))
-                                        .border(BorderStroke(1.dp, WisdomAccentEmerald.copy(alpha = 0.4f)), CircleShape)
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "Active",
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = WisdomAccentEmerald
-                                    )
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(CircleShape)
+                                                .background(WisdomAccentEmerald.copy(alpha = 0.15f))
+                                                .border(BorderStroke(1.dp, WisdomAccentEmerald.copy(alpha = 0.4f)), CircleShape)
+                                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = "Active",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = WisdomAccentEmerald
+                                            )
+                                        }
+                                    }
                                 }
+                            }
+                        }
+                    } else {
+                        WisdomModernCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            cornerRadius = 14.dp,
+                            borderColor = WisdomBorderWhite
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "No active course passes",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Sign in to activate full academic curriculum passes and offline storage.",
+                                    fontSize = 12.sp,
+                                    color = WisdomMuted
+                                )
                             }
                         }
                     }
@@ -330,9 +373,10 @@ fun AccountScreen(
 @Composable
 private fun DigitalStudentIdCard(
     displayName: String,
-    folio: String,
+    idData: StudentIdData,
     isLoggedIn: Boolean,
     userEmail: String?,
+    userProfile: UserProfile?,
     onCopyFolio: () -> Unit,
     copied: Boolean
 ) {
@@ -379,30 +423,39 @@ private fun DigitalStudentIdCard(
                             modifier = Modifier.size(18.dp)
                         )
                     }
-                    Text(
-                        text = "Wisdom Tower Academy",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Column {
+                        Text(
+                            text = "Wisdom Tower Academy",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = idData.idNumber,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = WisdomCyan,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(if (isLoggedIn) WisdomAccentEmerald.copy(alpha = 0.15f) else WisdomCyan.copy(alpha = 0.15f))
+                        .border(
+                            BorderStroke(1.dp, if (isLoggedIn) WisdomAccentEmerald.copy(alpha = 0.5f) else WisdomCyan.copy(alpha = 0.4f)),
+                            CircleShape
+                        )
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Verified,
-                        contentDescription = null,
-                        tint = WisdomCyan,
-                        modifier = Modifier.size(14.dp)
-                    )
                     Text(
-                        text = "OFFICIAL ID",
-                        fontSize = 10.sp,
+                        text = if (isLoggedIn) idData.status else "GUEST ACCESS",
+                        fontSize = 9.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = WisdomCyan,
-                        letterSpacing = 1.sp
+                        color = if (isLoggedIn) WisdomAccentEmerald else WisdomCyan,
+                        letterSpacing = 0.5.sp
                     )
                 }
             }
@@ -443,6 +496,13 @@ private fun DigitalStudentIdCard(
                         fontSize = 11.sp,
                         color = WisdomMuted
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${idData.academicTrack} · ${idData.institutionName}",
+                        fontSize = 10.5.sp,
+                        color = WisdomCyan.copy(alpha = 0.85f),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
 
@@ -468,12 +528,17 @@ private fun DigitalStudentIdCard(
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = folio,
+                        text = idData.folioNumber,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = WisdomCyan,
                         fontFamily = FontFamily.Monospace,
                         letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "ISSUED: ${idData.issueDateFull}",
+                        fontSize = 8.5.sp,
+                        color = WisdomMuted.copy(alpha = 0.7f)
                     )
                 }
 

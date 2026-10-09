@@ -56,6 +56,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.packages.NativePackage
+import com.wisdomtower.academy.data.model.UserProfile
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
@@ -136,6 +137,9 @@ val STUDY_HUBS = listOf(
 @Composable
 fun LearningScreen(
     modifier: Modifier = Modifier,
+    isLoggedIn: Boolean = false,
+    userProfile: UserProfile? = null,
+    packageList: List<NativePackage> = CATALOG_PACKAGES,
     onOpenTool: (String) -> Unit,
     onOpenHub: (String) -> Unit,
     onSelectCourse: (NativePackage) -> Unit
@@ -159,9 +163,13 @@ fun LearningScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Study workspace, smart tools, textbooks, and interactive question banks.",
+                        text = if (isLoggedIn && !userProfile?.fullName.isNullOrBlank()) {
+                            "Welcome back, ${userProfile?.fullName} · ${userProfile?.educationLevel ?: "Academic Track"}"
+                        } else {
+                            "Study workspace, smart tools, textbooks, and interactive question banks."
+                        },
                         fontSize = 13.sp,
-                        color = WisdomMuted,
+                        color = if (isLoggedIn) WisdomCyan else WisdomMuted,
                         lineHeight = 18.sp
                     )
                 }
@@ -221,11 +229,11 @@ fun LearningScreen(
             }
 
             items(
-                count = (CATALOG_PACKAGES.size + 1) / 2,
+                count = (packageList.size + 1) / 2,
                 key = { rowIndex -> "course_row_$rowIndex" }
             ) { rowIndex ->
-                val first = CATALOG_PACKAGES[rowIndex * 2]
-                val second = CATALOG_PACKAGES.getOrNull(rowIndex * 2 + 1)
+                val first = packageList[rowIndex * 2]
+                val second = packageList.getOrNull(rowIndex * 2 + 1)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

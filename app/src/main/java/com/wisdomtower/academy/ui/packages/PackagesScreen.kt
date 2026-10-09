@@ -63,6 +63,7 @@ import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
 @Composable
 fun PackagesScreen(
     modifier: Modifier = Modifier,
+    packageList: List<NativePackage> = CATALOG_PACKAGES,
     onSelectPackage: (NativePackage) -> Unit,
     onNavigateToUrl: (String) -> Unit
 ) {
@@ -76,7 +77,7 @@ fun PackagesScreen(
         "special" to "Special Tracks"
     )
 
-    val filteredList = CATALOG_PACKAGES.filter { pkg ->
+    val filteredList = packageList.filter { pkg ->
         val matchesGroup = when (selectedFilter) {
             "all" -> true
             else -> pkg.group == selectedFilter
