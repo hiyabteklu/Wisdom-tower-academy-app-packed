@@ -28,7 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -92,7 +92,7 @@ fun PackageDetailScreen(
                             .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = rememberRipple(color = WisdomCyan.copy(alpha = 0.2f)),
+                                indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
                                 onClick = onBack
                             ),
                         contentAlignment = Alignment.Center

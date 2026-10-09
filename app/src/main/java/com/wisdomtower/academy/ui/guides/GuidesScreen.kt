@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Apartment
-import androidx.compose.material.icons.filled.BookOpen
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.FormatQuote
@@ -37,7 +36,7 @@ import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Work
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -97,7 +96,7 @@ fun GuidesScreen(
                             .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = rememberRipple(color = WisdomCyan.copy(alpha = 0.2f)),
+                                indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
                                 onClick = onBack
                             ),
                         contentAlignment = Alignment.Center
@@ -143,7 +142,7 @@ fun GuidesScreen(
                                 )
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
-                                    indication = rememberRipple(color = tab.accentColor.copy(alpha = 0.2f)),
+                                    indication = ripple(color = tab.accentColor.copy(alpha = 0.2f)),
                                     onClick = { activeSlug = tab.slug }
                                 )
                                 .padding(horizontal = 14.dp, vertical = 7.dp),
@@ -242,7 +241,7 @@ private fun StudyTechniquesSection() {
         TechniqueCard(
             title = "Interleaving Topics",
             description = "Avoid blocking 6 hours on a single formula type. Mix related subjects (e.g., alternating between mechanics and calculus problems) to train problem classification under pressure.",
-            icon = Icons.Default.BookOpen,
+            icon = Icons.Default.MenuBook,
             accentColor = WisdomAccentPurple
         )
     }
@@ -544,7 +543,7 @@ private fun ScholarshipsSection() {
         TechniqueCard(
             title = "Crafting a Compelling Motivation Essay",
             description = "Focus on specific problems you aim to solve. Connect your department coursework directly to tangible development challenges in healthcare, software, energy, or economic policy.",
-            icon = Icons.Default.BookOpen,
+            icon = Icons.Default.MenuBook,
             accentColor = WisdomAccentAmber
         )
 

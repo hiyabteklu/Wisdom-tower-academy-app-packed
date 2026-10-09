@@ -36,7 +36,7 @@ import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -368,7 +368,7 @@ private fun SettingNavRow(
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(color = WisdomCyan.copy(alpha = 0.2f)),
+                indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
                 onClick = onClick
             )
             .padding(vertical = 4.dp),

@@ -29,16 +29,16 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.BookOpen
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Verified
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -155,7 +155,7 @@ fun AccountScreen(
 
                             AccountPillButton(
                                 label = "Learning Hub",
-                                icon = Icons.Default.BookOpen,
+                                icon = Icons.Default.MenuBook,
                                 tint = WisdomAccentEmerald,
                                 modifier = Modifier.weight(1f),
                                 onClick = { onNavigateToUrl("/learning") }
@@ -512,7 +512,7 @@ private fun AccountPillButton(
             .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(10.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(color = tint.copy(alpha = 0.2f)),
+                indication = ripple(color = tint.copy(alpha = 0.2f)),
                 onClick = onClick
             )
             .padding(horizontal = 12.dp, vertical = 10.dp),

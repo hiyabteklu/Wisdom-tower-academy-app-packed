@@ -25,10 +25,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.BookOpen
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -169,7 +169,7 @@ fun PackagesScreen(
                                     )
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
-                                        indication = rememberRipple(color = WisdomCyan.copy(alpha = 0.2f)),
+                                        indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
                                         onClick = { selectedFilter = key }
                                     )
                                     .padding(horizontal = 14.dp, vertical = 7.dp),
@@ -325,7 +325,7 @@ fun PackageCardItem(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.BookOpen,
+                        imageVector = Icons.Default.MenuBook,
                         contentDescription = null,
                         tint = WisdomCyan,
                         modifier = Modifier.size(13.dp)

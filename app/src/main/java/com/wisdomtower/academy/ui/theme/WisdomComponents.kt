@@ -16,7 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -48,7 +48,7 @@ fun WisdomModernCard(
     val clickModifier = if (onClick != null) {
         Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
-            indication = rememberRipple(color = WisdomCyan.copy(alpha = 0.2f)),
+            indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
             onClick = onClick
         )
     } else Modifier
@@ -77,7 +77,7 @@ fun WisdomPrimaryButton(
             .background(WisdomPrimaryBtnGradient)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(color = Color.White.copy(alpha = 0.3f)),
+                indication = ripple(color = Color.White.copy(alpha = 0.3f)),
                 onClick = onClick
             )
             .padding(horizontal = 20.dp, vertical = 12.dp),
@@ -113,7 +113,7 @@ fun WisdomSecondaryButton(
             .background(Color(0xFF111B2E).copy(alpha = 0.85f))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(color = WisdomCyan.copy(alpha = 0.2f)),
+                indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
                 onClick = onClick
             )
             .padding(horizontal = 18.dp, vertical = 12.dp),
@@ -149,7 +149,7 @@ fun WisdomOpenButton(
             .background(WisdomCyan.copy(alpha = 0.08f))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = rememberRipple(color = WisdomCyan.copy(alpha = 0.3f)),
+                indication = ripple(color = WisdomCyan.copy(alpha = 0.3f)),
                 onClick = onClick
             )
             .padding(horizontal = 10.dp, vertical = 4.dp),

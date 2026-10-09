@@ -59,6 +59,7 @@ Rule of thumb: if the screen only arranges items and shows images/titles, build 
 10. **Never edit `website-reference/`.** If the website needs a change, write it in `WEBSITE_CHANGES.md` (file path, exact code, reason).
 11. **Small commits**, one screen per commit, clear messages. After each commit, say what could affect tab-switch speed.
 12. The **Build Production AAB & APK** GitHub Action must stay green.
+13. **Read docs/BUILD_PITFALLS.md before writing code and never repeat a listed mistake.**
 
 ## 6. Known facts about the website Home page (already analysed)
 
@@ -100,3 +101,4 @@ Source: `website-reference/src/app/page.tsx` → `src/components/home/LandingPag
 | 2026-10-09 | AI Studio Agent | Phase A4 (Native LearningScreen shell, study tools carousel, study mode hubs, smooth webview study reader handoff) completed | Owner review, then Phase A5 (Native Account & Settings Shells) |
 | 2026-10-09 | AI Studio Agent | Phase A5 (Native AccountScreen with digital Student ID card, active course passes, and SettingsScreen with push alerts, vault controls & theme) completed | Owner review, then Phase A6 (Native Static Guide Pages) |
 | 2026-10-09 | AI Studio Agent | Phase A6 (Native GuidesScreen with all 6 guide readers: Study Techniques, Success Stories, Campus Life, Universities, Departments, Scholarships) completed | All Phase A screens completed! Ready for Phase B (Real Supabase / Appwrite data integration) |
+| 2026-10-09 | AI Studio Agent | Fixed Run #5 build failure: replaced BookOpen with MenuBook, replaced rememberRipple with ripple across all screens, created docs/BUILD_PITFALLS.md | Verify GitHub Actions CI green before Phase B |
