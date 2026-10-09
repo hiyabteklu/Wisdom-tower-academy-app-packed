@@ -42,3 +42,14 @@
 * **Cause:** `rememberRipple` from `androidx.compose.material.ripple.rememberRipple` is deprecated in modern Compose Material3 and caused compile failure during release Kotlin compilation.
 * **Fix:** Replaced every usage of `rememberRipple(...)` with `ripple(...)` from `androidx.compose.material3.ripple` (or used default indication), and removed all imports of `androidx.compose.material.ripple.rememberRipple` across `WisdomComponents.kt`, `AccountScreen.kt`, `GuidesScreen.kt`, `PackageDetailScreen.kt`, `PackagesScreen.kt`, `LearningScreen.kt`, and `SettingsScreen.kt`.
 * **DO NOT:** **DO NOT use `rememberRipple(...)` in Compose code. Always use `androidx.compose.material3.ripple(...)` or `LocalIndication`.**
+
+### 2026-10-09 – Phase C failed (`:app:compileReleaseKotlin`)
+
+#### Problem: Unresolved references 'packagePath' and 'WisdomOpenButton' in `AccountScreen.kt`
+* **Cause:** `AccountScreen.kt` referenced `pass.packagePath` on `EnrolledPackageRecord` (which was not a property on the model) and used `WisdomOpenButton` without importing it from `com.wisdomtower.academy.ui.theme.WisdomOpenButton`.
+* **Fix:**
+  1. Imported `WisdomOpenButton` from `com.wisdomtower.academy.ui.theme.WisdomOpenButton`.
+  2. Imported `CATALOG_PACKAGES` from `com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES` and derived `targetPath` from the existing catalog `path` (matching `href` from `website-reference/src/data/packages.ts`) for enrolled pass navigation.
+  3. Grepped the entire `app/src` repository to confirm zero remaining references to `packagePath` or missing `WisdomOpenButton` imports.
+* **DO NOT:** **Phase C: AccountScreen used packagePath and WisdomOpenButton that did not exist. Never reference a property or composable you have not defined or grepped for.**
+

@@ -70,6 +70,8 @@ import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import com.wisdomtower.academy.ui.theme.WisdomPrimaryButton
 import com.wisdomtower.academy.ui.theme.WisdomSecondaryButton
+import com.wisdomtower.academy.ui.theme.WisdomOpenButton
+import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.data.model.StudentIdData
 import com.wisdomtower.academy.data.model.StudentIdGenerator
 import com.wisdomtower.academy.data.model.UserProfile
@@ -225,11 +227,17 @@ fun AccountScreen(
                     if (enrolledPasses.isNotEmpty()) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             enrolledPasses.forEach { pass ->
+                                val targetPath = CATALOG_PACKAGES.find { it.id == pass.packageId }?.path
+                                    ?: when (pass.packageId) {
+                                        "grade-9-12" -> "/academy/grades/12"
+                                        "ece-y3-sem-1", "ece-y3-sem-2" -> "/academy/ece"
+                                        else -> "/academy/${pass.packageId}"
+                                    }
                                 WisdomModernCard(
                                     modifier = Modifier.fillMaxWidth(),
                                     cornerRadius = 14.dp,
                                     borderColor = WisdomBorderWhite,
-                                    onClick = { onNavigateToUrl(pass.packagePath) }
+                                    onClick = { onNavigateToUrl(targetPath) }
                                 ) {
                                     Row(
                                         modifier = Modifier
@@ -281,7 +289,7 @@ fun AccountScreen(
                                                     .clip(CircleShape)
                                                     .background(WisdomAccentEmerald.copy(alpha = 0.15f))
                                                     .border(BorderStroke(1.dp, WisdomAccentEmerald.copy(alpha = 0.4f)), CircleShape)
-                                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                                                .padding(horizontal = 8.dp, vertical = 2.dp)
                                             ) {
                                                 Text(
                                                     text = "Active",
@@ -292,7 +300,7 @@ fun AccountScreen(
                                             }
 
                                             WisdomOpenButton(
-                                                onClick = { onNavigateToUrl(pass.packagePath) },
+                                                onClick = { onNavigateToUrl(targetPath) },
                                                 label = "Study →"
                                             )
                                         }
