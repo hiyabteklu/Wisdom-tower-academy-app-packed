@@ -307,7 +307,7 @@ fun PackageDetailScreen(
                     }
                 }
 
-                val filteredFreshmanSubjects = remember(freshmanFilterIndex) {
+                val filteredFreshmanSubjects = run {
                     when (freshmanFilterIndex) {
                         1 -> FRESHMAN_SUBJECTS.filter { it.id in FRESHMAN_NATURAL_IDS }
                         2 -> FRESHMAN_SUBJECTS.filter { it.id in FRESHMAN_SOCIAL_IDS }

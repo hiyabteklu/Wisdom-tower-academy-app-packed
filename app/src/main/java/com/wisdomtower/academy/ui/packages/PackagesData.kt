@@ -9,6 +9,7 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentPurple
 import com.wisdomtower.academy.ui.theme.WisdomAccentRose
 import com.wisdomtower.academy.ui.theme.WisdomAccentSky
 import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
+import com.wisdomtower.academy.ui.theme.WisdomCyan
 
 /**
  * Seed data strictly mirroring website reference:

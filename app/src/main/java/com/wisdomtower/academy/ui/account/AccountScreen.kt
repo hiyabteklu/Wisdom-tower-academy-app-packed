@@ -263,7 +263,7 @@ private fun NativeAuthFormScreen(
     modifier: Modifier = Modifier,
     onNavigateToUrl: (String) -> Unit
 ) {
-    var mode by remember { mutableStateOf<"signin" | "signup">("signin") }
+    var mode by remember { mutableStateOf("signin") }
     var identifier by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }

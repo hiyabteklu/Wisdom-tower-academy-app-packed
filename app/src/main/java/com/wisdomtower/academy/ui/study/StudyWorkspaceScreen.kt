@@ -97,7 +97,7 @@ data class StudyHistoryRecord(
  * Native Study Workspace Screen matching:
  * - website-reference/src/components/ResourceHubGrid.tsx
  * - website-reference/src/components/AcademicResultSaver.tsx
- * - website-reference/src/app/academy/* courses
+ * - website-reference/src/app/academy/[slug] courses
  *
  * Provides:
  * 1. Breadcrumb & Subject header
