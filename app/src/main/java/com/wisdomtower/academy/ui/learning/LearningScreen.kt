@@ -19,25 +19,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.EditNote
-import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.Quiz
-import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,271 +45,435 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.wisdomtower.academy.data.model.StudentIdGenerator
+import com.wisdomtower.academy.data.model.UserProfile
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.packages.NativePackage
-import com.wisdomtower.academy.data.model.UserProfile
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
-import com.wisdomtower.academy.ui.theme.WisdomAccentPurple
 import com.wisdomtower.academy.ui.theme.WisdomAccentRose
 import com.wisdomtower.academy.ui.theme.WisdomAccentSky
-import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
-import com.wisdomtower.academy.ui.theme.WisdomOpenButton
 
-data class StudyTool(
-    val id: String,
-    val name: String,
-    val urlParam: String,
-    val icon: ImageVector,
-    val color: Color
-)
+/**
+ * Native Learning screen strictly mirroring website reference:
+ * - src/app/learning/page.tsx
+ * - src/app/learning/LearningContent.tsx
+ *
+ * Header:
+ * - Scholar Avatar, Full Name, Student Folio (WTA-XXXX), User Email
+ * - Quick Metrics Bar: Streak (1d Streak), Goals (% Goals), Tested (X Tested)
+ * - Guest Scholar Banner if signed out
+ *
+ * Study Tools Dock (8 tiles):
+ * - Timer, Planner, Targets, Notebook, Calculator, AI Tutor, Your status, Courses
+ *
+ * Curriculum Section:
+ * - Header: Curriculum with "All Courses (X)"
+ * - 2-Column cards with 16:9 images, titles, level badges, and "Start Learning"
+ */
 
-data class StudyModeHub(
+data class StudyToolTile(
+    val key: String,
     val title: String,
-    val description: String,
-    val path: String,
     val icon: ImageVector,
-    val accentColor: Color
+    val url: String
 )
 
-val STUDY_TOOLS = listOf(
-    StudyTool("tutor", "AI Tutor", "tool=tutor", Icons.Default.AutoAwesome, WisdomCyan),
-    StudyTool("calc", "Calculator", "tool=calc", Icons.Default.Calculate, WisdomAccentPurple),
-    StudyTool("notes", "Notebook", "tool=note", Icons.Default.EditNote, WisdomAccentAmber),
-    StudyTool("timer", "Pomodoro", "tool=time", Icons.Default.Timer, WisdomAccentEmerald),
-    StudyTool("planner", "Planner", "tool=plan", Icons.Default.CalendarMonth, WisdomAccentSky),
-    StudyTool("analytics", "Tracker", "tool=analytics", Icons.Default.BarChart, WisdomAccentRose),
-    StudyTool("goals", "Targets", "tool=goals", Icons.Default.CheckCircle, WisdomAccentEmerald)
-)
-
-val STUDY_HUBS = listOf(
-    StudyModeHub(
-        title = "Official Textbooks",
-        description = "Read curriculum & reference books offline",
-        path = "/academy/freshman/books",
-        icon = Icons.AutoMirrored.Filled.MenuBook,
-        accentColor = WisdomCyan
-    ),
-    StudyModeHub(
-        title = "Short Notes",
-        description = "Chapter-by-chapter summaries & formulas",
-        path = "/academy/freshman/short-notes",
-        icon = Icons.Default.Description,
-        accentColor = WisdomAccentAmber
-    ),
-    StudyModeHub(
-        title = "Question Banks",
-        description = "Targeted drills with AI explanations",
-        path = "/academy/freshman/question-banks",
-        icon = Icons.Default.Quiz,
-        accentColor = WisdomAccentPurple
-    ),
-    StudyModeHub(
-        title = "Practice Exams",
-        description = "Model & timed exams with full solutions",
-        path = "/academy/freshman/exams",
-        icon = Icons.AutoMirrored.Filled.Assignment,
-        accentColor = WisdomAccentEmerald
-    ),
-    StudyModeHub(
-        title = "Flashcard Decks",
-        description = "Rapid active recall & spaced repetition",
-        path = "/academy/freshman/flashcards",
-        icon = Icons.Default.Layers,
-        accentColor = WisdomAccentRose
-    ),
-    StudyModeHub(
-        title = "Life Savers",
-        description = "High-yield formulas, cheat sheets & quick recall",
-        path = "/academy/freshman/life-savers",
-        icon = Icons.Default.School,
-        accentColor = WisdomAccentSky
-    )
+val STUDY_TOOLS_TILES = listOf(
+    StudyToolTile("timer", "Timer", Icons.Default.Timer, "/learning?tool=timer"),
+    StudyToolTile("planner", "Planner", Icons.Default.CalendarMonth, "/learning?tool=planner"),
+    StudyToolTile("goals", "Targets", Icons.Default.CheckCircle, "/learning?tool=goals"),
+    StudyToolTile("notes", "Notebook", Icons.Default.Folder, "/learning?tool=notes"),
+    StudyToolTile("calculator", "Calculator", Icons.Default.Calculate, "/learning?tool=calculator"),
+    StudyToolTile("tutor", "AI Tutor", Icons.Default.AutoAwesome, "/learning?tool=tutor"),
+    StudyToolTile("analytics", "Your status", Icons.AutoMirrored.Filled.TrendingUp, "/learning?tool=analytics"),
+    StudyToolTile("courses", "Courses", Icons.AutoMirrored.Filled.MenuBook, "/packages")
 )
 
 @Composable
 fun LearningScreen(
     modifier: Modifier = Modifier,
     isLoggedIn: Boolean = false,
+    userName: String? = null,
+    userEmail: String? = null,
     userProfile: UserProfile? = null,
     packageList: List<NativePackage> = CATALOG_PACKAGES,
-    onOpenTool: (String) -> Unit,
-    onOpenHub: (String) -> Unit,
-    onSelectCourse: (NativePackage) -> Unit
+    onOpenTool: (String) -> Unit = {},
+    onOpenHub: (String) -> Unit = {},
+    onSelectCourse: (NativePackage) -> Unit = {},
+    onNavigateToUrl: (String) -> Unit = {}
 ) {
+    val displayName = userProfile?.fullName ?: userName ?: if (isLoggedIn) "Student Scholar" else "Scholar"
+    val email = userProfile?.email ?: userEmail
+    val studentIdData = remember(userProfile, isLoggedIn) {
+        StudentIdGenerator.computeStudentId(userProfile?.id, userProfile)
+    }
+    val studentId = studentIdData.idNumber
+
+    // Filter enrolled / featured courses for Curriculum section (defaults to Freshman, COC, Grade 12, etc.)
+    val enrolledCourses = remember(packageList) {
+        val preferredIds = listOf("freshman", "coc", "grade-12", "uat", "ece-y3-sem-1", "remedial")
+        val found = packageList.filter { it.id in preferredIds }
+        if (found.isNotEmpty()) found else packageList.take(6)
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header
+            // TOP HEADER: Scholar Name, Folio, Email, Quick Metrics
             item(key = "learning_header") {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Learning Suite",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = if (isLoggedIn && !userProfile?.fullName.isNullOrBlank()) {
-                            "Welcome back, ${userProfile?.fullName} · ${userProfile?.educationLevel ?: "Academic Track"}"
-                        } else {
-                            "Study workspace, smart tools, textbooks, and interactive question banks."
-                        },
-                        fontSize = 13.sp,
-                        color = if (isLoggedIn) WisdomCyan else WisdomMuted,
-                        lineHeight = 18.sp
-                    )
-                }
-            }
-
-            // Academic Progress Tracker & Analytics (Phase C)
-            item(key = "progress_tracker_card") {
                 WisdomModernCard(
                     modifier = Modifier.fillMaxWidth(),
-                    cornerRadius = 16.dp,
-                    borderColor = WisdomCyan.copy(alpha = 0.4f),
-                    onClick = { onOpenTool("/learning?tool=analytics") }
+                    cornerRadius = 24.dp,
+                    borderColor = WisdomBorderWhite
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.weight(1f)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(WisdomAccentRose.copy(alpha = 0.16f))
-                                    .border(BorderStroke(1.dp, WisdomAccentRose.copy(alpha = 0.45f)), RoundedCornerShape(10.dp)),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.BarChart,
-                                    contentDescription = null,
-                                    tint = WisdomAccentRose,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Column {
-                                Text(
-                                    text = "Academic Progress Tracker",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = if (isLoggedIn) "Live sync with your study records & scores" else "Track streak, targets & tested exam scores",
-                                    fontSize = 11.sp,
-                                    color = WisdomMuted
-                                )
+                                // Avatar Initial Box
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(Color.White.copy(alpha = 0.08f))
+                                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)), RoundedCornerShape(14.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = displayName.take(1).uppercase(),
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color.White
+                                    )
+                                }
+
+                                Column {
+                                    Text(
+                                        text = displayName,
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color.White,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = studentId,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = WisdomCyan,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                        if (!email.isNullOrBlank()) {
+                                            Text(
+                                                text = "• $email",
+                                                fontSize = 10.5.sp,
+                                                color = WisdomMuted,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
 
-                        WisdomOpenButton(onClick = { onOpenTool("/learning?tool=analytics") })
+                        // Compact Quick Metrics Bar
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Metric 1: Streak
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color.White.copy(alpha = 0.04f))
+                                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(20.dp))
+                                    .padding(vertical = 6.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = WisdomAccentAmber, modifier = Modifier.size(13.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = "1d Streak", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            }
+
+                            // Metric 2: Goals
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color.White.copy(alpha = 0.04f))
+                                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(20.dp))
+                                    .padding(vertical = 6.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(13.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = "100% Goals", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            }
+
+                            // Metric 3: Tested
+                            Row(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color.White.copy(alpha = 0.04f))
+                                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(20.dp))
+                                    .padding(vertical = 6.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = WisdomAccentAmber, modifier = Modifier.size(13.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = "0 Tested", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            }
+                        }
                     }
                 }
             }
 
-            // Quick Study Tools Carousel
-            item(key = "tools_carousel") {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Study Tools",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(bottom = 10.dp)
-                    )
-
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+            // GUEST SCHOLAR BANNER (if signed out)
+            if (!isLoggedIn) {
+                item(key = "guest_banner") {
+                    WisdomModernCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        cornerRadius = 18.dp,
+                        borderColor = WisdomBorderWhite
                     ) {
-                        items(STUDY_TOOLS) { tool ->
-                            StudyToolChip(
-                                tool = tool,
-                                onClick = { onOpenTool("/learning?${tool.urlParam}") }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Scholar Access",
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "Sign in or create an account to sync your study notes, targets, and course progress.",
+                                fontSize = 11.sp,
+                                color = WisdomMuted,
+                                lineHeight = 15.sp
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(Color.White)
+                                        .clickable { onNavigateToUrl("/login") }
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(text = "Sign In", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(Color.White.copy(alpha = 0.05f))
+                                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)), RoundedCornerShape(20.dp))
+                                        .clickable { onNavigateToUrl("/signup") }
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(text = "Create Account", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // STUDY TOOLS DOCK (8 tiles matching website)
+            item(key = "study_tools_dock") {
+                WisdomModernCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadius = 24.dp,
+                    borderColor = WisdomBorderWhite
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "STUDY TOOLS",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = WisdomMuted,
+                            letterSpacing = 0.8.sp,
+                            modifier = Modifier.padding(start = 2.dp)
+                        )
+
+                        // 4x2 Grid of phone-like toolbar tiles
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Row 1 (Timer, Planner, Targets, Notebook)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                STUDY_TOOLS_TILES.take(4).forEach { tile ->
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        ToolTileButton(
+                                            tile = tile,
+                                            onClick = { onOpenTool(tile.url) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Row 2 (Calculator, AI Tutor, Your status, Courses)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                STUDY_TOOLS_TILES.drop(4).forEach { tile ->
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        ToolTileButton(
+                                            tile = tile,
+                                            onClick = {
+                                                if (tile.key == "courses") {
+                                                    onNavigateToUrl("/packages")
+                                                } else {
+                                                    onOpenTool(tile.url)
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // CURRICULUM SECTION
+            item(key = "curriculum_header") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp, bottom = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = null,
+                            tint = WisdomCyan,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Curriculum",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color.White.copy(alpha = 0.04f))
+                            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(20.dp))
+                            .clickable { onNavigateToUrl("/packages") }
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "All Courses (${packageList.size})",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = WisdomCyan
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = WisdomCyan,
+                                modifier = Modifier.size(11.dp)
                             )
                         }
                     }
                 }
             }
 
-            // Study Mode Hubs (Textbooks, Notes, Question Bank, Exams, Flashcards)
-            item(key = "hubs_header") {
-                Text(
-                    text = "Study Hubs",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            items(STUDY_HUBS) { hub ->
-                StudyHubRowCard(
-                    hub = hub,
-                    onClick = { onOpenHub(hub.path) }
-                )
-            }
-
-            // Programs & Courses Section
-            item(key = "courses_header") {
-                Text(
-                    text = "Your Programs & Courses",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(top = 10.dp)
-                )
-            }
-
+            // 2-Column Curriculum Cards Grid
             items(
-                count = (packageList.size + 1) / 2,
-                key = { rowIndex -> "course_row_$rowIndex" }
+                count = (enrolledCourses.size + 1) / 2,
+                key = { rowIndex -> "curriculum_row_$rowIndex" }
             ) { rowIndex ->
-                val first = packageList[rowIndex * 2]
-                val second = packageList.getOrNull(rowIndex * 2 + 1)
+                val first = enrolledCourses[rowIndex * 2]
+                val second = enrolledCourses.getOrNull(rowIndex * 2 + 1)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
-                        CourseLaunchCard(
+                        CurriculumCourseCard(
                             pkg = first,
-                            onClick = { onSelectCourse(first) }
+                            onClick = {
+                                onOpenHub(first.path)
+                            }
                         )
                     }
                     if (second != null) {
                         Box(modifier = Modifier.weight(1f)) {
-                            CourseLaunchCard(
+                            CurriculumCourseCard(
                                 pkg = second,
-                                onClick = { onSelectCourse(second) }
+                                onClick = {
+                                    onOpenHub(second.path)
+                                }
                             )
                         }
                     } else {
@@ -322,50 +482,56 @@ fun LearningScreen(
                 }
             }
 
-            item(key = "bottom_space") {
-                Spacer(modifier = Modifier.height(28.dp))
+            item(key = "learning_bottom_spacer") {
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
 }
 
 @Composable
-private fun StudyToolChip(
-    tool: StudyTool,
+private fun ToolTileButton(
+    tile: StudyToolTile,
     onClick: () -> Unit
 ) {
-    WisdomModernCard(
-        modifier = Modifier.width(108.dp),
-        cornerRadius = 14.dp,
-        onClick = onClick
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White.copy(alpha = 0.04f))
+            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(16.dp))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
+                onClick = onClick
+            )
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(tool.color.copy(alpha = 0.14f))
-                    .border(BorderStroke(1.dp, tool.color.copy(alpha = 0.4f)), CircleShape),
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.06f))
+                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = tool.icon,
-                    contentDescription = tool.name,
-                    tint = tool.color,
+                    imageVector = tile.icon,
+                    contentDescription = null,
+                    tint = WisdomCyan,
                     modifier = Modifier.size(20.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = tool.name,
+                text = tile.title,
                 fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -375,63 +541,7 @@ private fun StudyToolChip(
 }
 
 @Composable
-private fun StudyHubRowCard(
-    hub: StudyModeHub,
-    onClick: () -> Unit
-) {
-    WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 14.dp,
-        borderColor = WisdomBorderWhite,
-        onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(hub.accentColor.copy(alpha = 0.12f))
-                    .border(BorderStroke(1.dp, hub.accentColor.copy(alpha = 0.35f)), RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = hub.icon,
-                    contentDescription = null,
-                    tint = hub.accentColor,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = hub.title,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = hub.description,
-                    fontSize = 11.sp,
-                    color = WisdomMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            WisdomOpenButton(onClick = onClick, label = "Enter →")
-        }
-    }
-}
-
-@Composable
-private fun CourseLaunchCard(
+private fun CurriculumCourseCard(
     pkg: NativePackage,
     onClick: () -> Unit
 ) {
@@ -439,14 +549,14 @@ private fun CourseLaunchCard(
 
     WisdomModernCard(
         modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 14.dp,
+        cornerRadius = 16.dp,
         onClick = onClick
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(16f / 10f)
+                    .aspectRatio(16f / 9f)
                     .background(WisdomDark)
             ) {
                 AsyncImage(
@@ -460,26 +570,48 @@ private fun CourseLaunchCard(
                 )
             }
 
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = 10.dp, vertical = 10.dp)
             ) {
                 Text(
                     text = pkg.name,
-                    color = Color.White,
-                    fontSize = 12.sp,
+                    fontSize = 12.5.sp,
                     fontWeight = FontWeight.Bold,
+                    color = Color.White,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 6.dp)
+                    overflow = TextOverflow.Ellipsis
                 )
 
-                WisdomOpenButton(onClick = onClick, label = "Study →")
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(WisdomCyan.copy(alpha = 0.12f))
+                        .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.45f)), RoundedCornerShape(10.dp))
+                        .clickable(onClick = onClick)
+                        .padding(vertical = 6.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = null,
+                            tint = WisdomCyan,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Start Learning",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = WisdomCyan
+                        )
+                    }
+                }
             }
         }
     }

@@ -57,6 +57,11 @@ import com.wisdomtower.academy.ui.packages.PackageDetailScreen
 import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.settings.SettingsScreen
+import com.wisdomtower.academy.ui.drawer.AboutScreen
+import com.wisdomtower.academy.ui.drawer.ContactScreen
+import com.wisdomtower.academy.ui.drawer.FaqScreen
+import com.wisdomtower.academy.ui.drawer.PrivacyScreen
+import com.wisdomtower.academy.ui.drawer.TermsScreen
 import com.wisdomtower.academy.ui.theme.WisdomNavy
 import com.wisdomtower.academy.data.auth.AuthStateManager
 import com.wisdomtower.academy.data.repository.AcademyRepository
@@ -980,6 +985,7 @@ fun MainScreen(
     var selectedPackage by remember { mutableStateOf<NativePackage?>(null) }
     var activeStudyUrl by remember { mutableStateOf<String?>(null) }
     var activeGuideSlug by remember { mutableStateOf<String?>(null) }
+    var activeDrawerScreen by remember { mutableStateOf<String?>(null) }
     var webView: WebView? by remember { mutableStateOf(null) }
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -1462,6 +1468,10 @@ fun MainScreen(
         }
         if (menuExpanded) {
             menuExpanded = false
+            return@BackHandler
+        }
+        if (activeDrawerScreen != null) {
+            activeDrawerScreen = null
             return@BackHandler
         }
         if (activeGuideSlug != null) {
@@ -2813,6 +2823,70 @@ fun MainScreen(
                     modifier = Modifier.fillMaxSize()
                 )
 
+                // Unified Global Navigation Router (Guarantees zero 404s, routes directly to native screens)
+                val handleGlobalNav: (String) -> Unit = { targetPathOrUrl ->
+                    val clean = targetPathOrUrl.trim()
+                    val pathPart = if (clean.startsWith("http")) {
+                        try { Uri.parse(clean).path ?: clean } catch (_: Exception) { clean }
+                    } else clean
+
+                    if (pathPart == "/about" || pathPart.endsWith("/about")) {
+                        activeDrawerScreen = "about"
+                    } else if (pathPart == "/contact" || pathPart.endsWith("/contact")) {
+                        activeDrawerScreen = "contact"
+                    } else if (pathPart.contains("/faq")) {
+                        activeDrawerScreen = "faq"
+                    } else if (pathPart == "/privacy" || pathPart.endsWith("/privacy")) {
+                        activeDrawerScreen = "privacy"
+                    } else if (pathPart == "/terms" || pathPart.endsWith("/terms")) {
+                        activeDrawerScreen = "terms"
+                    } else if (pathPart.contains("/academy/success-stories") || pathPart == "/success-stories") {
+                        activeGuideSlug = "success-stories"
+                    } else if (pathPart.contains("/academy/study-techniques") || pathPart == "/study-techniques") {
+                        activeGuideSlug = "study-techniques"
+                    } else if (pathPart.contains("/academy/campus-life") || pathPart == "/campus-life") {
+                        activeGuideSlug = "campus-life"
+                    } else if (pathPart.contains("/academy/universities") || pathPart == "/universities") {
+                        activeGuideSlug = "universities"
+                    } else if (pathPart.contains("/academy/departments") || pathPart == "/departments") {
+                        activeGuideSlug = "departments"
+                    } else if (pathPart.contains("/academy/scholarships") || pathPart == "/scholarships") {
+                        activeGuideSlug = "scholarships"
+                    } else {
+                        val matchedPkg = catalogPackages.find {
+                            it.path.equals(pathPart, ignoreCase = true) ||
+                            it.id.equals(pathPart.removePrefix("/academy/"), ignoreCase = true) ||
+                            it.id.equals(pathPart.removePrefix("/packages/"), ignoreCase = true)
+                        }
+                        if (matchedPkg != null) {
+                            selectedPackage = matchedPkg
+                            selectedIndex = 2
+                        } else if (pathPart == "/academy" || pathPart == "/packages") {
+                            selectedPackage = null
+                            selectedIndex = 2
+                        } else if (pathPart == "/learning" || pathPart == "/my-learning") {
+                            activeStudyUrl = null
+                            selectedIndex = 1
+                        } else if (pathPart == "/account" || pathPart == "/login" || pathPart == "/signup") {
+                            selectedIndex = 3
+                        } else if (pathPart == "/settings") {
+                            selectedIndex = 4
+                        } else {
+                            val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
+                            if (fullUrl.contains("/books") || fullUrl.contains("/short-notes") || fullUrl.contains("/flashcards") || fullUrl.contains("/question-banks") || fullUrl.contains("/exams") || fullUrl.contains("/life-savers")) {
+                                activeStudyUrl = fullUrl
+                                navigateTo(fullUrl, 1)
+                            } else {
+                                val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
+                                if (targetTab == 1) {
+                                    activeStudyUrl = fullUrl
+                                }
+                                navigateTo(fullUrl, targetTab)
+                            }
+                        }
+                    }
+                }
+
                 // Native Home Screen (Phase A2 / B)
                 if (selectedIndex == 0) {
                     HomeScreen(
@@ -2822,50 +2896,7 @@ fun MainScreen(
                             .zIndex(10f),
                         isLoggedIn = isLoggedIn,
                         userName = currentProfile?.fullName ?: currentUser?.fullName,
-                        onNavigateToUrl = { targetPathOrUrl ->
-                            val clean = targetPathOrUrl.trim()
-                            if (clean.contains("/academy/success-stories")) {
-                                activeGuideSlug = "success-stories"
-                            } else if (clean.contains("/academy/study-techniques")) {
-                                activeGuideSlug = "study-techniques"
-                            } else if (clean.contains("/academy/campus-life")) {
-                                activeGuideSlug = "campus-life"
-                            } else if (clean.contains("/academy/universities")) {
-                                activeGuideSlug = "universities"
-                            } else if (clean.contains("/academy/departments")) {
-                                activeGuideSlug = "departments"
-                            } else if (clean.contains("/academy/scholarships")) {
-                                activeGuideSlug = "scholarships"
-                            } else {
-                                val matchedPkg = catalogPackages.find {
-                                    it.path.equals(clean, ignoreCase = true) ||
-                                    it.id.equals(clean.removePrefix("/academy/"), ignoreCase = true)
-                                }
-                                if (matchedPkg != null) {
-                                    selectedPackage = matchedPkg
-                                    selectedIndex = 2
-                                } else if (clean == "/academy" || clean == "/packages") {
-                                    selectedPackage = null
-                                    selectedIndex = 2
-                                } else if (clean == "/learning" || clean == "/my-learning") {
-                                    activeStudyUrl = null
-                                    selectedIndex = 1
-                                } else {
-                                    val fullUrl = if (targetPathOrUrl.startsWith("http")) {
-                                        targetPathOrUrl
-                                    } else {
-                                        "https://www.wisdom-tower-academy.live$targetPathOrUrl"
-                                    }
-                                    if (fullUrl.contains("/books") || fullUrl.contains("/short-notes") || fullUrl.contains("/flashcards") || fullUrl.contains("/question-banks") || fullUrl.contains("/exams") || fullUrl.contains("/life-savers")) {
-                                        activeStudyUrl = fullUrl
-                                        navigateTo(fullUrl, 1)
-                                    } else {
-                                        val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
-                                        navigateTo(fullUrl, targetTab)
-                                    }
-                                }
-                            }
-                        }
+                        onNavigateToUrl = handleGlobalNav
                     )
                 }
 
@@ -2890,7 +2921,8 @@ fun MainScreen(
                         onSelectCourse = { pkg ->
                             selectedPackage = pkg
                             selectedIndex = 2
-                        }
+                        },
+                        onNavigateToUrl = handleGlobalNav
                     )
                 }
 
@@ -2934,14 +2966,7 @@ fun MainScreen(
                                 activeStudyUrl = fullUrl
                                 navigateTo(fullUrl, 1)
                             },
-                            onNavigateToUrl = { targetPathOrUrl ->
-                                val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
-                                val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
-                                if (targetTab == 1) {
-                                    activeStudyUrl = fullUrl
-                                }
-                                navigateTo(fullUrl, targetTab)
-                            }
+                            onNavigateToUrl = handleGlobalNav
                         )
                     }
                 }
@@ -2960,25 +2985,7 @@ fun MainScreen(
                         onSignOut = {
                             AuthStateManager.signOut(webView)
                         },
-                        onNavigateToUrl = { targetPathOrUrl ->
-                            val clean = targetPathOrUrl.trim()
-                            val matchedPkg = catalogPackages.find {
-                                it.path.equals(clean, ignoreCase = true) ||
-                                it.id.equals(clean.removePrefix("/academy/"), ignoreCase = true)
-                            }
-                            if (matchedPkg != null) {
-                                selectedPackage = matchedPkg
-                                selectedIndex = 2
-                            } else if (clean.contains("/learning") || clean.contains("/books") || clean.contains("/short-notes") || clean.contains("/flashcards") || clean.contains("/question-banks") || clean.contains("/exams")) {
-                                val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
-                                activeStudyUrl = fullUrl
-                                navigateTo(fullUrl, 1)
-                            } else {
-                                val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
-                                val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
-                                navigateTo(fullUrl, targetTab)
-                            }
-                        }
+                        onNavigateToUrl = handleGlobalNav
                     )
                 }
 
@@ -2989,11 +2996,7 @@ fun MainScreen(
                             .fillMaxSize()
                             .background(WisdomNavy)
                             .zIndex(10f),
-                        onNavigateToUrl = { targetPathOrUrl ->
-                            val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
-                            val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
-                            navigateTo(fullUrl, targetTab)
-                        }
+                        onNavigateToUrl = handleGlobalNav
                     )
                 }
 
@@ -3007,6 +3010,47 @@ fun MainScreen(
                             .background(WisdomNavy)
                             .zIndex(15f)
                     )
+                }
+
+                // Native Drawer Screens (About, Contact, FAQ, Privacy, Terms)
+                if (activeDrawerScreen != null) {
+                    when (activeDrawerScreen) {
+                        "about" -> AboutScreen(
+                            onBack = { activeDrawerScreen = null },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(16f)
+                        )
+                        "contact" -> ContactScreen(
+                            onBack = { activeDrawerScreen = null },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(16f)
+                        )
+                        "faq" -> FaqScreen(
+                            onBack = { activeDrawerScreen = null },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(16f)
+                        )
+                        "privacy" -> PrivacyScreen(
+                            onBack = { activeDrawerScreen = null },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(16f)
+                        )
+                        "terms" -> TermsScreen(
+                            onBack = { activeDrawerScreen = null },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(16f)
+                        )
+                    }
                 }
 
                 // Restored & Fixed Custom Animated Loader Overlay:
@@ -3652,7 +3696,14 @@ fun MainScreen(
                                     label = link.label,
                                     onClick = {
                                         menuExpanded = false
-                                        navigateTo(link.url, tabIndex = null)
+                                        when (link.label) {
+                                            "About Academy" -> activeDrawerScreen = "about"
+                                            "Contact & Support" -> activeDrawerScreen = "contact"
+                                            "FAQ" -> activeDrawerScreen = "faq"
+                                            "Privacy Policy" -> activeDrawerScreen = "privacy"
+                                            "Terms of Service" -> activeDrawerScreen = "terms"
+                                            else -> handleGlobalNav(link.url)
+                                        }
                                     }
                                 )
                             }

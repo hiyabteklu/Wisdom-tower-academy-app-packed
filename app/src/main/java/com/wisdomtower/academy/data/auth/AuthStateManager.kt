@@ -259,6 +259,15 @@ object AuthStateManager {
         }
     }
 
+    fun updateProfile(updated: UserProfile) {
+        _currentProfile.value = updated
+        _currentUser.value?.let { user ->
+            val mergedUser = user.copy(fullName = updated.fullName ?: user.fullName)
+            _currentUser.value = mergedUser
+            saveToPrefs(mergedUser, updated)
+        }
+    }
+
     fun clearSession() {
         _currentUser.value = null
         _currentProfile.value = null

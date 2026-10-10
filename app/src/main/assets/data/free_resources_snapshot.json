@@ -1,0 +1,99 @@
+{
+  "stories": [
+    {
+      "id": "story-1",
+      "studentName": "Kalkidan Mengistu",
+      "program": "Grade 12 Natural Stream",
+      "result": "Top 0.5% National Matriculation Score",
+      "year": "2025/2026",
+      "quote": "Solving timed question banks under closed-book conditions made the real exam feel like an everyday drill.",
+      "body": "I stopped passive rereading early in the first semester. Every day after classes, I dedicated 45 minutes to active retrieval: writing textbook definitions from memory, solving unworked questions, and explaining difficult Physics concepts to my study partner without looking at my notebook. By the time national matriculation arrived, the exam hall felt like our daily rehearsal."
+    },
+    {
+      "id": "story-2",
+      "studentName": "Bereket Tesfaye",
+      "program": "Freshman University STEM",
+      "result": "3.94 Freshman GPA & ECE Placement",
+      "year": "2025/2026",
+      "quote": "The university midterm gap catches students off guard. Starting semester question banks on week two was my greatest advantage.",
+      "body": "Freshman calculus and classical mechanics cover double the speed of high school. Wisdom Tower's chapter summaries gave me the core mental models before lectures, so classroom hours became review sessions rather than first exposure. The worked midterm exams helped me secure first-round placement into Electrical and Computer Engineering."
+    },
+    {
+      "id": "story-3",
+      "studentName": "Selamawit Girma",
+      "program": "Undergraduate Admission Test",
+      "result": "Perfect Verbal & 94th Percentile UAT Admission",
+      "year": "2025/2026",
+      "quote": "Speed is the real test in entrance exams. Timed simulations gave me the rhythm to finish with 10 minutes to spare.",
+      "body": "The UAT tests structured logic and rapid comprehension. Practicing with full timed mock exams once every weekend eliminated my test anxiety completely. When the actual computer-based test was administered, I had developed enough pacing discipline to review all flagged questions before submitting."
+    },
+    {
+      "id": "story-4",
+      "studentName": "Natnael Tadesse",
+      "program": "Grade 12 to AAiT Transition",
+      "result": "Top Score in AAiT Software Engineering Entrance",
+      "year": "2024/2025",
+      "quote": "Active recall notes combined with formula blurting turned difficult calculus concepts into second nature.",
+      "body": "Transitioning from high school to Addis Ababa Institute of Technology was intimidating. The modular curriculum demands complete independence. Wisdom Tower gave me the exact study framework needed to master engineering mathematics without getting overwhelmed."
+    },
+    {
+      "id": "story-5",
+      "studentName": "Meron Hailu",
+      "program": "Comprehensive Health Science Track",
+      "result": "Dean's List Honoree & Medicine Placement",
+      "year": "2024/2025",
+      "quote": "Flashcards for rapid active recall saved me hundreds of hours of rote memorization.",
+      "body": "In medical and biology courses, the sheer volume of anatomical terminology and pharmacological pathways can be paralyzing. Breaking chapters into digital flashcards allowed me to practice retrieval on daily commutes, keeping retention high without burning out."
+    }
+  ],
+  "scholarships": [
+    {
+      "id": "sch-1",
+      "title": "Mastercard Foundation Scholars Program",
+      "provider": "Mastercard Foundation & Partner Universities",
+      "amount": "Full Tuition + Living Stipend + Health Insurance",
+      "level": "Undergraduate & Postgraduate",
+      "country": "Pan-African & International",
+      "eligibility": "Sub-Saharan African students with academic excellence, financial need, and commitment to community transformation",
+      "deadline": "2026-11-30",
+      "externalUrl": "https://mastercardfdn.org/all/scholars/",
+      "body": "The Mastercard Foundation Scholars Program develops Africa's next generation of transformative leaders. The scholarship provides comprehensive financial, academic, and social support to young people whose talent outstrips their financial resources. Selected scholars receive full tuition fees, accommodation, books and study materials, a modest living stipend, and comprehensive leadership development training. Applicants must demonstrate academic merit, financial disadvantage, and commitment to returning to contribute to their home communities."
+    },
+    {
+      "id": "sch-2",
+      "title": "Ethiopian Higher Education Excellence Grant",
+      "provider": "Ministry of Education (MoE)",
+      "amount": "Merit Allowance & Academic Equipment Subsidy",
+      "level": "Undergraduate",
+      "country": "Ethiopia",
+      "eligibility": "Top national matriculation performers admitted to public research universities (AAU, AASTU, ASTU, JU, BDU)",
+      "deadline": "2026-12-15",
+      "externalUrl": "https://moe.gov.et",
+      "body": "Annual merit awards instituted to recognize outstanding high school matriculation candidates entering public research and science & technology universities. Priority is extended to students pursuing STEM fields, Medicine, and Strategic Industrial Disciplines. Recipients receive supplemental research grants, book allocations, and computer equipment subsidies."
+    },
+    {
+      "id": "sch-3",
+      "title": "DAAD In-Country / In-Region Scholarship Programme",
+      "provider": "German Academic Exchange Service (DAAD)",
+      "amount": "Tuition Waiver + Monthly Stipend + Research Grants",
+      "level": "Master's & Ph.D.",
+      "country": "Sub-Saharan Africa / Ethiopia",
+      "eligibility": "Graduates with first-class degrees seeking postgraduate study at recognized centers of excellence",
+      "deadline": "2026-10-31",
+      "externalUrl": "https://www.daad.de/en/information-services-for-higher-education-institutions/programmes/in-country-in-region-scholarship-programmes/",
+      "body": "DAAD offers scholarships for postgraduate studies in Sub-Saharan Africa to support the training of future university faculty and research specialists. The programme covers full tuition fees, monthly living allowances, travel subsidies, and funding for research field visits and theses publishing."
+    },
+    {
+      "id": "sch-4",
+      "title": "Türkiye Scholarships (Türkiye Bursları)",
+      "provider": "Presidency for Turks Abroad (YTB)",
+      "amount": "Full Tuition + Dormitory + Monthly Stipend + Flight",
+      "level": "Bachelor's, Master's & Ph.D.",
+      "country": "Turkey",
+      "eligibility": "Open to Ethiopian candidates with minimum academic thresholds (70% for undergrad, 75% for grad, 90% for health sciences)",
+      "deadline": "2027-02-20",
+      "externalUrl": "https://www.turkiyeburslari.gov.tr",
+      "body": "Competitive government-funded higher education scholarship program covering placement in prestigious Turkish state universities. Selected candidates receive accommodation in university dormitories, health insurance, airfare, and a preparatory Turkish language program prior to degree coursework."
+    }
+  ]
+}

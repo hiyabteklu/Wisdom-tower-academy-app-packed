@@ -1,0 +1,1690 @@
+{
+  "intro": {
+    "title": "Ethiopian Universities",
+    "subtitle": "What it actually feels like to study at each one",
+    "paragraphs": [
+      "Most people pick a university the way they pick a lottery ticket. They hear a name, feel a flicker of pride or fear, and let that flicker decide four years of their life.",
+      "That is backwards. A university is not a prize you win. It is a place you will wake up in, eat in, get sick in, fall behind in, and rebuild yourself in, semester after semester. The name on the certificate matters far less than whether the place fits the person who has to actually live inside it.",
+      "Rankings and Wikipedia facts will not tell you what you actually need to know. They will not tell you how strict the department is about attendance, whether the cafeteria food is something you can survive on for four years, how quickly the registrar fixes a mistake on your transcript, or how many of your classmates disappear after first semester because the GPA cutoff caught them. Those are the things that decide whether you finish strong or limp through.",
+      "So this is not a comparison of prestige. It is written the way someone who has actually been there, or who has listened closely to people who have, would tell a younger sibling before they leave home. Some of it is uncomfortable. All of it is honest."
+    ],
+    "closing": "Read the one for your university, or the one you are hoping to be placed at. Then read it again in your first month there and see how much of it turns out to be true."
+  },
+  "regions": [
+    "Addis Ababa",
+    "Amhara",
+    "Oromia",
+    "Tigray",
+    "SNNPR",
+    "Somali",
+    "Afar",
+    "Benishangul Gumuz",
+    "Gambela",
+    "Dire Dawa"
+  ],
+  "universities": [
+    {
+      "id": "aau",
+      "name": "Addis Ababa University",
+      "abbr": "AAU",
+      "region": "Addis Ababa",
+      "location": "Addis Ababa (multiple campuses)",
+      "website": "https://www.aau.edu.et",
+      "founded": "1950",
+      "distanceFromAddisKm": 0,
+      "distanceNote": "Inside the capital, but which campus you actually live near depends entirely on your department.",
+      "elevationM": 2350,
+      "campuses": "Sidist Kilo is the old heart of the university and where most humanities and social science students spend their days, walking distance from the John F. Kennedy Library. Arat Kilo is a short walk from there and holds natural and computational sciences. 5 Kilo, home to AAiT, feels like its own university within the university, engineering students there rarely mix much with the rest of campus. Tikur Anbessa is where health science students end up living once clinical years start, attached to the hospital itself. Business and economics sit closer to the Piassa side of town. If you get placed at Bishoftu for veterinary medicine, you are effectively not in Addis anymore, that is a 45 minute plus drive and a genuinely different daily life.",
+      "knownFor": [
+        "Water resource management — national reference programs, not just a course name on a brochure",
+        "Medical and health sciences anchored at Tikur Anbessa; clinical years are hospital life, not campus life",
+        "Railway engineering is rare in the country — if that is your field, AAU is one of the few real homes for it",
+        "Split campuses by field: your daily life depends on whether you land at 5 Kilo, 4 Kilo, Sidist Kilo, or Bishoftu, not on the AAU name"
+      ],
+      "strengths": [
+        "Water resource management — national reference programs, not just a course name on a brochure",
+        "Medical and health sciences anchored at Tikur Anbessa; clinical years are hospital life, not campus life",
+        "Railway engineering is rare in the country — if that is your field, AAU is one of the few real homes for it",
+        "Split campuses by field: your daily life depends on whether you land at 5 Kilo, 4 Kilo, Sidist Kilo, or Bishoftu, not on the AAU name"
+      ],
+      "whatToExpect": [
+        "The size is the first shock. Classes in first year general courses can run into the hundreds, and lecturers will not know your name unless you make a point of being known.",
+        "Attendance policy is taken seriously here more than students expect. Miss too many sessions in a course and you can be barred from sitting the final exam entirely, this is not a rumor, it happens every semester to students who assumed lecture was optional.",
+        "The academic dismissal system runs on GPA, and it is strict. Fall below the cutoff for your program two semesters running and you can be dismissed regardless of how much you have already invested. Nobody explains this clearly during orientation, so ask your department secretary directly what your program's cutoff actually is.",
+        "Dorm life is crowded. Expect to share a room built for two with one or two more people than that, especially in your first year. Water gets cut without warning often enough that keeping a filled jerrycan is just normal life, not paranoia.",
+        "Cafeteria food is filling but repetitive, most students who can afford it supplement with food from small shops just outside campus gates within the first month.",
+        "The registrar and administrative offices move slowly. A transcript correction or a missing grade can take weeks of follow up, bring printed copies of everything and keep them, do not assume a problem was fixed just because someone said it would be.",
+        "Because the campus is spread across a real city, a huge amount of unofficial learning happens through senior students. Find someone a year or two ahead in your specific department in your first two weeks, they will save you more time than any orientation session.",
+        "5 Kilo teaches software, electrical, biomedical, mechanical, civil, and chemical engineering, AAU is one of the few universities in the country teaching biomedical engineering at all",
+        "4 Kilo, a separate site from 5 Kilo despite both sounding like general engineering, teaches computer science and computer engineering specifically",
+        "Sefere Selam is where nursing and related health fields study for their first years before moving to Tikur Anbessa for third year and clinical work, so your early health science years likely will not be at the hospital campus at all",
+        "18 Mazoria handles other allied health fields, a separate identity again from Sefere Selam and Tikur Anbessa",
+        "Lideta is where architecture, construction, and urban planning live, distinct from the engineering fields at 5 Kilo",
+        "Mexico campus is where commerce, marketing, business administration, and management are taught, separate from both the humanities at Sidist Kilo and the engineering campuses"
+      ],
+      "tips": [
+        "If you are in AAiT, arrive already comfortable with your math fundamentals, the pace assumes you are, and the first semester does not slow down for people who are still catching up.",
+        "If you are heading into health sciences, understand now that once clinical rotations begin your schedule stops being your own, hospital hours do not care about exam schedules for your other remaining courses.",
+        "Introduce yourself to your department secretary early and learn their name. They control far more of your daily reality, registration issues, room changes, missing documents, than any professor does.",
+        "Keep every stamped document the university gives you, admission letter, ID, grade reports, in a folder you control. Offices lose paperwork here more often than students expect.",
+        "Join one club or student association in your first month even if you are shy. AAU is large enough that it is easy to become anonymous, and the students who struggle most socially are usually the ones who never attached themselves to a smaller group inside the bigger one.",
+        "Ask specifically which numbered campus, not just 'AAiT' as a general name, your exact engineering field is taught at, since 4 Kilo and 5 Kilo are different sites teaching different things"
+      ],
+      "studentFit": "AAU rewards students who can be self reliant inside a large, sometimes impersonal system. You will need to advocate for yourself with administration, keep track of your own deadlines and GPA standing, and build your own smaller community inside a very large one. If you need a lot of individual attention from instructors or a tightly held hand through bureaucracy, the size here will wear on you. If you can handle being one of many while still finding your footing, very few places in the country will hand you more doors to walk through afterward.",
+      "featured": true,
+      "detailed": true
+    },
+    {
+      "id": "aastu",
+      "name": "Addis Ababa Science and Technology University",
+      "abbr": "AASTU",
+      "region": "Addis Ababa",
+      "location": "Addis Ababa (Kilinto / Akaki Kality)",
+      "website": "https://www.aastu.edu.et",
+      "founded": "2011",
+      "distanceFromAddisKm": 25,
+      "distanceNote": "Technically still Addis, but Kilinto is far enough from the center that it feels like its own town.",
+      "elevationM": 2300,
+      "campuses": "One single campus, which is actually a relief after hearing how spread out AAU is. Everything, classrooms, labs, dorms, cafeteria, is close enough to walk. The tradeoff is that the campus sits away from the busy parts of the city, so a trip into central Addis for anything is a planned outing, not a quick errand.",
+      "knownFor": [
+        "Being newer and smaller than AAU, which shows in both good and bad ways",
+        "A genuinely engineering and applied science focused identity, there is no large humanities or social science crowd to blend into",
+        "Being the university government messaging points to when it talks about training the country's future engineers"
+      ],
+      "strengths": [
+        "Being newer and smaller than AAU, which shows in both good and bad ways",
+        "A genuinely engineering and applied science focused identity, there is no large humanities or social science crowd to blend into",
+        "Being the university government messaging points to when it talks about training the country's future engineers"
+      ],
+      "whatToExpect": [
+        "Because it is younger than AAU, some systems still feel like they are being figured out as they go, registration hiccups and schedule changes happen more than students expect from a university with this much government attention.",
+        "Lab access is genuinely good compared to older, more crowded institutions, if you are in engineering or applied science this is one of the real upsides of choosing AASTU over a bigger name.",
+        "The student body skews heavily toward people who already knew they wanted engineering or tech before arriving, so if you are still unsure about your field, the culture here will not offer you much space to explore other directions the way a broader university would.",
+        "Being outside the city center means your social life is largely built from people on campus, there is less of the option to disappear into wider Addis on weekends the way AAU students can.",
+        "Project based coursework is heavy from early on. Group projects and presentations are a bigger part of grades here than straight exams compared to older universities."
+      ],
+      "tips": [
+        "Bring a laptop if there is any way you can. Coding, design, and modeling work is constant, and relying only on shared lab computers will slow you down all semester.",
+        "Because the campus is compact, reputations spread fast, both good and bad. Showing up prepared in your first few group projects matters more here than at a huge anonymous campus.",
+        "If you already know you want a specific engineering track, ask final year students in that exact department which labs and professors are worth prioritizing, the answer changes department to department."
+      ],
+      "studentFit": "AASTU fits students who already know they want engineering, applied science, or technology and would rather commit to that identity fully than keep their options broad. It suits people who do not mind a quieter, more contained campus in exchange for better lab access and a tighter, more focused peer group. If you want the option to wander academically or crave the buzz of a big city campus, the isolation here will feel more like a cost than a benefit.",
+      "featured": true,
+      "detailed": true
+    },
+    {
+      "id": "astu-adama",
+      "name": "Adama Science and Technology University",
+      "abbr": "ASTU",
+      "region": "Oromia",
+      "location": "Adama, in the Rift Valley",
+      "website": "https://www.astu.edu.et",
+      "founded": "Traces back to 1993, reached university status in 2006, took its current name in 2011",
+      "distanceFromAddisKm": 100,
+      "distanceNote": "About 100 km southeast of Addis in the Rift Valley, a manageable trip.",
+      "elevationM": 1700,
+      "campuses": "One single campus.",
+      "knownFor": [
+        "One of only two dedicated science and technology universities in the country, alongside AASTU in Addis",
+        "ASTU teaches only two broad streams, Engineering and Applied Science, and both begin with two shared foundation semesters before students choose a specific department",
+        "የኢንጅነሪንግ እና Applied Science ትምህርት ብቻ የሚሰጥበት ፣ ሁለት ልዩ ትምህርት ክፍሎች ብቻ ያሉት ዩኒቨርሲቲ ነው"
+      ],
+      "whatToExpect": [
+        "Engineering runs through three schools, Electrical, Mechanical, and Civil and Architecture, each with its own specific streams inside it, so 'engineering' here is really several separate identities, not one",
+        "There is a genuine option to finish a five year engineering degree in four years, or a four year applied science degree in three, by passing a qualifying exam that tests out of the standard foundation sequence, most incoming students never hear about this until someone tells them directly",
+        "Aerospace engineering and software engineering are not currently taught here, despite sometimes being listed elsewhere, confirm your exact department before assuming it exists",
+        "Water runs a little warm here rather than being unpredictable, a small, unusual detail worth knowing in your first week so it doesn't confuse you"
+      ],
+      "tips": [
+        "If you want to attempt the accelerated degree track, ask your department directly and early about the qualifying exam rather than waiting until you're already behind on the standard timeline"
+      ],
+      "studentFit": "ASTU suits students who want a focused science and technology environment outside Addis, with a clear engineering or applied science path and the option of an accelerated track. It fits people drawn to a single-campus tech-focused culture rather than a broad multi-college university. Students looking for software engineering or aerospace should confirm availability before choosing this placement.",
+      "detailed": true,
+      "strengths": [
+        "One of only two dedicated science and technology universities in the country, alongside AASTU in Addis",
+        "ASTU teaches only two broad streams, Engineering and Applied Science, and both begin with two shared foundation semesters before students choose a specific department"
+      ]
+    },
+    {
+      "id": "ju",
+      "name": "Jimma University",
+      "abbr": "JU",
+      "region": "Oromia",
+      "location": "Jimma (roughly 350 to 360 km southwest of Addis)",
+      "website": "https://ju.edu.et",
+      "founded": "1999, with roots going back to 1952 in agriculture",
+      "distanceFromAddisKm": 355,
+      "distanceNote": "A genuine long haul, expect a full day of travel by bus, or a flight plus ground transfer.",
+      "elevationM": 1700,
+      "campuses": "The main campus handles most health and natural science students. Agriculture and veterinary medicine sit on their own separate site, and the technology institute is separate again. If your program is not on the main campus, your daily life, food options, and social circle end up shaped by whichever site you actually belong to, not by the university's name as a whole.",
+      "knownFor": [
+        "Being the pioneer of Ethiopia's community based education model, where students spend real time doing fieldwork in surrounding villages instead of staying purely in lecture halls",
+        "Its health sciences and public health programs, which lean heavily on that community exposure",
+        "A genuinely warmer, greener, more relaxed feeling city than most other university towns"
+      ],
+      "strengths": [
+        "Being the pioneer of Ethiopia's community based education model, where students spend real time doing fieldwork in surrounding villages instead of staying purely in lecture halls",
+        "Its health sciences and public health programs, which lean heavily on that community exposure",
+        "A genuinely warmer, greener, more relaxed feeling city than most other university towns"
+      ],
+      "whatToExpect": [
+        "If you are in health sciences or public health, expect actual time spent in nearby communities as part of your coursework, this is not an optional add on, it is central to how the program is built.",
+        "The city itself is known for coffee culture and a slower pace than Addis, many students say the adjustment out of Jimma back into a busier city after graduation is its own small culture shock.",
+        "Because agriculture, health, and technology sit on different sites, cross department friendships take more effort to build than at a single compact campus, you have to actually go looking for people outside your own program.",
+        "Living costs are noticeably lower than Addis, food from local markets is cheap and plentiful, which matters a lot if your family is stretching a budget to support you.",
+        "The rainy season here is serious, roads and paths on the more rural sites can get genuinely difficult to move through, decent shoes and a real umbrella are not optional.",
+        "The Business and Economics college sits far enough from the main campus that a large bridge connects the two, so students on either side move between them by that bridge as a routine part of daily life",
+        "The Technology campus, a short ride from both the main campus and the city center's Merkato area, has a real reputation among students for having some of the most impressive campus architecture in the university",
+        "The Agriculture and Veterinary Medicine college sits between the Technology campus and the main campus geographically",
+        "First year students across all four campuses live in what students describe as genuinely attractive dormitory blocks, but the workload at Jimma is real, do not let the pleasant buildings suggest an easy pace"
+      ],
+      "tips": [
+        "If you are placed in health sciences, ask second or third year students what the community attachment schedule actually looks like, it affects how you plan everything else that semester.",
+        "Take advantage of the food and coffee culture for your own mental health, students who isolate themselves in the library the whole time report burning out faster here than students who build in real breaks.",
+        "If your program is on the agriculture or technology site rather than main campus, budget extra time to visit friends or resources based at the other sites, it is not a short walk."
+      ],
+      "studentFit": "Jimma suits students who want hands on, community connected learning rather than a purely classroom based degree, and who do not mind trading big city energy for a slower, greener pace of life. It is a strong fit for anyone drawn to public health or agriculture specifically. Students who need constant city stimulation or who want every department close together on one walkable campus may find the spread between sites frustrating.",
+      "featured": true,
+      "detailed": true
+    },
+    {
+      "id": "mu",
+      "name": "Mekelle University",
+      "abbr": "MU",
+      "region": "Tigray",
+      "location": "Mekelle (roughly 780 to 940 km north of Addis depending on route)",
+      "website": "https://www.mu.edu.et",
+      "founded": "2000",
+      "distanceFromAddisKm": 780,
+      "distanceNote": "One of the longer hauls in the country, most students fly if family can afford it and take the road trip only once or twice a year.",
+      "elevationM": 2200,
+      "campuses": "Several sites across Mekelle, including a strong technology institute inheriting an older engineering training tradition.",
+      "knownFor": [
+        "Engineering and technology, built on a training tradition that predates the university's official founding",
+        "Being the main hub of higher education for the entire Tigray region",
+        "A tight, close knit student culture, partly a product of most students coming from the same broader region and knowing each other or people in common"
+      ],
+      "strengths": [
+        "Engineering and technology, built on a training tradition that predates the university's official founding",
+        "Being the main hub of higher education for the entire Tigray region",
+        "A tight, close knit student culture, partly a product of most students coming from the same broader region and knowing each other or people in common"
+      ],
+      "whatToExpect": [
+        "Because of the distance from Addis, going home for a random weekend simply is not realistic, students plan trips home around the two or three main breaks a year and treat the rest of the semester as a stretch they commit to.",
+        "The regional recovery period following the recent conflict years has meant some infrastructure and services have taken longer to fully stabilize than at universities further south, ask current students directly about the state of dorms and labs before assuming anything based on older information.",
+        "The sense of community here tends to be strong, students often describe feeling more genuinely known by classmates and even some staff than they expected, a byproduct of the university being a regional anchor rather than one of many options.",
+        "Winters here are properly cold at night for a country many people assume is uniformly warm, layered bedding and a real jacket are not optional extras.",
+        "The university runs across six named campuses. Social campus sits inside the Adi Haqi neighborhood and functions as the most convenient, centrally located site. Veterinary campus sits further from town and handles medical fields for animals. MIT is a small, competitively entrance-tested campus recommended specifically for stronger students, similar in structure to ASTU's accelerated track. Ayder campus is dedicated to medicine. Arid campus, despite its name, is a genuinely large site for agriculture. Quiha, a newer campus a bit further from town, houses engineering and is generally described as clean and pleasant.",
+        "Water shortages here are described as a real and recurring problem tied to the wider city's water supply, students should plan around this honestly rather than assume it will resolve itself"
+      ],
+      "tips": [
+        "Confirm current facilities and dorm conditions directly with the university or currently enrolled students before you travel, given how much has changed in the region in recent years, older online reviews may not reflect today's reality.",
+        "If you are in engineering or technology, ask specifically about lab equipment availability for your track, this varies more here than students expect going in.",
+        "Build in the emotional cost of long distance from home into your planning, students who prepare for this ahead of time cope noticeably better than those who assume it will feel like any other move away."
+      ],
+      "studentFit": "Mekelle suits students who are comfortable with real distance from home and who want to be part of a regional anchor institution with a close, tightly bonded student community. It has been a demanding few years for the region and its infrastructure, so students who choose Mekelle right now are often doing so with real regional pride and commitment, not just convenience. If constant closeness to home is a requirement for you to function, the distance here needs serious thought before you commit.",
+      "featured": true,
+      "detailed": true
+    },
+    {
+      "id": "hru",
+      "name": "Haramaya University",
+      "abbr": "HRU",
+      "region": "Oromia",
+      "location": "Haramaya, near Harar in eastern Ethiopia",
+      "website": "https://www.haramaya.edu.et",
+      "founded": "1954, originally as an agricultural college",
+      "distanceFromAddisKm": 510,
+      "distanceNote": "A long eastern trip, most students combine bus travel with the Dire Dawa or Harar corridor.",
+      "elevationM": 2000,
+      "campuses": "Main campus built around working experimental farms, agriculture is not a subject studied from a textbook here, it happens on land you can walk to.",
+      "knownFor": [
+        "Being one of the oldest and most established agricultural training centers on the continent, not just in Ethiopia",
+        "Hands on field and farm work built directly into the curriculum for agriculture and related programs",
+        "A more rural, unhurried daily rhythm than city universities, students describe it as feeling closer to a working farm town than an urban campus",
+        "Cafeteria food that students consistently rate among the best of any public university in the country, including meat served multiple times a week, unusual for a campus dining hall"
+      ],
+      "strengths": [
+        "Being one of the oldest and most established agricultural training centers on the continent, not just in Ethiopia",
+        "Hands on field and farm work built directly into the curriculum for agriculture and related programs",
+        "A more rural, unhurried daily rhythm than city universities, students describe it as feeling closer to a working farm town than an urban campus",
+        "Cafeteria food that students consistently rate among the best of any public university in the country, including meat served multiple times a week, unusual for a campus dining hall"
+      ],
+      "whatToExpect": [
+        "If you are in agriculture, veterinary science, or related fields, expect real outdoor practical work tied to actual growing and harvest seasons, your semester calendar sometimes bends around what is happening on the farms.",
+        "The surrounding area is more rural than most other major universities, which means fewer entertainment options in town, students who need constant city buzz find this an adjustment, students who prefer quiet find it a relief.",
+        "Harar's old walled city is close enough for a day trip when your schedule allows, many students treat it as their go to break from campus life.",
+        "Because of the agricultural focus, a noticeable portion of the student body arrives already from farming or rural backgrounds, this shapes a campus culture that leans practical and grounded rather than flashy.",
+        "Living costs are lower than Addis and most students say the food, largely local produce, is genuinely good and fresh.",
+        "The main campus actually contains three closely linked sub-campuses handling social sciences, computer science, business, natural and computational science, law, teaching, and agriculture together, plus a separate technology-focused site called Gandajay for engineering students from second year onward and food science",
+        "There is also a distinct site in Harar city itself, called Hareri campus, dedicated specifically to medicine, health, and pharmacy",
+        "Water and electricity are described as genuinely reliable here, rarely an issue"
+      ],
+      "tips": [
+        "If you are in an agriculture linked program, bring proper outdoor shoes and clothing you do not mind getting dirty, practicals are frequent and not optional.",
+        "Ask your department directly about the farm and field work calendar early, so you are not caught off guard by how much of your grade depends on practical seasons rather than pure classroom exams.",
+        "If quiet, small town life is not something you have experience with, talk to a current student about the adjustment before you arrive, it is a real shift for students used to Addis or another big city.",
+        "Khat use is treated as a genuinely serious disciplinary matter here, not a minor rule, students are strongly advised to stay away from it entirely, particularly given how normalized khat culture is in the surrounding town, arriving unaware of local norms around it can lead to real conflict"
+      ],
+      "studentFit": "Haramaya fits students genuinely drawn to agriculture, veterinary science, or applied environmental work who want their education to happen with their hands in the actual work, not only in lecture halls. It also suits students who are looking for a calmer, more rural pace of life during their studies. Students chasing city energy or a broad range of unrelated fields under one roof will find the focus here narrower than they want.",
+      "featured": true,
+      "detailed": true
+    },
+    {
+      "id": "bdu",
+      "name": "Bahir Dar University",
+      "abbr": "BDU",
+      "region": "Amhara",
+      "location": "Bahir Dar, on the shore of Lake Tana",
+      "website": "https://www.bdu.edu.et",
+      "founded": "2000, built on a polytechnic dating to 1963 and a teachers college from 1972",
+      "distanceFromAddisKm": 565,
+      "distanceNote": "A long but very doable trip, flights to Bahir Dar are common and reasonably frequent.",
+      "elevationM": 1800,
+      "campuses": "Multiple campuses across the city, engineering and technology sit somewhat separately from the education and humanities heritage sites, ask which one your program actually uses day to day.",
+      "knownFor": [
+        "Engineering and technology, with real institutional weight behind those programs",
+        "A long running teacher training heritage that still shapes parts of campus culture",
+        "Genuinely being one of the most physically beautiful university settings in the country, right on Lake Tana"
+      ],
+      "strengths": [
+        "Engineering and technology, with real institutional weight behind those programs",
+        "A long running teacher training heritage that still shapes parts of campus culture",
+        "Genuinely being one of the most physically beautiful university settings in the country, right on Lake Tana"
+      ],
+      "whatToExpect": [
+        "The lake is not just scenery, it becomes part of your actual routine, weekend walks along the water and trips to the Blue Nile Falls nearby are a normal part of student life here, not a rare treat.",
+        "Because the university is genuinely large, registration and hostel allocation move slowly at the start of each year, students who show up prepared with all their paperwork and follow up persistently get through the process faster than those who wait passively.",
+        "Rainy season, especially around July, is heavy here. Paths get muddy and some areas flood briefly, a decent bag that keeps books and a laptop dry is worth buying before you arrive, not after your things get ruined once.",
+        "Living costs are noticeably below Addis for a similar standard of student life, which is one of the quieter reasons this university stays popular with families budgeting carefully.",
+        "There is enough of a mix of programs here, education, engineering, water resources, health, business, that you are not stuck in a single narrow academic culture the way you might be at a specialized technical university.",
+        "The university runs across seven distinct campuses. Peda campus is the main one and includes most social science fields, computational science, medicine, and maritime studies. Selam campus, close to Peda, handles all textile-related departments. Yibab campus, out toward the edge of the city, handles fresh engineering students, computer science, law, and architecture, which is entrance-tested and accepts only around 30 students a year who stay on that same campus for their entire degree. Zenzelma campus, near the university's exit, covers agriculture, geology, and veterinary medicine. Poly campus houses second and third year engineering students and some social science instruction.",
+        "Water can be genuinely scarce at times, and at Yibab campus specifically, students report the water sometimes tastes noticeably salty",
+        "Dorms tend to be on the smaller side, with rooms built for far fewer people sometimes holding up to 12 students"
+      ],
+      "tips": [
+        "If you are in engineering or a water resources related program, look into the Blue Nile Water Institute early, it is a real strength of this university and not something every incoming student knows to ask about.",
+        "Buy a proper rain jacket and a waterproof bag before the July rains hit, not after.",
+        "Do not swim in the lake outside spots locals specifically recommend as safe, currents and conditions vary more than they look from the shore."
+      ],
+      "studentFit": "Bahir Dar suits students who want a large, comprehensive university with real strength in engineering and water related fields, wrapped in a setting that genuinely makes daily life more pleasant than most other options. It is a strong fit for people who want variety in program options without going all the way to the size and intensity of Addis Ababa University. Students purely focused on one narrow technical field with the best possible lab access might find more specialized options elsewhere, but for most students the balance here is hard to beat.",
+      "featured": true,
+      "detailed": true
+    },
+    {
+      "id": "uog",
+      "name": "University of Gondar",
+      "abbr": "UoG",
+      "region": "Amhara",
+      "location": "Gondar, roughly 650 to 740 km northwest of Addis",
+      "website": "https://www.uog.edu.et",
+      "founded": "Roots in a public health college from 1954, university status came later",
+      "distanceFromAddisKm": 725,
+      "distanceNote": "A long northwestern trip, flights to Gondar are available and commonly used.",
+      "elevationM": 2100,
+      "campuses": "Main campus alongside dedicated health science sites, the health college heritage means those facilities and buildings tend to be older and more established than newer program buildings elsewhere on campus.",
+      "knownFor": [
+        "Being a genuine pioneer in Ethiopian public health education, this is not a marketing line, the college predates the university itself by decades",
+        "Producing a large share of the country's public health and medical professionals over the years",
+        "Sitting inside one of Ethiopia's most historically significant cities, with castles and centuries old churches within walking distance of campus"
+      ],
+      "strengths": [
+        "Being a genuine pioneer in Ethiopian public health education, this is not a marketing line, the college predates the university itself by decades",
+        "Producing a large share of the country's public health and medical professionals over the years",
+        "Sitting inside one of Ethiopia's most historically significant cities, with castles and centuries old churches within walking distance of campus"
+      ],
+      "whatToExpect": [
+        "If you are in medicine or public health, expect the program to be genuinely demanding and field heavy, community health attachments outside the hospital are a real and regular part of training, not a rare event.",
+        "The historic city itself becomes part of your mental health toolkit here, students describe walking among the castles on a free afternoon as a real, accessible way to reset during stressful exam periods.",
+        "Winters and evenings get properly cold at this elevation, students coming from lowland areas describe an adjustment period in their first months.",
+        "Health colleges here have a strong, tightly bonded community feel, students in these programs often say they made lifelong friends specifically through the shared intensity of clinical years.",
+        "Non health programs exist and are growing, but the university's identity and reputation still lean heavily on medicine and public health, students in other fields sometimes feel like a smaller part of the overall picture."
+      ],
+      "tips": [
+        "If you are aiming for medicine or public health here, prepare mentally for community based attachments being a core, non negotiable part of the program, not an elective add on.",
+        "Pack real warm clothes, more than you think you need, the cold here surprises a lot of students especially those from warmer regions.",
+        "Use the historic sites around you, they are a genuine, free resource for mental reset during hard semesters, do not let studying keep you from ever seeing them."
+      ],
+      "studentFit": "Gondar suits students set on medicine, public health, or related fields who want that training grounded in real community exposure, alongside daily life in one of the most historically rich cities in the country. It fits students who find meaning and calm in history and old architecture as a counterbalance to demanding coursework. Students in unrelated fields looking for a campus identity built equally around their own program may feel slightly secondary here compared to the health sciences.",
+      "featured": true,
+      "detailed": true
+    },
+    {
+      "id": "hwu",
+      "name": "Hawassa University",
+      "abbr": "HWU",
+      "region": "SNNPR",
+      "location": "Hawassa, on Lake Hawassa",
+      "website": "https://www.hu.edu.et",
+      "founded": "Expanded into its current form around 1999 to 2000, though its agriculture roots go back further",
+      "distanceFromAddisKm": 275,
+      "distanceNote": "One of the more reachable major universities from Addis, a manageable road trip along the Rift Valley.",
+      "elevationM": 1700,
+      "campuses": "Main campuses in Hawassa itself, plus agriculture and forestry sites carrying on the older Wondo Genet forestry tradition, ask which site your specific program actually uses.",
+      "knownFor": [
+        "Agriculture and natural resources, with forestry specifically tracing back to the respected Wondo Genet heritage",
+        "A genuinely pleasant lakeside city that has grown a lot in recent years, more shops, more transport options, more of a real urban feel than many other regional university towns",
+        "Being one of the more comfortable middle ground choices, far enough from Addis to feel like your own independent chapter, close enough that visiting home is not a major expedition"
+      ],
+      "strengths": [
+        "Agriculture and natural resources, with forestry specifically tracing back to the respected Wondo Genet heritage",
+        "A genuinely pleasant lakeside city that has grown a lot in recent years, more shops, more transport options, more of a real urban feel than many other regional university towns",
+        "Being one of the more comfortable middle ground choices, far enough from Addis to feel like your own independent chapter, close enough that visiting home is not a major expedition"
+      ],
+      "whatToExpect": [
+        "Evenings by the lake are a genuine, regular part of student social life here, it is one of the more naturally pleasant settings among Ethiopian universities for simply unwinding after a hard week.",
+        "Because the city has grown quickly, expect ongoing construction and change, this generally means improving services and options rather than a downside, but it also means things you read about the city even a couple years old may already be outdated.",
+        "Forestry and agriculture students should expect real time at field stations away from the main Hawassa campus, factor this into how connected you expect to feel to the main city core.",
+        "Weather here runs warmer than Addis, evenings by the lake are pleasant but daytime heat and humidity take some adjustment for students coming from cooler highland regions.",
+        "The relatively shorter, easier distance from Addis means more students go home for shorter breaks than at more remote universities, this can shape a slightly less intensely bonded overall student culture compared to universities where almost nobody goes home often."
+      ],
+      "tips": [
+        "If you are in forestry or agriculture, ask early which field station you will actually be based at for practicals, and how far that is from central Hawassa.",
+        "Protect laptops and electronics from lake area humidity and dust, it is more of a real issue here than students expect.",
+        "Take advantage of the lake for your own mental health, it is one of the more genuinely restorative settings among Ethiopian campuses, do not let studying keep you from using it."
+      ],
+      "studentFit": "Hawassa suits students who want a comfortable middle ground, real distance from home to build independence, without the isolation of the furthest regional universities, combined with a genuinely pleasant lakeside setting and solid agriculture and health options. It is a strong fit for students who want city conveniences without full Addis intensity. Students seeking either the extremes, total immersion far from home or staying essentially within reach of the capital, may find the middle ground here less distinct than what they are looking for.",
+      "featured": true,
+      "detailed": true
+    },
+    {
+      "id": "amu",
+      "name": "Arba Minch University",
+      "abbr": "AMU",
+      "region": "SNNPR",
+      "location": "Arba Minch, in the southern Rift Valley",
+      "website": "https://www.amu.edu.et",
+      "founded": "Began as the Water Technology Institute in 1986, became a full university in 2004",
+      "distanceFromAddisKm": 500,
+      "distanceNote": "A genuine long trip south, most students budget a full day of road travel.",
+      "elevationM": 1300,
+      "campuses": "Main Arba Minch campuses, with the original water technology institute identity still shaping the engineering and applied science side of the university.",
+      "knownFor": [
+        "Water technology and hydraulic engineering, a genuinely respected national specialty rooted in the university's original founding purpose",
+        "Natural resource and environmental management programs, helped by the surrounding lakes and national park landscape",
+        "Being noticeably warmer and more humid than most other major universities, a real physical adjustment for students from the highlands",
+        "A hydraulics engineering program considered one of the strongest in East Africa, this is a genuine, specific point of national reputation, not a general claim"
+      ],
+      "strengths": [
+        "Water technology and hydraulic engineering, a genuinely respected national specialty rooted in the university's original founding purpose",
+        "Natural resource and environmental management programs, helped by the surrounding lakes and national park landscape",
+        "Being noticeably warmer and more humid than most other major universities, a real physical adjustment for students from the highlands",
+        "A hydraulics engineering program considered one of the strongest in East Africa, this is a genuine, specific point of national reputation, not a general claim"
+      ],
+      "whatToExpect": [
+        "If you are in water engineering or a related applied science track, this is one of the more respected places in the country to be, the institutional history in this specific area runs deep.",
+        "The heat and humidity here are a real daily factor, not a minor detail, students moving from Addis or northern highland areas describe a genuine adjustment period in their first weeks.",
+        "The surrounding natural setting, close to Nech Sar National Park and several lakes, makes field trips and applied environmental fieldwork a regular, hands on part of relevant programs.",
+        "Town services and options are smaller than Hawassa or Jimma, though steadily improving, students who need a lot of city stimulation should set expectations accordingly before arriving.",
+        "Mosquito exposure is a real, practical consideration in the warmer lakeside areas, students sensitive to this should plan ahead rather than being caught off guard.",
+        "The university spans six campuses. The main campus, at the entrance to town, handles only engineering and computer science. Chamo campus covers social science fields like law, business, economics, accounting, and political science. A health-focused campus, sometimes called the White Grass campus, handles medicine, other health fields, and health officer training. Abaya campus covers both natural and social computational science. Kulfo campus is dedicated to agriculture students. Sawula campus, about four hours from Arba Minch town in Gofa zone, is the most distant site.",
+        "Engineering programs here are broad, spanning civil, food, automotive, electromechanical, software, architecture, electrical and computer, mechanical, metallurgy and production, hydrology, hydroelectric, environmental, and water supply engineering"
+      ],
+      "tips": [
+        "If you are in water resources, civil, or hydraulic engineering, lean into the institute's lab and field culture early, it is one of the genuine strengths of choosing this university specifically.",
+        "Bring breathable, lightweight clothing and sun protection, the climate adjustment from highland Ethiopia is more significant than people expect.",
+        "Consider mosquito protection seriously if you know you react badly to bites, this is a warmer, lake adjacent environment."
+      ],
+      "studentFit": "Arba Minch suits students specifically drawn to water resources, hydraulic engineering, or environmental and natural resource management, who do not mind trading highland cool for genuine warmth and humidity. It also fits students who want their environmental studies to happen amid real lakes and national park landscape rather than only in a classroom. Students who struggle with heat or who want a bigger town with more entertainment options nearby may find the adjustment here harder than at cooler, more urban alternatives.",
+      "detailed": true
+    },
+    {
+      "id": "axu",
+      "name": "Aksum University",
+      "abbr": "AXU",
+      "region": "Tigray",
+      "location": "Aksum, one of the oldest continuously significant cities in the country",
+      "website": "https://www.aku.edu.et",
+      "founded": "2007",
+      "distanceFromAddisKm": 1020,
+      "distanceNote": "One of the furthest major trips from Addis in this entire list, plan travel well in advance around break periods.",
+      "elevationM": 2100,
+      "campuses": "A single main campus, smaller and more contained than the older regional universities like Mekelle.",
+      "knownFor": [
+        "Sitting in a city with some of the oldest and most significant historical and religious sites in the entire country, obelisks and churches that predate the university by well over a thousand years",
+        "Being a newer, smaller university still actively building out its full range of programs and reputation",
+        "A close, small town daily rhythm shaped as much by the ancient city around it as by the university itself"
+      ],
+      "strengths": [
+        "Sitting in a city with some of the oldest and most significant historical and religious sites in the entire country, obelisks and churches that predate the university by well over a thousand years",
+        "Being a newer, smaller university still actively building out its full range of programs and reputation",
+        "A close, small town daily rhythm shaped as much by the ancient city around it as by the university itself"
+      ],
+      "whatToExpect": [
+        "Because the university is younger and smaller than regional anchors like Mekelle, expect some programs and facilities to still be developing, ask current students directly about your specific department rather than assuming a fixed reputation.",
+        "The historical surroundings are genuinely extraordinary and become part of daily life here in a way few other university towns can match, many students say the city itself is one of the most memorable parts of studying at Aksum.",
+        "The far distance from Addis means holiday travel needs real planning, most students settle into a rhythm of going home only during the two or three main break periods each year.",
+        "As with the rest of the Tigray region, recent years of regional instability have affected infrastructure and services to varying degrees, confirm current conditions directly with the university or recently enrolled students rather than relying on older information.",
+        "The smaller scale of the university, compared to giants like AAU, means it is genuinely easier to be known by name by both classmates and some staff, a real plus for students who do not want to feel anonymous."
+      ],
+      "tips": [
+        "Reach out to current students or the university directly before travel to confirm up to date facility and service conditions, given how much has shifted in the region recently.",
+        "Take real advantage of the historical sites around you, walking distance access to some of Ethiopia's oldest heritage is not something most students elsewhere in the country get, treat it as part of your education, not just tourism.",
+        "Plan your handful of trips home each year well in advance given the distance, last minute travel from this far north is neither cheap nor simple."
+      ],
+      "studentFit": "Aksum suits students who want to be part of a smaller, still growing university and who are drawn to living somewhere with extraordinary historical weight and meaning, not just attending classes. It fits people who do not need a huge range of programs or a big city buzz to feel their education is worthwhile. Students who want a large, long established institution with every program option available and easier access back to Addis will find both the scale and the distance here a real trade off to consider carefully.",
+      "detailed": true
+    },
+    {
+      "id": "au",
+      "name": "Ambo University",
+      "abbr": "AU",
+      "region": "Oromia",
+      "location": "Ambo, about 110 to 125 km west of Addis",
+      "website": "https://www.ambou.edu.et",
+      "founded": "Roots as a training college decades earlier, university status in the 2010s",
+      "distanceFromAddisKm": 120,
+      "distanceNote": "One of the closest full universities to the capital, roughly two to three hours by road.",
+      "elevationM": 2100,
+      "campuses": "One main campus in Ambo town.",
+      "knownFor": [
+        "Being close enough to Addis that going home for a weekend is actually realistic",
+        "Agriculture and education programs with a longer institutional history than the university's own founding date suggests",
+        "Ambo's own bottled water brand, which shares the town's name and is a small point of local pride students get asked about constantly"
+      ],
+      "whatToExpect": [
+        "The short distance from Addis changes the social rhythm here compared to remote universities, more students go home on ordinary weekends, which can mean a slightly less tightly bonded campus community than places where almost nobody leaves.",
+        "The town itself is small and quiet, do not expect much beyond what the university and a modest main street offer, entertainment options are limited compared to bigger cities.",
+        "Because it sits close to Addis, some students treat Ambo as a stepping stone or a fallback rather than a first choice, this shows up in classroom energy sometimes, ask current students in your specific department how engaged the culture actually feels.",
+        "Weather is mild and manageable, cool nights and comfortable days, nothing like the extremes of the lowlands or the coldest highland towns."
+      ],
+      "tips": [
+        "If proximity to family or Addis matters to you for personal or financial reasons, this is one of the few full universities where that is genuinely easy, plan around it honestly rather than treating it as a downside to hide.",
+        "Ask specifically which college your program sits under and whether it is on the main campus, satellite arrangements exist for some departments."
+      ],
+      "studentFit": "Ambo fits students who need or want to stay within easy reach of Addis, whether for financial reasons, family responsibilities, or simply not wanting to be far from home. It suits people who do not need a big city or an intense specialized identity to feel settled. Students hoping for a vibrant, bustling campus town or a highly distinct academic reputation in a specific field may find Ambo underwhelming compared to more specialized or larger options.",
+      "detailed": true,
+      "strengths": [
+        "Being close enough to Addis that going home for a weekend is actually realistic",
+        "Agriculture and education programs with a longer institutional history than the university's own founding date suggests",
+        "Ambo's own bottled water brand, which shares the town's name and is a small point of local pride students get asked about constantly"
+      ]
+    },
+    {
+      "id": "dbu",
+      "name": "Debre Berhan University",
+      "abbr": "DBU",
+      "region": "Amhara",
+      "location": "Debre Berhan, about 130 km northeast of Addis",
+      "website": "https://www.dbu.edu.et",
+      "founded": "2007",
+      "distanceFromAddisKm": 130,
+      "distanceNote": "Close enough for a manageable two and a half to three and a half hour trip from Addis.",
+      "elevationM": 2800,
+      "campuses": "One main campus in Debre Berhan.",
+      "knownFor": [
+        "Being genuinely one of the coldest university towns in the country, sitting at nearly 2,800 meters",
+        "A relatively short, manageable distance from the capital compared to most Amhara universities",
+        "An expanding health sciences program still building its full reputation"
+      ],
+      "whatToExpect": [
+        "The cold here is not a minor detail, it is a daily fact of life. Mornings are genuinely harsh, and students who arrive without real blankets and warm clothes suffer through their first weeks unnecessarily before figuring out what they actually needed.",
+        "The town is quiet and academically focused, there is not much distraction beyond studying and a modest social scene, some students find this helps them focus, others find it isolating.",
+        "Because Addis is close, family visits and support are easier here than at almost any other Amhara university, this is a real, practical relief for students whose families cannot afford long distance travel or who need to be reachable for family reasons.",
+        "The health sciences programs are newer and still growing their facilities and reputation, ask current students in that specific track about lab and clinical placement realities rather than assuming a fixed, established system.",
+        "The university runs two campuses. Main campus, close to the city, houses nearly everything: computing, all engineering streams (electrical and computer, mechanical, civil, construction technology and management, industrial, chemical, food, software, hydroelectric, survey), agriculture, computational science, and the full range of social science fields. Minilik campus, in the middle of the city itself, is dedicated specifically to medicine, public health officer training, anesthesia, medical laboratory science, nursing, and midwifery.",
+        "Water is available at essentially any hour, a genuine strength of this campus"
+      ],
+      "tips": [
+        "Buy real winter layers and heavy blankets in your first week if you have not already, do not try to tough out the cold with what feels adequate in Addis.",
+        "If you are in health sciences, ask directly about clinical placement sites and how established the pipeline is for your specific specialty."
+      ],
+      "studentFit": "Debre Berhan suits students who do not mind serious cold and who want the practical benefit of staying close enough to Addis for family support and easier travel. It works well for people who prefer a quiet, low distraction town to focus on academics. Students who struggle with cold weather or who want a livelier town with more going on outside the university should think carefully before choosing this one.",
+      "detailed": true,
+      "strengths": [
+        "Being genuinely one of the coldest university towns in the country, sitting at nearly 2,800 meters",
+        "A relatively short, manageable distance from the capital compared to most Amhara universities",
+        "An expanding health sciences program still building its full reputation"
+      ]
+    },
+    {
+      "id": "dmu",
+      "name": "Debre Markos University",
+      "abbr": "DMU",
+      "region": "Amhara",
+      "location": "Debre Markos, about 300 km northwest of Addis, in Gojjam",
+      "website": "https://www.dmu.edu.et",
+      "founded": "2005",
+      "distanceFromAddisKm": 300,
+      "distanceNote": "A moderate northwest trip, further than Debre Berhan but shorter than Bahir Dar or Gondar.",
+      "elevationM": 2400,
+      "campuses": "One main campus in Debre Markos.",
+      "knownFor": [
+        "Serving as the main higher education access point for students from the Gojjam area specifically",
+        "A comprehensive but still developing range of programs across education, health, and applied sciences",
+        "Genuinely cool highland weather with a distinct, sometimes heavy rainy season"
+      ],
+      "whatToExpect": [
+        "This is a mid-sized regional university still actively building out its facilities and reputation, some labs and library resources are newer and less established than at older universities like Gondar or Bahir Dar, ask current students in your department directly about the state of things rather than assuming.",
+        "The town itself offers basic student life services without the range of options in bigger cities, most social life happens on or immediately around campus.",
+        "For students specifically from Gojjam, there is a strong sense of studying somewhere built for and by the local region, this matters to some students more than they expect going in.",
+        "Cold, wet weather during the rainy months is a real daily factor, proper footwear for muddy paths is not optional."
+      ],
+      "tips": [
+        "Join a study group early, especially in competitive departments where facilities are still catching up to demand, peer support fills real gaps here.",
+        "Pack for genuinely cold, wet weather, this is highland Gojjam, not the mild lowlands."
+      ],
+      "studentFit": "Debre Markos suits students from the Gojjam region who want to study close to home, or anyone comfortable with a smaller, still developing regional university rather than a large established name. It fits people who prioritize community and regional connection over prestige or top tier facilities. Students who need cutting edge labs or a wide, well established program list from day one may find some departments here still catching up.",
+      "detailed": true,
+      "strengths": [
+        "Serving as the main higher education access point for students from the Gojjam area specifically",
+        "A comprehensive but still developing range of programs across education, health, and applied sciences",
+        "Genuinely cool highland weather with a distinct, sometimes heavy rainy season"
+      ]
+    },
+    {
+      "id": "du",
+      "name": "Dilla University",
+      "abbr": "DU",
+      "region": "SNNPR",
+      "location": "Dilla, about 360 km south of Addis, past Hawassa",
+      "website": "https://www.du.edu.et",
+      "founded": "2004",
+      "distanceFromAddisKm": 360,
+      "distanceNote": "South past Hawassa on the Sidama and Gedeo corridor, a genuine full day trip by road.",
+      "elevationM": 1600,
+      "campuses": "One main campus in Dilla.",
+      "knownFor": [
+        "Sitting in genuine coffee growing country, the smell and culture of coffee production is part of daily life in the surrounding area, not just something you read about",
+        "Being the main public university option for southern Ethiopia beyond Hawassa itself",
+        "A warmer, greener climate than most highland universities further north",
+        "Water that essentially never runs out, showers are available 24 hours a day thanks to a nearby spring source, a genuinely rare advantage among Ethiopian universities"
+      ],
+      "whatToExpect": [
+        "The town is smaller and has fewer services than Hawassa, students who want a bigger city nearby travel there when they need something Dilla itself does not offer.",
+        "The local community around coffee farming shapes a slower, grounded daily rhythm, students describe the area as calm compared to busier university towns.",
+        "Weather is warm and generally pleasant compared to the cold highlands, light clothing works for most of the year, though rain gear still matters during the wet season.",
+        "As a developing regional university, some programs are stronger and more established than others, ask specifically about your department's facilities rather than judging the whole university by its overall reputation.",
+        "Three campuses: Techno campus for engineering and computer science, Main campus for agriculture, physics, and related natural sciences, and Tenagbi campus for social science fields"
+      ],
+      "tips": [
+        "If you need access to bigger city services occasionally, check the transport options and travel time to Hawassa before you settle into a routine.",
+        "Take real advantage of the local coffee culture, it is one of the genuine, low cost pleasures of studying in this specific area."
+      ],
+      "studentFit": "Dilla suits students who want southern Ethiopia's warmth and slower pace, and who do not need a large city's full range of services close by. It fits people drawn to a grounded, community connected small town setting. Students who want the broader program selection and bigger city access of Hawassa, or who struggle without more urban amenities nearby, should weigh that trade off honestly before choosing Dilla.",
+      "detailed": true,
+      "strengths": [
+        "Sitting in genuine coffee growing country, the smell and culture of coffee production is part of daily life in the surrounding area, not just something you read about",
+        "Being the main public university option for southern Ethiopia beyond Hawassa itself",
+        "A warmer, greener climate than most highland universities further north",
+        "Water that essentially never runs out, showers are available 24 hours a day thanks to a nearby spring source, a genuinely rare advantage among Ethiopian universities"
+      ]
+    },
+    {
+      "id": "ddu",
+      "name": "Dire Dawa University",
+      "abbr": "DDU",
+      "region": "Dire Dawa",
+      "location": "Dire Dawa, about 450 to 460 km east of Addis",
+      "website": "https://www.ddu.edu.et",
+      "founded": "2006",
+      "distanceFromAddisKm": 455,
+      "distanceNote": "A long eastern trip along the road or rail corridor toward Dire Dawa.",
+      "elevationM": 1200,
+      "campuses": "One main urban campus, with technology institute activity linked to the university.",
+      "knownFor": [
+        "Sitting inside one of Ethiopia's genuinely major commercial cities, with a real urban economy around it, not just a university town",
+        "Serious heat, this is lowland eastern Ethiopia and the climate is a real daily adjustment for most students",
+        "A more diverse, mixed student body than many regional universities, reflecting the city's long history as a trading and rail hub"
+      ],
+      "whatToExpect": [
+        "The heat here is the single biggest daily adjustment most students face, highs can be genuinely harsh, and students coming from highland regions describe real physical adjustment in their first month or two.",
+        "Because Dire Dawa is a real commercial city, not just a university town, students have access to more shops, transport, and general urban services than at most other regional universities of similar size.",
+        "The city's mixed population, historically shaped by trade and rail connections, gives campus life a different social texture than more homogenous regional university towns, some students find this refreshing.",
+        "Studying during the coolest parts of the day becomes a real, practical strategy for a lot of students here, the heat during peak afternoon hours can make sustained focus genuinely difficult.",
+        "This is a single unified campus with three entry gates rather than separate satellite sites, everything happens in one place. Within it, three broad divisions operate: Techno, Main, and FB (Faculty of Business). Architecture and Medicine both require passing a specific entrance exam beyond standard placement scores. Software engineering is not offered here.",
+        "The Faculty of Business covers the full range of social science fields, and the health division, sometimes called the House of Medicine, covers all health science fields together",
+        "Dorm and bathroom conditions here are consistently described by students as genuinely below average compared to most other universities on this list"
+      ],
+      "tips": [
+        "Prioritize hydration and breathable clothing from day one, do not assume you will simply adjust quickly, give yourself real time.",
+        "If you struggle with heat, try to arrange your personal study schedule around the cooler morning and evening hours rather than fighting the hottest part of the day.",
+        "New students should go directly into campus on arrival rather than wandering, there are real, specific reports of organized theft targeting new students around the bus station and in taxis, particularly involving phones and cash, and certain named neighborhoods nearby are worth navigating carefully, especially at night, ask current students which areas to avoid",
+        "Mosques and churches near campus have reportedly served as safe gathering points during occasional periods of unrest, a practical detail worth knowing rather than a cause for alarm"
+      ],
+      "studentFit": "Dire Dawa suits students who can genuinely handle serious heat and who want the benefits of a real commercial city around their university experience, more shops, more transport, more diversity. It fits people drawn to eastern Ethiopia specifically. Students who struggle physically with hot climates, or who want a quieter, purely academic small town feel, will find the heat and the city bustle here a real and constant factor to weigh.",
+      "detailed": true,
+      "strengths": [
+        "Sitting inside one of Ethiopia's genuinely major commercial cities, with a real urban economy around it, not just a university town",
+        "Serious heat, this is lowland eastern Ethiopia and the climate is a real daily adjustment for most students",
+        "A more diverse, mixed student body than many regional universities, reflecting the city's long history as a trading and rail hub"
+      ]
+    },
+    {
+      "id": "wou",
+      "name": "Wollo University",
+      "abbr": "WOU",
+      "region": "Amhara",
+      "location": "Split across Dessie and Kombolcha",
+      "website": "https://www.wu.edu.et",
+      "founded": "2007",
+      "distanceFromAddisKm": 400,
+      "distanceNote": "About 400 km north on the Dessie road.",
+      "elevationM": 2500,
+      "campuses": "Dessie serves as the main campus, Kombolcha hosts the technology focused programs, which campus you belong to depends entirely on your program.",
+      "knownFor": [
+        "Running as a genuine two campus operation, Dessie and Kombolcha are different towns with different daily rhythms, not just two buildings on one site",
+        "Technology and engineering programs concentrated specifically at Kombolcha",
+        "Serving a large catchment area across the wider Wollo region"
+      ],
+      "whatToExpect": [
+        "Your actual daily experience depends heavily on which campus your program sits on, Dessie and Kombolcha are not interchangeable, ask specifically which one you will be based at before making assumptions about the climate, town size, or social scene you will experience.",
+        "Some programs require occasional movement between the two campuses, this becomes a real, recurring part of student life for those specific departments, budget time and a bit of money for it.",
+        "Dessie tends to run cooler given its elevation, Kombolcha can feel noticeably warmer, pack according to your actual assigned campus, not just the region's general reputation.",
+        "As with several other regional universities, facilities and program maturity vary by department, the technology programs at Kombolcha in particular are worth asking current students about directly given how central that identity is to the campus.",
+        "Dessie campus, the main site, covers all social science fields plus health sciences (medicine, nursing, health officer training) and teaching-track natural sciences (biology, physics, chemistry), along with some language departments",
+        "Kombolcha Institute of Technology, true to its name, is where nearly every engineering discipline lives: electrical and computer engineering, mechatronics and robotics, software engineering, mechanical, civil, textile, water resources and irrigation, hydraulics, industrial, construction technology and management, garment, leather, and chemical engineering, with biomedical engineering reportedly under consideration for the future",
+        "Kombolcha campus is described by students as feeling genuinely tight on space compared to Dessie"
+      ],
+      "tips": [
+        "Confirm which specific campus your program uses before you pack or make assumptions about climate.",
+        "If your program involves any inter-campus movement, ask seniors about the actual transport routine, cost, and timing early."
+      ],
+      "studentFit": "Wollo University suits students who are comfortable with a two campus system and want either the academic breadth based in Dessie or the technology focus at Kombolcha specifically. It works for students from the wider Wollo region who want to study close to home. Students who want a single, unified campus experience without the complexity of a two site system should ask detailed questions about their specific program's setup before committing.",
+      "detailed": true,
+      "strengths": [
+        "Running as a genuine two campus operation, Dessie and Kombolcha are different towns with different daily rhythms, not just two buildings on one site",
+        "Technology and engineering programs concentrated specifically at Kombolcha",
+        "Serving a large catchment area across the wider Wollo region"
+      ]
+    },
+    {
+      "id": "wsu",
+      "name": "Wolaita Sodo University",
+      "abbr": "WSU",
+      "region": "SNNPR",
+      "location": "Sodo, about 380 km south of Addis",
+      "website": "https://www.wsu.edu.et",
+      "founded": "2007",
+      "distanceFromAddisKm": 380,
+      "distanceNote": "A southern route through the Wolaita zone, roughly 350 to 400 km depending on the exact road taken.",
+      "elevationM": 2100,
+      "campuses": "Main campus in Sodo, with some programs at related nearby sites.",
+      "knownFor": [
+        "Being the main higher education hub for the Wolaita zone and surrounding areas specifically",
+        "A genuinely well regarded local food culture that students frequently mention as one of the better parts of daily life there",
+        "Health and agriculture programs that lean into the region's actual economic base"
+      ],
+      "whatToExpect": [
+        "This is a town centered university experience, most of daily life happens on or very close to campus, with the town itself providing basic services rather than a big city range of options.",
+        "The local food is a genuine, frequently mentioned highlight, students who make an effort to explore what is actually available beyond the cafeteria tend to eat better and feel more settled than those who do not.",
+        "As a still developing university, facilities vary by department, ask current students in your specific program about lab and library conditions rather than judging from the university's overall reputation.",
+        "Community and department clubs offer a real, accessible way to build a smaller social circle inside the wider student body, students who join early adjust faster than those who wait.",
+        "Three campuses: Main campus covers nearly all departments including veterinary medicine and agricultural economics, Otona campus is dedicated to health sciences (medicine, health officer, nursing, midwifery, pharmacy, clinical pharmacy), and Dawuro Tarcha campus covers some agriculture departments"
+      ],
+      "tips": [
+        "Explore the local food scene beyond the cafeteria early, it is a genuine and affordable highlight of studying here.",
+        "Confirm hostel rules and current room conditions with the university or current students before arrival rather than assuming.",
+        "Petty theft is a real, specific concern here, students are advised to stay alert and cautious with personal belongings, particularly newer students who don't yet know the area"
+      ],
+      "studentFit": "Wolaita Sodo suits students from the Wolaita zone or nearby areas who want accessible, comprehensive higher education without traveling far, and who appreciate strong local food and community culture. It fits people who do not need big city amenities to feel settled. Students seeking a large, long established institution with extensive facilities across every department may find some areas here still developing.",
+      "detailed": true,
+      "strengths": [
+        "Being the main higher education hub for the Wolaita zone and surrounding areas specifically",
+        "A genuinely well regarded local food culture that students frequently mention as one of the better parts of daily life there",
+        "Health and agriculture programs that lean into the region's actual economic base"
+      ]
+    },
+    {
+      "id": "jgu",
+      "name": "Jigjiga University",
+      "abbr": "JGU",
+      "region": "Somali",
+      "location": "Jigjiga, about 600 to 630 km east of Addis",
+      "website": "https://www.jju.edu.et",
+      "founded": "2007",
+      "distanceFromAddisKm": 625,
+      "distanceNote": "A long eastern road trip to the Somali Region capital.",
+      "elevationM": 1600,
+      "campuses": "One main campus in Jigjiga.",
+      "knownFor": [
+        "Being the flagship public university for the entire Somali Region",
+        "A genuinely diverse student body drawn from across the region and beyond",
+        "Hot, dry weather that stays consistent for most of the year"
+      ],
+      "whatToExpect": [
+        "Heat and dust are daily realities here, not occasional inconveniences, students arriving from cooler highland areas describe a real physical adjustment in their first weeks.",
+        "The cultural texture of Jigjiga city life is genuinely distinct from most of the rest of the country, students who come in curious rather than guarded tend to have a richer experience.",
+        "As with several regional universities built to expand access quickly, facility quality and program maturity vary by department, ask current students in your specific field how established things actually are rather than judging from the university's name alone.",
+        "Rainfall is limited and seasonal, most of the year is dry, plan your wardrobe and daily routine around sun and dust rather than rain."
+      ],
+      "tips": [
+        "Hydration and real sun protection are not optional extras here, treat them as daily essentials from day one.",
+        "Approach the local cultural norms with genuine respect and curiosity, students who do this describe a much smoother, more rewarding adjustment than those who arrive treating the region as simply remote or difficult."
+      ],
+      "studentFit": "Jigjiga suits students who can genuinely handle sustained heat and dust and who are drawn to studying somewhere culturally distinct from most other Ethiopian university towns. It fits people who want to be part of a regionally important institution serving a specific community. Students who struggle with hot, dry climates or who need a highly established, fully built out facility environment should ask detailed questions about their specific department before committing.",
+      "detailed": true,
+      "strengths": [
+        "Being the flagship public university for the entire Somali Region",
+        "A genuinely diverse student body drawn from across the region and beyond",
+        "Hot, dry weather that stays consistent for most of the year"
+      ]
+    },
+    {
+      "id": "mwu",
+      "name": "Madda Walabu University",
+      "abbr": "MWU",
+      "region": "Oromia",
+      "location": "Bale Robe",
+      "website": "https://www.mwu.edu.et",
+      "founded": "2006",
+      "distanceFromAddisKm": 430,
+      "distanceNote": "Southeast toward the Bale area, several hours by road from Addis.",
+      "elevationM": 2500,
+      "campuses": "One main campus in Bale Robe.",
+      "knownFor": [
+        "Sitting in the Bale highlands, a genuinely cooler and greener environment than much of southern Oromia",
+        "Agriculture and natural resource programs that make direct use of the surrounding highland landscape",
+        "Being a quieter, smaller scale option than the region's bigger named universities"
+      ],
+      "whatToExpect": [
+        "The Bale highlands are cool, sometimes cold at night, students coming from warmer lowland areas need real warm clothing, not just a light layer.",
+        "The town itself is small and quiet, daily life centers heavily on campus and a modest local area rather than a wide range of city entertainment.",
+        "Agriculture and natural resource students get genuine field exposure given the surrounding highland terrain, this is a real strength for anyone in those specific programs.",
+        "As a smaller regional university, facilities are still growing in some departments, ask current students directly about your specific field rather than assuming a fixed standard across the whole institution.",
+        "Three campuses: Main campus in Bale Robe covers engineering (civil, construction technology and management, electrical, water, mechanical), social science, and computer science (IT, information systems, computer science). Bale Goba campus, a short ride from Main, covers medicine, health officer training, and other science fields. Shashemene campus hosts roughly half of the social science student population."
+      ],
+      "tips": [
+        "Bring proper warm bedding and clothing, the highland cold here is real and consistent, not occasional.",
+        "If you need supplies or services beyond what the town offers, ask current students about transport options to larger nearby towns."
+      ],
+      "studentFit": "Madda Walabu suits students drawn to agriculture or natural resource fields who want genuine highland field exposure, and who do not mind a small, quiet town setting. It fits people who prefer a calmer pace over a bustling city campus. Students seeking a wide range of established programs with mature facilities across every department, or who need more going on socially outside the university, may find this a narrower fit.",
+      "detailed": true,
+      "strengths": [
+        "Sitting in the Bale highlands, a genuinely cooler and greener environment than much of southern Oromia",
+        "Agriculture and natural resource programs that make direct use of the surrounding highland landscape",
+        "Being a quieter, smaller scale option than the region's bigger named universities"
+      ]
+    },
+    {
+      "id": "mtu",
+      "name": "Mizan-Tepi University",
+      "abbr": "MTU",
+      "region": "SNNPR",
+      "location": "Split across Mizan Teferi and Tepi",
+      "website": "https://www.mtu.edu.et",
+      "founded": "2006",
+      "distanceFromAddisKm": 560,
+      "distanceNote": "A long southwestern trip toward the Bench Sheko and Sheka areas.",
+      "elevationM": 1400,
+      "campuses": "Two campuses, one in Mizan Teferi and one in Tepi, which one you belong to depends on your program.",
+      "knownFor": [
+        "Operating as a genuine two campus system in a remote southwestern corner of the country",
+        "Agriculture and natural resource programs suited to the region's forest edge environment",
+        "A warmer, more humid climate than almost anywhere else on this list"
+      ],
+      "whatToExpect": [
+        "The climate here is genuinely different from highland Ethiopia, humid, warm, closer to rainforest edge conditions, students from cooler regions describe a real adjustment period.",
+        "Because the university operates across two separate towns, your actual daily experience depends heavily on which campus your program is based at, ask specifically and do not assume Mizan and Tepi offer the same experience.",
+        "This is one of the more remote placements on this list, plan supplies, travel, and communication with family around real distance and limited transport frequency.",
+        "Insects and general humidity related discomfort are a more constant daily factor here than in the highlands, students who prepare for this adjust faster than those caught off guard."
+      ],
+      "tips": [
+        "Confirm which specific campus, Mizan or Tepi, your department is based at before you travel or pack.",
+        "Bring genuine mosquito protection, this is a real and regular need in this climate, not an occasional precaution."
+      ],
+      "studentFit": "Mizan-Tepi suits students genuinely open to a remote, humid, forest edge environment and comfortable navigating a two campus system. It fits people drawn to agriculture and natural resource fields specific to this ecological zone. Students who need to stay closer to Addis, who struggle with humidity and insects, or who want a single unified campus should think carefully about this placement.",
+      "detailed": true,
+      "strengths": [
+        "Operating as a genuine two campus system in a remote southwestern corner of the country",
+        "Agriculture and natural resource programs suited to the region's forest edge environment",
+        "A warmer, more humid climate than almost anywhere else on this list"
+      ]
+    },
+    {
+      "id": "su",
+      "name": "Samara University",
+      "abbr": "SU",
+      "region": "Afar",
+      "location": "Semera",
+      "website": "https://www.su.edu.et",
+      "founded": "2008",
+      "distanceFromAddisKm": 590,
+      "distanceNote": "A hot lowland road trip northeast of Addis into the Afar region.",
+      "elevationM": 400,
+      "campuses": "One main campus in Semera.",
+      "knownFor": [
+        "Being the primary public university access point for the Afar region",
+        "Genuinely extreme daytime heat, among the hottest campus environments in the country",
+        "A strong sense of regional purpose, this university exists specifically to build local capacity in Afar"
+      ],
+      "whatToExpect": [
+        "The heat here is not comparable to anywhere else on this list except perhaps Dire Dawa, daytime temperatures are genuinely extreme by highland Ethiopian standards, and adjustment takes real, deliberate effort.",
+        "Town services are smaller than in bigger highland university cities, students should set expectations for a quieter, more limited range of shops and entertainment options.",
+        "Outdoor activity is best scheduled for early morning or evening, the middle of the day is genuinely difficult to be productive in without shade and consistent hydration.",
+        "The regional mission of this university is real and visible in daily life, many students and staff share a strong sense of purpose tied to developing the Afar region specifically."
+      ],
+      "tips": [
+        "Treat electrolytes, sunscreen, and proper head covering as daily essentials from the very first day, do not wait to see if you need them.",
+        "Plan your personal study and activity schedule around the cooler hours of the day rather than fighting the peak afternoon heat."
+      ],
+      "studentFit": "Samara suits students who can genuinely manage extreme heat and who want to be part of a university with a clear, strongly felt regional mission in Afar. It fits people drawn to applied, locally relevant development work. Students who struggle physically with very hot climates, or who want a wider range of city services and entertainment nearby, should think seriously about whether this specific environment is sustainable for them over several years.",
+      "detailed": true,
+      "strengths": [
+        "Being the primary public university access point for the Afar region",
+        "Genuinely extreme daytime heat, among the hottest campus environments in the country",
+        "A strong sense of regional purpose, this university exists specifically to build local capacity in Afar"
+      ]
+    },
+    {
+      "id": "kmu",
+      "name": "Kotebe University of Education",
+      "abbr": "KUE",
+      "region": "Addis Ababa",
+      "location": "Addis Ababa, in the Kotebe area",
+      "website": "https://www.kue.edu.et",
+      "founded": "Built on teacher education roots going back decades, formal university of education status came through recent reforms",
+      "distanceFromAddisKm": 0,
+      "distanceNote": "Inside Addis, but a specialized single purpose campus, not a broad multi college university like AAU.",
+      "elevationM": 2400,
+      "campuses": "One main campus in the Kotebe area of Addis Ababa.",
+      "knownFor": [
+        "Being Ethiopia's dedicated public university for training teachers and education professionals specifically",
+        "A clear, narrow institutional identity, everyone here is generally headed toward teaching, school leadership, curriculum work, or educational psychology",
+        "Direct access to real schools around Addis for practicum and classroom experience"
+      ],
+      "whatToExpect": [
+        "If you did not come here specifically wanting education as a career, the narrow focus of the programs on offer will feel limiting, this is not a place to explore broad academic interests, it is built around one clear professional path.",
+        "Practicum placements in real schools are a genuine, central part of the experience, not an occasional add on, expect real classroom time well before graduation.",
+        "Because it sits inside Addis, living costs are closer to capital city prices than a small regional town, and students from Addis itself get an easier daily commute and family contact than students from elsewhere in the country.",
+        "The overall student community is smaller and more tightly focused than at AAU or other general universities in the capital, some students find this genuinely helpful for building close relationships within their field."
+      ],
+      "tips": [
+        "This is a strong, direct choice if you already know you want to teach or move into education leadership, do not choose it hoping to pivot into an unrelated field later.",
+        "Start building real classroom observation experience early rather than waiting for formal practicum requirements, it will help you figure out early whether teaching is genuinely the right fit."
+      ],
+      "studentFit": "Kotebe suits students who already know they want to teach, lead schools, or work in curriculum and educational psychology, and who want that training to happen inside the capital. It is not a good fit for students still exploring broad academic interests or hoping for flexibility to switch fields later. If you are certain about education as a career, few places in the country offer a more focused path toward it.",
+      "detailed": true,
+      "strengths": [
+        "Being Ethiopia's dedicated public university for training teachers and education professionals specifically",
+        "A clear, narrow institutional identity, everyone here is generally headed toward teaching, school leadership, curriculum work, or educational psychology",
+        "Direct access to real schools around Addis for practicum and classroom experience"
+      ]
+    },
+    {
+      "id": "agu",
+      "name": "Adigrat University",
+      "abbr": "AGU",
+      "region": "Tigray",
+      "location": "Adigrat, near the Eritrean border corridor in northern Tigray",
+      "website": "https://www.adu.edu.et",
+      "founded": "2011",
+      "distanceFromAddisKm": 900,
+      "distanceNote": "A very long road journey, most students fly toward Mekelle and then travel by ground the rest of the way.",
+      "elevationM": 2400,
+      "campuses": "One main campus in Adigrat.",
+      "knownFor": [
+        "Serving eastern and northern Tigray specifically, an area with fewer higher education options than the region's center",
+        "A mountain town setting with a strong, distinct local identity",
+        "Being a genuinely remote placement even by the standards of Tigray's other universities"
+      ],
+      "whatToExpect": [
+        "The distance and remoteness here are real, going home outside the two or three main break periods a year is neither easy nor cheap, most students plan their emotional and financial year around that reality from the start.",
+        "As with the rest of the region, recent years of instability have affected infrastructure and services to varying degrees, ask the university or recently enrolled students directly about current conditions rather than relying on older information you find online.",
+        "The mountain town setting is cold, especially at night, real warm clothing and bedding are essential, not optional.",
+        "Facility quality varies by college here, ask specifically about your department's labs and library access rather than assuming a fixed standard."
+      ],
+      "tips": [
+        "Confirm current, up to date facility and service conditions directly with the university or current students before you travel, given how much may have changed recently in the region.",
+        "Pack seriously warm clothing and bedding as a first priority, the cold here is consistent and real."
+      ],
+      "studentFit": "Adigrat suits students from northern or eastern Tigray who want to study close to their home area, or anyone genuinely prepared for real distance from Addis and a remote, mountain town setting. It fits people who value being part of a regionally important institution in a challenging but meaningful context. Students who need to stay closer to Addis or who are not prepared for the practical realities of studying in a still recovering region should think carefully before committing.",
+      "detailed": true,
+      "strengths": [
+        "Serving eastern and northern Tigray specifically, an area with fewer higher education options than the region's center",
+        "A mountain town setting with a strong, distinct local identity",
+        "Being a genuinely remote placement even by the standards of Tigray's other universities"
+      ]
+    },
+    {
+      "id": "asu",
+      "name": "Assosa University",
+      "abbr": "ASU",
+      "region": "Benishangul Gumuz",
+      "location": "Assosa",
+      "website": "https://www.asu.edu.et",
+      "founded": "2011",
+      "distanceFromAddisKm": 660,
+      "distanceNote": "A long western road trip to the Benishangul Gumuz regional capital.",
+      "elevationM": 1500,
+      "campuses": "One main campus in Assosa.",
+      "knownFor": [
+        "Being the flagship public university for the entire Benishangul Gumuz region",
+        "Playing a genuinely critical role in regional human resource development, this is one of very few higher education options for the area",
+        "A warmer climate with a distinct, noticeable wet season compared to the central highlands"
+      ],
+      "whatToExpect": [
+        "Town services are modest, students should bring or plan for essentials that might not be readily available locally, especially anything specialized.",
+        "The student body draws from a genuinely diverse regional mix, students who arrive open to that diversity tend to build a richer social circle than those who stick only to people from their exact home area.",
+        "Distance from Addis shapes the whole rhythm of the academic year, most students plan around the two or three main break periods rather than expecting casual trips home.",
+        "The wet season here is real and distinct from the dry heat of much of the rest of the year, pack for both."
+      ],
+      "tips": [
+        "Plan holiday transport well in advance given the real distance and limited transport frequency.",
+        "If you are in agriculture, ask specifically about field attachment opportunities, they are a genuine part of how those programs function here."
+      ],
+      "studentFit": "Assosa suits students from Benishangul Gumuz who want to study close to home, or anyone prepared for genuine distance from Addis in service of attending a university with a clear, important regional mission. It fits people comfortable with modest town services in exchange for that sense of purpose. Students who need frequent access to Addis or a wider range of city amenities should weigh the real distance and remoteness carefully.",
+      "detailed": true,
+      "strengths": [
+        "Being the flagship public university for the entire Benishangul Gumuz region",
+        "Playing a genuinely critical role in regional human resource development, this is one of very few higher education options for the area",
+        "A warmer climate with a distinct, noticeable wet season compared to the central highlands"
+      ]
+    },
+    {
+      "id": "bhu",
+      "name": "Bule Hora University",
+      "abbr": "BHU",
+      "region": "Oromia",
+      "location": "Bule Hora, in the Hagere Mariam area of southern Oromia",
+      "website": "https://www.bhu.edu.et",
+      "founded": "University status established between roughly 2008 and 2011",
+      "distanceFromAddisKm": 470,
+      "distanceNote": "Southern Oromia on the road toward the Moyale corridor, several hours south of Addis.",
+      "elevationM": 1700,
+      "campuses": "One main campus in Bule Hora.",
+      "knownFor": [
+        "Agriculture, natural resources, and health science pathways suited to the surrounding region",
+        "A genuine emphasis on community engagement and locally relevant knowledge alongside standard coursework",
+        "Sitting in an area with real, growing mining and resource development potential"
+      ],
+      "whatToExpect": [
+        "This is a quieter town than Hawassa or Jimma, do not expect a wide range of entertainment or services beyond the essentials, most social life happens on and immediately around campus.",
+        "As a still developing university, facility quality genuinely varies department to department, ask current students in your specific field directly rather than judging from the institution's overall reputation.",
+        "The warmer, mid altitude climate here is more manageable than the true lowlands but still noticeably warmer than highland campuses further north, daytime outdoor classes call for real sun protection.",
+        "The community engagement focus built into several programs here means some coursework genuinely happens outside the traditional classroom, this is a real and intentional part of the university's approach, not filler."
+      ],
+      "tips": [
+        "Before buying specialized equipment for your program, confirm with your department exactly what resources and facilities are already available.",
+        "Bring real sun protection for outdoor classes and activities, the daytime heat here is a genuine daily factor."
+      ],
+      "studentFit": "Bule Hora suits students drawn to agriculture, health sciences, or community engaged learning in a southern Oromia setting, and who are comfortable with a quieter town and still developing facilities in some departments. It fits people who value hands on, locally relevant coursework. Students seeking a large, fully established institution with mature facilities across the board, or who want more going on socially outside the university, may find this a narrower fit.",
+      "detailed": true,
+      "strengths": [
+        "Agriculture, natural resources, and health science pathways suited to the surrounding region",
+        "A genuine emphasis on community engagement and locally relevant knowledge alongside standard coursework",
+        "Sitting in an area with real, growing mining and resource development potential"
+      ]
+    },
+    {
+      "id": "dbtu",
+      "name": "Debre Tabor University",
+      "abbr": "DBTU",
+      "region": "Amhara",
+      "location": "Debre Tabor, in South Gondar",
+      "website": "https://www.dtu.edu.et",
+      "founded": "2008",
+      "distanceFromAddisKm": 660,
+      "distanceNote": "A long northwestern journey, south of Gondar in the South Gondar zone.",
+      "elevationM": 2600,
+      "campuses": "One main campus in Debre Tabor.",
+      "knownFor": [
+        "Sitting in a historic highland town in South Gondar with genuine regional character",
+        "A comprehensive spread of programs across education and applied sciences",
+        "Consistently cold weather, this is one of the more reliably chilly campus environments on this list"
+      ],
+      "whatToExpect": [
+        "Cold mornings are a year round reality here, not just a seasonal inconvenience, students who arrive without serious warm clothing regret it quickly.",
+        "The town itself is quiet and centered heavily on academic life, students describe it as calm and focused rather than lively or distraction filled.",
+        "As a university established in the late 2000s, facilities have grown steadily but still vary by department, ask current students in your specific field about lab and library conditions.",
+        "Travel home requires real planning given the distance from Addis, most students settle into a rhythm built around the main academic breaks."
+      ],
+      "tips": [
+        "Treat warm clothing and real bedding as a first priority purchase, the cold here is consistent and not to be underestimated.",
+        "Join study groups early, a quieter town with fewer distractions can work strongly in your favor if you build good academic habits from the start."
+      ],
+      "studentFit": "Debre Tabor suits students who want a cool, quiet highland campus away from big city noise and are comfortable with real distance from Addis. It fits people who focus well in a calm, academically centered environment. Students who dislike cold weather or who want a livelier town with more happening outside the university should think carefully before choosing this one.",
+      "detailed": true,
+      "strengths": [
+        "Sitting in a historic highland town in South Gondar with genuine regional character",
+        "A comprehensive spread of programs across education and applied sciences",
+        "Consistently cold weather, this is one of the more reliably chilly campus environments on this list"
+      ]
+    },
+    {
+      "id": "meu",
+      "name": "Mattu University",
+      "abbr": "MEU",
+      "region": "Oromia",
+      "location": "Split across Mattu, also called Metu, and a second site in Bedele",
+      "website": "https://meu.edu.et",
+      "founded": "University status from 2011, though some sources point to earlier college roots",
+      "distanceFromAddisKm": 600,
+      "distanceNote": "A long western road trip toward the Illubabor area, with Bedele as a second campus site along the way.",
+      "elevationM": 1600,
+      "campuses": "Metu serves as the main campus, with a second site in Bedele, which one you belong to depends entirely on your program.",
+      "knownFor": [
+        "Operating as a genuine two site university across Metu and Bedele in western Oromia",
+        "Agriculture and applied science programs suited to the region's greener, more humid environment",
+        "Serving a wide western catchment area with limited nearby alternatives"
+      ],
+      "whatToExpect": [
+        "Your actual daily experience depends heavily on which campus your program uses, confirm this specifically on your placement documents rather than assuming Metu and Bedele offer the same setting.",
+        "Town services at either site are smaller than in bigger western hubs like Nekemte or Jimma, students should set modest expectations for shopping and entertainment options.",
+        "The rainy season brings real mud and can affect local transport between and within campus areas, sturdy footwear matters more here than students expect.",
+        "As with several regional universities built to expand access quickly, facility quality varies by department, ask current students in your specific field for an honest picture."
+      ],
+      "tips": [
+        "Double check your exact campus assignment, Metu or Bedele, on your official placement letter before you travel or pack.",
+        "Bring real rain gear and sturdy shoes, the wet season here genuinely affects daily movement around campus."
+      ],
+      "studentFit": "Mattu University suits students comfortable navigating a two site system in western Oromia and drawn to agriculture or applied science programs in a greener, more humid environment. It fits people from the wider western region wanting accessible higher education close to home. Students who want a single unified campus without the added logistics of two sites, or who need more established city amenities nearby, should weigh this carefully.",
+      "detailed": true,
+      "strengths": [
+        "Operating as a genuine two site university across Metu and Bedele in western Oromia",
+        "Agriculture and applied science programs suited to the region's greener, more humid environment",
+        "Serving a wide western catchment area with limited nearby alternatives"
+      ]
+    },
+    {
+      "id": "wcu",
+      "name": "Wachemo University",
+      "abbr": "WCU",
+      "region": "SNNPR",
+      "location": "Hosaena, in the Hadiya zone",
+      "website": "https://www.wcu.edu.et",
+      "founded": "Established sometime between 2009 and 2012",
+      "distanceFromAddisKm": 230,
+      "distanceNote": "A reachable southern trip, closer than most far south universities.",
+      "elevationM": 2200,
+      "campuses": "One main campus in Hosaena.",
+      "knownFor": [
+        "Serving Hadiya and neighboring zones as the main local public university option",
+        "A moderate distance from Addis that makes family visits genuinely realistic",
+        "Health and education programs alongside a still growing general catalogue"
+      ],
+      "whatToExpect": [
+        "The town itself centers heavily around the university, do not expect much beyond basic services, most social life happens on and near campus.",
+        "Because this university is still relatively young, facilities and program depth vary noticeably by department, ask current students in your specific field directly rather than assuming a uniform standard.",
+        "The moderate distance from Addis means home visits are more realistic here than at most southern or western universities, this is a genuine, practical relief for students whose families need to stay in closer contact.",
+        "Evenings are cool in this highland setting, but nothing like the harsher cold of Debre Berhan or Debre Tabor, a light jacket generally covers it.",
+        "Architecture requires passing a competitive entrance exam beyond standard placement. Medicine also requires passing a competitive exam after completing a shared freshman year, rather than direct entry. Medicine students currently study through Negeste Elleni Referral Hospital, commuting there by campus bus, with dedicated dormitory space at the hospital compound reportedly under construction, though for now medicine students remain on the main campus through their fourth year.",
+        "Water shortages are a real, recurring problem here, serious enough that some areas of campus reportedly develop an odor as a result"
+      ],
+      "tips": [
+        "Ask current students directly about current hostel and lab conditions in your specific department before arriving, given how much can vary here by field.",
+        "Bring a light jacket for cooler evenings, but do not over pack for cold the way you might for a higher elevation posting.",
+        "New students are advised to hold off exploring the Gombore, Mikael, and Wonji neighborhoods until they've had time to properly learn the campus and town social dynamics first, this is less about danger and more about not knowing yet who's who or what local etiquette expects"
+      ],
+      "studentFit": "Wachemo suits students from Hadiya and nearby areas who want accessible higher education close to home, or anyone who wants the practical benefit of a moderate distance from Addis without full isolation. It fits people comfortable with a still developing university rather than a long established name. Students seeking extensive, mature facilities across every department should ask specific questions about their field before assuming a uniform experience.",
+      "detailed": true,
+      "strengths": [
+        "Serving Hadiya and neighboring zones as the main local public university option",
+        "A moderate distance from Addis that makes family visits genuinely realistic",
+        "Health and education programs alongside a still growing general catalogue"
+      ]
+    },
+    {
+      "id": "wku",
+      "name": "Wolkite University",
+      "abbr": "WKU",
+      "region": "SNNPR",
+      "location": "Wolkite, on the Jimma road corridor",
+      "website": "https://www.wku.edu.et",
+      "founded": "Established around 2011 to 2012",
+      "distanceFromAddisKm": 160,
+      "distanceNote": "One of the closer southern universities, roughly two and a half to three hours from Addis.",
+      "elevationM": 1800,
+      "campuses": "One main campus in or near Wolkite.",
+      "knownFor": [
+        "Sitting on the direct road corridor between Addis and southwestern Ethiopia, a genuinely convenient location",
+        "Being close enough to the capital that many central Ethiopian families find it a real, practical option",
+        "A comprehensive but still growing range of programs"
+      ],
+      "whatToExpect": [
+        "The relatively short distance from Addis is one of the most practically important facts about this university, weekend or holiday travel home is realistic here in a way it simply is not at most other placements on this list.",
+        "As a newer institution, some departments are still building out their full facilities and reputation, ask current students in your specific field for an honest picture.",
+        "The climate sits in a comfortable middle ground, warmer than the coldest highland towns, cooler than the true lowlands, most students find it manageable without major wardrobe changes.",
+        "Town services are growing alongside the university itself, expect steady improvement year to year rather than a fixed, finished picture.",
+        "Two campuses: a Textile campus in town covering textile and garment design (entrance-tested), and Main campus in the Gubre sub-city area covering engineering and technology fields (civil, chemical, electrical, food processing, water resources, mechanical, construction technology and management, and architecture, also entrance-tested), computer science (software, CS, information systems, information technology), the full range of social science fields, midwifery, nursing, law, psychology, and natural and computational science fields including mathematics, sport science, and physics. Medicine is offered but the university has not yet graduated its first class in that field."
+      ],
+      "tips": [
+        "If proximity to Addis genuinely matters for your family or your own peace of mind, this is a solid, practical option worth taking seriously rather than seeing only as a fallback.",
+        "Confirm the exact site of your specific campus location upon arrival, some sources reference slightly different site names in the surrounding area.",
+        "Discipline is taken genuinely seriously here, in one recent year the university dismissed 16 medicine students specifically for disciplinary reasons, along with other students close to graduation, fighting, khat use, and smoking all carry real, heavy penalties, not just warnings",
+        "Khat use is notably common in the surrounding area, particularly near the Gubre campus, new students should be aware of this rather than caught off guard by how normalized it is locally"
+      ],
+      "studentFit": "Wolkite suits students who want the benefit of studying outside the capital while keeping a genuinely short, manageable distance back to Addis. It fits families who value being able to visit or bring a student home easily. Students hoping for a long established, fully mature university with a strong distinct academic reputation in a specific field may find some departments here still building toward that.",
+      "detailed": true,
+      "strengths": [
+        "Sitting on the direct road corridor between Addis and southwestern Ethiopia, a genuinely convenient location",
+        "Being close enough to the capital that many central Ethiopian families find it a real, practical option",
+        "A comprehensive but still growing range of programs"
+      ]
+    },
+    {
+      "id": "wdu",
+      "name": "Woldia University",
+      "abbr": "WDU",
+      "region": "Amhara",
+      "location": "Woldia, in North Wollo",
+      "website": "https://www.wldu.edu.et",
+      "founded": "2011",
+      "distanceFromAddisKm": 520,
+      "distanceNote": "A long northern road trip on the corridor toward Lalibela.",
+      "elevationM": 2100,
+      "campuses": "One main campus in Woldia.",
+      "knownFor": [
+        "Serving North Wollo as its main regional higher education access point",
+        "A comprehensive spread of applied and social science programs",
+        "Sitting on a route many travelers know because of its proximity to Lalibela's historic churches"
+      ],
+      "whatToExpect": [
+        "The distance from Addis is real, most students settle into a rhythm built around the main academic breaks rather than frequent trips home, and the emotional adjustment to that distance hits harder in the first semester than people expect going in.",
+        "Cool highland evenings are a regular feature here, pack accordingly even if daytime feels manageable.",
+        "Building a close peer network early matters more here than at closer universities, students describe the first few weeks of genuine loneliness as common, and the ones who reach out and build friendships quickly adjust far faster than those who wait for it to happen naturally.",
+        "As a university established in 2011, some facilities are still maturing, ask current students in your department directly about lab and library conditions."
+      ],
+      "tips": [
+        "Actively build friendships and peer networks in your first few weeks rather than waiting, the distance from home can feel larger than expected at first, and community helps enormously.",
+        "Pack warm bedding for cool highland nights."
+      ],
+      "studentFit": "Woldia suits students from North Wollo who want to study close to home, or anyone prepared for a genuine adjustment period tied to real distance from Addis, who is willing to actively build community once there. It fits people who do not need frequent trips home to feel settled once they find their footing. Students who struggle with early homesickness and are not proactive about building new friendships may find the first semester here harder than expected.",
+      "detailed": true,
+      "strengths": [
+        "Serving North Wollo as its main regional higher education access point",
+        "A comprehensive spread of applied and social science programs",
+        "Sitting on a route many travelers know because of its proximity to Lalibela's historic churches"
+      ]
+    },
+    {
+      "id": "aru",
+      "name": "Arsi University",
+      "abbr": "ARU",
+      "region": "Oromia",
+      "location": "Asella",
+      "website": "https://www.arsiun.edu.et",
+      "founded": "2014",
+      "distanceFromAddisKm": 175,
+      "distanceNote": "A relatively accessible southeastern trip, roughly two to three hours from Addis.",
+      "elevationM": 2400,
+      "campuses": "One main campus in Asella.",
+      "knownFor": [
+        "Sitting in a major Arsi highland town with a real, established local community around it",
+        "A shorter distance from Addis than most regional universities, making it a genuinely practical option",
+        "Growing health science and agriculture programs"
+      ],
+      "whatToExpect": [
+        "Because Arsi University is relatively new, having only reached full university status in 2014, some programs are still building out their full reputation and facilities, ask current students in your specific department for an honest, current picture.",
+        "The cool Arsi highland climate means jackets are a regular part of daily wear, especially in the mornings and evenings.",
+        "The relatively short distance from Addis means many students from central Ethiopia find family visits genuinely manageable, this is a real, practical advantage over more remote placements.",
+        "Health science students should ask specifically about clinical attachment sites, as this is one of the newer and still developing parts of the university's program offerings.",
+        "The university runs across four sites. Dinsho, at the entrance to Asella, covers competition-based and natural science fields. Ardu, a short ride from the main transit hub, hosts upper-year students in law, accounting, and marketing along with agriculture students. Bekoji, in its own town, covers social science fields. A temporary health campus operates out of a teachers' college building for health officer, midwifery, and nursing students, while medicine students currently study through Asella's hospital directly, with a dedicated new health campus reportedly planned that would also bring engineering to Arsi for the first time.",
+        "Fresh female students are housed in dorms kept separate from continuing students specifically for safety and to reduce disruption"
+      ],
+      "tips": [
+        "If you are in health sciences, ask directly and early about where clinical attachments actually happen, this varies and is still being built out.",
+        "Pack warm clothes for the cool Arsi highland climate, especially for morning classes."
+      ],
+      "studentFit": "Arsi University suits students who want a highland Oromia university experience without traveling extremely far from Addis, and who are comfortable with a still growing, relatively young institution. It fits people who value practical proximity to family alongside genuine highland town life. Students seeking a long established, fully mature program in a specific specialized field may find some departments here still in active development.",
+      "detailed": true,
+      "strengths": [
+        "Sitting in a major Arsi highland town with a real, established local community around it",
+        "A shorter distance from Addis than most regional universities, making it a genuinely practical option",
+        "Growing health science and agriculture programs"
+      ]
+    },
+    {
+      "id": "gmu",
+      "name": "Gambella University",
+      "abbr": "GMU",
+      "region": "Gambela",
+      "location": "Gambela",
+      "website": "https://www.gmu.edu.et",
+      "founded": "Reached university status around 2014",
+      "distanceFromAddisKm": 770,
+      "distanceNote": "A long western journey to the Gambela regional capital.",
+      "elevationM": 500,
+      "campuses": "One main campus in Gambela.",
+      "knownFor": [
+        "Being the primary public university access point for the entire Gambela region",
+        "A genuinely hot, humid lowland climate that is a real departure from highland Ethiopia",
+        "Serving a culturally and ecologically distinct part of the country compared to most other university placements"
+      ],
+      "whatToExpect": [
+        "The heat and humidity here represent one of the more significant climate adjustments on this entire list, students from highland regions describe a real, sometimes difficult first few weeks before their bodies adjust.",
+        "Town services are more limited than in bigger highland university cities, students should set realistic expectations for shopping and general amenities.",
+        "Mosquitoes and general humidity related discomfort are a consistent daily factor, not an occasional one, students who prepare seriously for this from day one fare much better than those who do not.",
+        "The regional mission of this university is genuinely felt by students and staff, many describe a strong shared sense of purpose around developing the Gambela region specifically.",
+        "Water, electricity, and network connectivity are all described as genuinely unreliable here, more so than most other universities on this list, students who bring a power bank or a small solar charging setup are noticeably better off than those who don't",
+        "The Social stream covers 14 departments including law, economics, management, accounting, and banking, while the Natural stream covers 12 departments including computer science, IT, competition-based science, agricultural economics, and plant science"
+      ],
+      "tips": [
+        "Bring genuine, reliable mosquito protection and treat it as a daily necessity, not an occasional precaution.",
+        "Prioritize light, breathable clothing and constant hydration from the very first day you arrive."
+      ],
+      "studentFit": "Gambella University suits students genuinely prepared for a hot, humid lowland climate very different from most of highland Ethiopia, and who are drawn to a university with a strong, specific regional development mission. It fits people open to a culturally distinct part of the country. Students who struggle with heat and humidity, or who need a wider range of city services nearby, should think seriously about whether this specific environment is sustainable for them long term.",
+      "detailed": true,
+      "strengths": [
+        "Being the primary public university access point for the entire Gambela region",
+        "A genuinely hot, humid lowland climate that is a real departure from highland Ethiopia",
+        "Serving a culturally and ecologically distinct part of the country compared to most other university placements"
+      ]
+    },
+    {
+      "id": "obu",
+      "name": "Oda Bultum University",
+      "abbr": "OBU",
+      "region": "Oromia",
+      "location": "Chiro, also known as Asebe Teferi",
+      "website": "https://www.obu.edu.et",
+      "founded": "Part of the public university expansion around 2015",
+      "distanceFromAddisKm": 320,
+      "distanceNote": "An eastern trip on the Harar road corridor, a bit over 300 km from Addis.",
+      "elevationM": 1800,
+      "campuses": "One main campus in Chiro.",
+      "knownFor": [
+        "Serving West Hararghe as its main local public university option",
+        "A comprehensive but still developing range of applied and agriculture focused programs",
+        "A warmer, drier feel typical of eastern Oromia during the dry season"
+      ],
+      "whatToExpect": [
+        "As one of the newer universities in this list, facilities and program depth are still actively developing, ask current students in your specific department directly about their real experience rather than relying on the university's general description.",
+        "Town life here is modest and centers around the university, students should not expect a wide range of entertainment or amenities beyond the essentials.",
+        "The moderate distance from Addis means holiday travel is manageable without being as easy as the closest universities on this list.",
+        "Sun protection is genuinely important for outdoor classes and activities given the region's typically warm, dry conditions."
+      ],
+      "tips": [
+        "Confirm what resources and equipment your specific department actually has available before assuming, this varies given how recently the university was established.",
+        "Bring real sun protection, the eastern Oromia dry season sun is genuinely strong."
+      ],
+      "studentFit": "Oda Bultum suits students from West Hararghe who want accessible local higher education, or anyone comfortable with a newer, still developing university rather than a long established name. It fits people prioritizing regional access over an extensive, mature program list. Students seeking well established facilities and a strong existing academic reputation in a specific specialized field may find better options elsewhere for now.",
+      "detailed": true,
+      "strengths": [
+        "Serving West Hararghe as its main local public university option",
+        "A comprehensive but still developing range of applied and agriculture focused programs",
+        "A warmer, drier feel typical of eastern Oromia during the dry season"
+      ]
+    },
+    {
+      "id": "slu",
+      "name": "Salale University",
+      "abbr": "SLU",
+      "region": "Oromia",
+      "location": "Fiche, north of Addis",
+      "website": "https://www.slu.edu.et",
+      "founded": "Part of a recent wave of public university expansion",
+      "distanceFromAddisKm": 115,
+      "distanceNote": "One of the closer Oromia universities to the capital, roughly two to three hours by road.",
+      "elevationM": 2700,
+      "campuses": "One main campus in Fiche.",
+      "knownFor": [
+        "Being one of the closest full universities to Addis while still offering a genuine campus experience outside the capital",
+        "A cool, high elevation highland climate",
+        "A comprehensive but still growing range of education and applied programs"
+      ],
+      "whatToExpect": [
+        "The short distance from Addis is the single most practically important fact about this university, family visits and support are genuinely easy here in a way they are not for most other placements on this list.",
+        "The high elevation means real cold, especially at night, students should pack seriously warm clothing and bedding rather than assuming Addis area weather patterns apply uniformly.",
+        "As a newer institution, some facilities and programs are still being built out, ask current students in your specific field for an honest, current picture.",
+        "Town life is quiet and centers on the university, do not expect a wide range of entertainment beyond campus and a modest local area."
+      ],
+      "tips": [
+        "If proximity to Addis and easy family contact matter to you, this is a genuinely strong, practical option to take seriously.",
+        "Pack real warm bedding, the elevation here means colder nights than the distance from Addis might suggest."
+      ],
+      "studentFit": "Salale suits students who want the benefit of a cool, quiet highland campus experience while staying genuinely close to Addis and family. It fits people who value practical proximity without sacrificing the feeling of being away at university. Students seeking a long established, fully mature institution with an extensive reputation in a specific field may find some departments here still developing.",
+      "detailed": true,
+      "strengths": [
+        "Being one of the closest full universities to Addis while still offering a genuine campus experience outside the capital",
+        "A cool, high elevation highland climate",
+        "A comprehensive but still growing range of education and applied programs"
+      ]
+    },
+    {
+      "id": "dedu",
+      "name": "Dembi Dolo University",
+      "abbr": "DeDU",
+      "region": "Oromia",
+      "location": "Dembi Dolo, in far western Oromia",
+      "website": "https://dadu.edu.et",
+      "founded": "2015",
+      "distanceFromAddisKm": 630,
+      "distanceNote": "A long western road journey toward the borderlands corridor.",
+      "elevationM": 1700,
+      "campuses": "One main campus in Dembi Dolo.",
+      "knownFor": [
+        "Being one of the more remote public university placements in western Oromia",
+        "A genuine community linked development focus running through several programs",
+        "Serving a catchment area with very few other nearby higher education options"
+      ],
+      "whatToExpect": [
+        "The remoteness here is real and shapes daily logistics more than at most other placements, plan supplies, communication with family, and travel around real distance and limited transport frequency.",
+        "As a university founded in 2015, infrastructure is still actively developing, ask current students directly and honestly about current conditions before arriving.",
+        "Building a strong peer support network matters enormously here, students describe the sense of community among classmates as one of the things that makes the remoteness genuinely manageable.",
+        "The humid, warmer western climate is a real adjustment for students coming from highland regions, pack accordingly."
+      ],
+      "tips": [
+        "Talk to current students directly about transport and general safety advice before you travel, given the real remoteness of this location.",
+        "Plan supply runs and communication with family around the genuine distance and limited transport options here."
+      ],
+      "studentFit": "Dembi Dolo suits students genuinely prepared for a remote western placement with a still developing infrastructure, who value being part of a close, community oriented student body. It fits people drawn to the university's development focused mission. Students who need to stay closer to Addis, who struggle with genuine isolation, or who need well established facilities from day one should think seriously before committing to this placement.",
+      "detailed": true,
+      "strengths": [
+        "Being one of the more remote public university placements in western Oromia",
+        "A genuine community linked development focus running through several programs",
+        "Serving a catchment area with very few other nearby higher education options"
+      ]
+    },
+    {
+      "id": "dku",
+      "name": "Debark University",
+      "abbr": "DKU",
+      "region": "Amhara",
+      "location": "Debark, near the Simien Mountains",
+      "website": "https://www.dku.edu.et",
+      "founded": "Established sometime in the late 2000s to early 2010s",
+      "distanceFromAddisKm": 830,
+      "distanceNote": "A very long trip north of Gondar toward the Simien Mountains.",
+      "elevationM": 2900,
+      "campuses": "One main campus in Debark.",
+      "knownFor": [
+        "Sitting near the Simien Mountains, one of the most dramatic landscapes in the entire country",
+        "Genuinely extreme cold, this is one of the highest elevation, coldest campus environments on this list",
+        "Being one of the more remote placements in Amhara region"
+      ],
+      "whatToExpect": [
+        "The cold here is not comparable to most other universities on this list, nights can be genuinely harsh, and students arriving without serious cold weather gear suffer through an avoidable rough adjustment.",
+        "The altitude itself takes some getting used to for students coming from lower elevation areas, pacing yourself physically in the first weeks matters more here than most students expect.",
+        "Town services are modest given the remoteness, students should set realistic expectations for shopping and general amenities beyond the essentials.",
+        "Holiday travel requires serious advance planning given both the distance and the mountain terrain involved."
+      ],
+      "tips": [
+        "Invest immediately in genuinely warm jackets and blankets, do not try to make do with what feels adequate in Addis or even other highland towns.",
+        "Pace your physical activity in the first weeks given the combination of cold and high altitude, do not push yourself as hard as you would at a lower elevation."
+      ],
+      "studentFit": "Debark suits students who genuinely enjoy or at least do not mind extreme cold and dramatic mountain landscapes, and who are prepared for real remoteness and distance from Addis. It fits people drawn to a quieter, more physically demanding highland environment. Students who struggle with cold weather or need to be closer to a bigger city should think very carefully before committing to this specific placement.",
+      "detailed": true,
+      "strengths": [
+        "Sitting near the Simien Mountains, one of the most dramatic landscapes in the entire country",
+        "Genuinely extreme cold, this is one of the highest elevation, coldest campus environments on this list",
+        "Being one of the more remote placements in Amhara region"
+      ]
+    },
+    {
+      "id": "bu",
+      "name": "Bonga University",
+      "abbr": "BU",
+      "region": "SNNPR",
+      "location": "Bonga, in the Kaffa zone",
+      "website": "https://www.bongau.edu.et",
+      "founded": "Established around 2015",
+      "distanceFromAddisKm": 450,
+      "distanceNote": "A southwestern trip through Jimma corridor routes, several hours from Addis.",
+      "elevationM": 1700,
+      "campuses": "One main campus in Bonga.",
+      "knownFor": [
+        "Sitting in genuine coffee growing country in the Kaffa zone, an area with deep historical ties to coffee's origins",
+        "Agriculture and natural resource programs suited to the region's rich, green environment",
+        "Being one of the newer universities still actively building its program list and reputation"
+      ],
+      "whatToExpect": [
+        "The warm, humid Kaffa climate is a real adjustment for students from highland areas, pack light, breathable clothing alongside real rain gear for the wet months.",
+        "Town services here are smaller than at more established southern universities like Jimma or Hawassa, students should set modest expectations.",
+        "As a newer institution, program depth and facilities vary by department, ask current students in your specific field for an honest, current picture.",
+        "The local culture and food traditions around coffee are a genuine, distinctive part of daily life here, students who engage with it describe it as one of the better parts of studying in this area.",
+        "Natural engineering is not yet offered here, current core fields are computer science, applied science, and agriculture, alongside health fields like midwifery, nursing, and pharmacy"
+      ],
+      "tips": [
+        "Bring a genuinely waterproof bag for books and electronics, the humid, rainy Kaffa climate is harder on gear than drier highland areas.",
+        "Stay aware of mosquito exposure in this warmer, more humid environment."
+      ],
+      "studentFit": "Bonga University suits students drawn to agriculture and natural resource fields in a genuinely rich, green environment, who do not mind a smaller town and a still developing university. It fits people interested in the region's distinctive coffee culture and history. Students seeking a large, long established institution with a wide, mature program list should look at more established southern options.",
+      "detailed": true,
+      "strengths": [
+        "Sitting in genuine coffee growing country in the Kaffa zone, an area with deep historical ties to coffee's origins",
+        "Agriculture and natural resource programs suited to the region's rich, green environment",
+        "Being one of the newer universities still actively building its program list and reputation"
+      ]
+    },
+    {
+      "id": "wru",
+      "name": "Werabe University",
+      "abbr": "WRU",
+      "region": "SNNPR",
+      "location": "Werabe, also spelled Worabe, in the Silte zone",
+      "website": "https://www.wru.edu.et",
+      "founded": "Part of a recent wave of public university expansion",
+      "distanceFromAddisKm": 220,
+      "distanceNote": "A south central trip, a few hours from Addis.",
+      "elevationM": 2000,
+      "campuses": "One main campus in Werabe.",
+      "knownFor": [
+        "Serving the Silte zone and surrounding central southern areas as the local public university option",
+        "A moderate, manageable climate that avoids the extremes of both the coldest highlands and the hottest lowlands",
+        "Being genuinely new, with facilities and academic culture still forming"
+      ],
+      "whatToExpect": [
+        "Because this is a newer campus, expect an atmosphere that still feels like it is finding its footing, some services and facilities are less established than at older universities, ask current students directly and honestly about what to expect.",
+        "Town scale services apply here, students should not expect a wide range of amenities beyond the essentials.",
+        "The moderate climate is one of the more comfortable on this list, requiring less specialized wardrobe planning than the extremes of far north or far south placements.",
+        "As with any newer university, the specific quality of your experience will depend heavily on your program and department, ask direct questions rather than relying on general assumptions.",
+        "Natural engineering programs have not yet started here, the current core offerings are computer science, applied science, and agriculture, alongside health fields (midwifery, nursing, pharmacy)",
+        "Water shortages are a real and fairly frequent issue here, more so than electricity or WiFi, which students describe as comparatively reliable"
+      ],
+      "tips": [
+        "Ask current students honestly about hostel quality and current campus conditions rather than relying on official descriptions alone.",
+        "Confirm exactly which campus location and site your specific program uses."
+      ],
+      "studentFit": "Werabe suits students from the Silte zone or nearby areas who want local access to higher education, or anyone comfortable being part of a genuinely newer university still building its identity and reputation. It fits people who do not need an established name or extensive facilities to feel their education is worthwhile. Students seeking a long established institution with a strong existing reputation should look elsewhere for now.",
+      "detailed": true,
+      "strengths": [
+        "Serving the Silte zone and surrounding central southern areas as the local public university option",
+        "A moderate, manageable climate that avoids the extremes of both the coldest highlands and the hottest lowlands",
+        "Being genuinely new, with facilities and academic culture still forming"
+      ]
+    },
+    {
+      "id": "jnu",
+      "name": "Jinka University",
+      "abbr": "JNU",
+      "region": "SNNPR",
+      "location": "Jinka, in South Omo",
+      "website": "https://www.jku.edu.et",
+      "founded": "2015",
+      "distanceFromAddisKm": 750,
+      "distanceNote": "A long southern journey toward South Omo, among the more remote placements on this list.",
+      "elevationM": 1400,
+      "campuses": "One main campus in Jinka.",
+      "knownFor": [
+        "Serving South Omo, one of the most culturally diverse and distinct regions of the country",
+        "Agriculture and local development programs suited to the surrounding pastoral and agricultural communities",
+        "Genuine heat, this is a hot southern lowland environment requiring real physical adjustment"
+      ],
+      "whatToExpect": [
+        "The distance and remoteness here are serious, this is one of the furthest placements from Addis on this entire list, plan travel and communication with family around that reality from day one.",
+        "The heat requires real, sustained adjustment, students from cooler highland areas describe a genuine physical transition in their first weeks.",
+        "Town infrastructure is modest given the remoteness, students should set realistic expectations for shopping, healthcare access, and general services.",
+        "South Omo's cultural diversity is genuinely remarkable, and many students describe their time here as broadening their understanding of Ethiopia's cultural range in ways a highland or capital city university simply could not.",
+        "This is a genuinely young campus, opened around 2010, still growing steadily. Natural science offerings include agriculture, agricultural economics, computer science and IT, competition-based science, and a newly added sport science track. Social science offerings include competition-based fields, law, accounting and management, and economics, with more fields reportedly planned soon.",
+        "Because the student population is still small, students describe the food quality as noticeably better and more consistent than at larger, more crowded campuses, closer to home cooking than typical cafeteria fare"
+      ],
+      "tips": [
+        "Pack seriously for sustained heat, this is not a place where light preparation is enough.",
+        "Plan travel, supplies, and communication with family carefully given the genuine remoteness of this location, this is not a place for last minute logistics."
+      ],
+      "studentFit": "Jinka suits students genuinely ready for remote southern Ethiopia and drawn to a university with a clear regional development mission in one of the country's most culturally distinct areas. It fits people who value that cultural richness enough to accept real distance and modest infrastructure in exchange. Students who need to stay closer to Addis, who struggle with heat, or who need well established city services nearby should think very seriously before committing.",
+      "detailed": true,
+      "strengths": [
+        "Serving South Omo, one of the most culturally diverse and distinct regions of the country",
+        "Agriculture and local development programs suited to the surrounding pastoral and agricultural communities",
+        "Genuine heat, this is a hot southern lowland environment requiring real physical adjustment"
+      ]
+    },
+    {
+      "id": "kdu",
+      "name": "Kebri Dehar University",
+      "abbr": "KDU",
+      "region": "Somali",
+      "location": "Kebri Dehar",
+      "website": "https://www.uok.edu.et",
+      "founded": "Part of a recent wave of public university expansion in the Somali Region",
+      "distanceFromAddisKm": 900,
+      "distanceNote": "A very long eastern or southeastern road journey, among the more remote placements in this entire list.",
+      "elevationM": 500,
+      "campuses": "One main campus in Kebri Dehar.",
+      "knownFor": [
+        "Serving the Somali Region as an additional access point to higher education alongside Jigjiga",
+        "Genuinely extreme heat, this is a hot, arid lowland environment even by the standards of other hot placements on this list",
+        "Being a newer institution still building its full capacity and reputation"
+      ],
+      "whatToExpect": [
+        "The heat here is among the most extreme on this entire list, real, sustained adjustment is required, and students should not underestimate how physically demanding the climate is.",
+        "Town services are limited given both the remoteness and the newness of the surrounding infrastructure, students should set very modest expectations for amenities beyond the essentials.",
+        "As a newer university, expect facilities and academic culture to still be actively forming, ask current students directly and honestly about their real experience.",
+        "The strong local Somali community presence shapes daily campus life, students who arrive with genuine cultural respect and curiosity describe an easier, more rewarding adjustment."
+      ],
+      "tips": [
+        "Prioritize hydration, sun protection, and light clothing as non negotiable daily essentials from the very first day.",
+        "Approach local cultural norms with genuine respect, this matters enormously for a smooth day to day experience here."
+      ],
+      "studentFit": "Kebri Dehar suits students who can genuinely handle extreme heat and who want to be part of expanding higher education access specifically in the Somali Region. It fits people prepared for real remoteness and modest infrastructure. Students who struggle with extreme heat or who need well established facilities and services from day one should think very seriously before committing to this placement.",
+      "detailed": true,
+      "strengths": [
+        "Serving the Somali Region as an additional access point to higher education alongside Jigjiga",
+        "Genuinely extreme heat, this is a hot, arid lowland environment even by the standards of other hot placements on this list",
+        "Being a newer institution still building its full capacity and reputation"
+      ]
+    },
+    {
+      "id": "iu",
+      "name": "Injibara University",
+      "abbr": "IU",
+      "region": "Amhara",
+      "location": "Injibara, in the Awi zone",
+      "website": "https://www.inu.edu.et",
+      "founded": "Established around 2015",
+      "distanceFromAddisKm": 450,
+      "distanceNote": "A long trip west of the Bahir Dar corridor through northwestern routes.",
+      "elevationM": 2500,
+      "campuses": "One main campus in Injibara.",
+      "knownFor": [
+        "Serving the Awi zone and neighboring areas as the local public university option",
+        "A cool, comfortable highland climate",
+        "Being a genuinely newer institution still expanding its program offerings"
+      ],
+      "whatToExpect": [
+        "Nights here are properly chilly, students should pack real warm clothing rather than assuming a mild adjustment.",
+        "The town itself is quiet, with student life centered heavily around the university and a modest surrounding area.",
+        "As a newer university, facilities are still developing in some departments, ask current students in your specific field directly for an honest picture.",
+        "Distance from Addis shapes holiday planning, most students settle into a rhythm built around the main academic breaks rather than casual trips home."
+      ],
+      "tips": [
+        "Pack seriously warm clothing for the cool highland nights here.",
+        "Connect with senior students early for honest, specific advice about your department's courses and facilities."
+      ],
+      "studentFit": "Injibara suits students placed in the Awi zone or nearby areas of northwestern Amhara who prefer cooler weather and are comfortable with a newer, still developing university. It fits people who do not need an extensive, long established program list to feel settled. Students seeking a large, fully mature institution with a strong existing reputation across many fields may find better fits elsewhere.",
+      "detailed": true,
+      "strengths": [
+        "Serving the Awi zone and neighboring areas as the local public university option",
+        "A cool, comfortable highland climate",
+        "Being a genuinely newer institution still expanding its program offerings"
+      ]
+    },
+    {
+      "id": "ru",
+      "name": "Raya University",
+      "abbr": "RU",
+      "region": "Tigray",
+      "location": "Maichew, also spelled Maychew, in southern Tigray",
+      "website": "https://www.rayu.edu.et",
+      "founded": "2015",
+      "distanceFromAddisKm": 700,
+      "distanceNote": "A long northern journey to southern Tigray.",
+      "elevationM": 2400,
+      "campuses": "One main campus in the Maichew area.",
+      "knownFor": [
+        "Serving southern Tigray as an access point to higher education, offering an alternative to traveling further north to Mekelle",
+        "A cool, mixed highland climate with seasonal rains",
+        "Being one of the smaller, newer universities in the Tigray region"
+      ],
+      "whatToExpect": [
+        "As with the rest of the region, recent years have affected infrastructure and services to varying degrees, confirm current operating conditions directly with the university before making travel plans based on older information.",
+        "The distance and remoteness from Addis are real, most students plan around the main academic breaks rather than expecting frequent trips home.",
+        "Being smaller than Mekelle University, some students describe a more tightly knit, personal campus community here, though also fewer program options and facilities overall.",
+        "Cool nights and seasonal rains mean real warm layers and rain gear are both necessary at different points in the year."
+      ],
+      "tips": [
+        "Confirm current campus operations and conditions directly with the university before traveling, given how much has shifted in the region recently.",
+        "Pack both warm layers and rain gear, the highland and mid altitude mix here brings both cold nights and real seasonal rain."
+      ],
+      "studentFit": "Raya University suits students from southern Tigray who want a closer, smaller alternative to Mekelle, or anyone comfortable with a newer, more compact regional university. It fits people who value a tighter knit community over a wider range of program options. Students seeking the fuller facilities and broader academic catalogue of a larger, more established university like Mekelle should weigh that trade off carefully.",
+      "detailed": true,
+      "strengths": [
+        "Serving southern Tigray as an access point to higher education, offering an alternative to traveling further north to Mekelle",
+        "A cool, mixed highland climate with seasonal rains",
+        "Being one of the smaller, newer universities in the Tigray region"
+      ]
+    },
+    {
+      "id": "mkau",
+      "name": "Mekdela Amba University",
+      "abbr": "MkAU",
+      "region": "Amhara",
+      "location": "The Tulu Awlia area of South Wollo",
+      "website": "https://www.mkau.edu.et",
+      "founded": "Part of a recent wave of public university expansion",
+      "distanceFromAddisKm": 480,
+      "distanceNote": "A long trip into the South Wollo highlands toward the Mekdela area.",
+      "elevationM": 2700,
+      "campuses": "One main campus in the Tulu Awlia and Mekdela area.",
+      "knownFor": [
+        "Serving South Wollo as a newer local public university access point",
+        "Genuinely cold, high elevation highland weather",
+        "Being one of the more recently established universities still actively building out its identity"
+      ],
+      "whatToExpect": [
+        "Nights here are consistently cold given the high elevation, warm bedding and jackets are essential daily items, not optional extras for the occasional cold snap.",
+        "As a newer institution, expect facilities and campus infrastructure to still be actively developing, ask current students directly and honestly about what to expect in your specific department.",
+        "The remoteness from Addis means holiday travel needs real advance planning, this is not a place for last minute trips home.",
+        "The overall atmosphere is quiet and academically focused, with limited entertainment or amenities beyond the university itself and its immediate surroundings."
+      ],
+      "tips": [
+        "Prioritize warm bedding and jackets as an immediate first purchase, the cold here is consistent and significant.",
+        "Plan transport for academic breaks well ahead of time given the real distance and remoteness involved."
+      ],
+      "studentFit": "Mekdela Amba suits students placed in South Wollo who are comfortable with genuinely cold weather and a newer, quieter university still building its full identity. It fits people who do not need extensive amenities or an established reputation to feel their time there is worthwhile. Students who struggle with cold weather or need a more developed, well resourced campus from day one should think carefully before committing to this placement.",
+      "detailed": true,
+      "strengths": [
+        "Serving South Wollo as a newer local public university access point",
+        "Genuinely cold, high elevation highland weather",
+        "Being one of the more recently established universities still actively building out its identity"
+      ]
+    },
+    {
+      "id": "wu",
+      "name": "Wollega University",
+      "abbr": "WU",
+      "region": "Oromia",
+      "location": "Nekemte, about 500 km west of Addis",
+      "website": "https://www.wollegauniversity.edu.et",
+      "founded": "2007",
+      "distanceFromAddisKm": 500,
+      "distanceNote": "A long westbound trip into western Oromia.",
+      "elevationM": 2100,
+      "campuses": "One main campus in Nekemte.",
+      "knownFor": [
+        "Serving as the flagship public university for western Oromia specifically",
+        "A comprehensive spread of programs built up steadily since its founding",
+        "Genuine distance from Addis that shapes a self contained, locally rooted student community"
+      ],
+      "whatToExpect": [
+        "The distance from Addis means spontaneous trips home are not realistic, most students settle into a rhythm built around the university's own community rather than frequent travel back to the capital.",
+        "The town provides adequate basic services for student life without the range of a big city, most students describe adjusting within their first semester and building a genuine local routine.",
+        "Because this is the main regional anchor for western Oromia, there is a strong, locally rooted student identity, many students know each other or people in common from the wider region before ever arriving.",
+        "The green, rainy western highlands mean a real wet season, proper rain gear matters for getting around comfortably."
+      ],
+      "tips": [
+        "Plan holiday travel well ahead of time given the real distance involved, last minute trips home are neither cheap nor simple.",
+        "Bring genuine rain gear, the wet season in this part of the country is serious and regular."
+      ],
+      "studentFit": "Wollega suits students from western Ethiopia who want to study close to their home region, or anyone comfortable committing to real distance from Addis in exchange for a locally rooted, community oriented university experience. It works well for students who do not need frequent trips home to feel stable. Students who need to stay close to Addis or who want a wider range of nearby city amenities should weigh the real distance carefully before choosing Wollega.",
+      "detailed": true,
+      "strengths": [
+        "Serving as the flagship public university for western Oromia specifically",
+        "A comprehensive spread of programs built up steadily since its founding",
+        "Genuine distance from Addis that shapes a self contained, locally rooted student community"
+      ]
+    }
+  ]
+}

@@ -19,47 +19,42 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
-import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
-import com.wisdomtower.academy.ui.theme.WisdomCardBorderSubtle
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
-import com.wisdomtower.academy.ui.theme.WisdomMuted
-import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
 
+/**
+ * Packages tab matching website reference:
+ * - src/app/packages/page.tsx
+ * - src/components/PackagesCatalog.tsx
+ *
+ * Title: "Academy packages"
+ * 3 Section headings: "Grades 9–12", "Other branches", "Special packages"
+ * Cards: Image (16:9), Title (pkg.name), "Start Learning" button with MenuBook icon.
+ * Zero search boxes, zero filter chips, zero card descriptions, zero "Explore" buttons.
+ */
 @Composable
 fun PackagesScreen(
     modifier: Modifier = Modifier,
@@ -67,26 +62,9 @@ fun PackagesScreen(
     onSelectPackage: (NativePackage) -> Unit,
     onNavigateToUrl: (String) -> Unit
 ) {
-    var selectedFilter by remember { mutableStateOf("all") }
-    var searchQuery by remember { mutableStateOf("") }
-
-    val filterOptions = listOf(
-        "all" to "All Pathways",
-        "grades" to "Grades 9–12",
-        "branch" to "University & Entrance",
-        "special" to "Special Tracks"
-    )
-
-    val filteredList = packageList.filter { pkg ->
-        val matchesGroup = when (selectedFilter) {
-            "all" -> true
-            else -> pkg.group == selectedFilter
-        }
-        val matchesSearch = searchQuery.isBlank() ||
-                pkg.name.contains(searchQuery, ignoreCase = true) ||
-                pkg.description.contains(searchQuery, ignoreCase = true)
-        matchesGroup && matchesSearch
-    }
+    val grades = remember(packageList) { packageList.filter { it.group == "grades" } }
+    val branches = remember(packageList) { packageList.filter { it.group == "branch" } }
+    val specials = remember(packageList) { packageList.filter { it.group == "special" } }
 
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
@@ -96,150 +74,171 @@ fun PackagesScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header Section
-            item(key = "packages_header") {
-                Column(modifier = Modifier.fillMaxWidth()) {
+            // Title Header
+            item(key = "packages_title_header") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        text = "Academy Packages",
+                        text = "Academy packages",
                         fontSize = 28.sp,
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
-                        lineHeight = 34.sp
+                        textAlign = TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+
+            // Section 1: Grades 9–12
+            if (grades.isNotEmpty()) {
+                item(key = "section_grades_heading") {
                     Text(
-                        text = "Curricula, question banks, textbooks, exams, and AI-assisted revision.",
-                        fontSize = 13.sp,
-                        color = WisdomMuted,
-                        lineHeight = 18.sp
+                        text = "Grades 9–12",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
                     )
-                    Spacer(modifier = Modifier.height(14.dp))
+                }
 
-                    // Search Input
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
+                items(
+                    count = (grades.size + 1) / 2,
+                    key = { rowIndex -> "grades_row_$rowIndex" }
+                ) { rowIndex ->
+                    val first = grades[rowIndex * 2]
+                    val second = grades.getOrNull(rowIndex * 2 + 1)
+
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = {
-                            Text(
-                                text = "Search packages or subjects…",
-                                color = WisdomMuted.copy(alpha = 0.7f),
-                                fontSize = 13.sp
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = null,
-                                tint = WisdomCyan,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = WisdomCyan,
-                            unfocusedBorderColor = WisdomBorderWhite,
-                            focusedContainerColor = Color(0xFF111B2E).copy(alpha = 0.8f),
-                            unfocusedContainerColor = Color(0xFF0C1424).copy(alpha = 0.8f),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        )
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Filter Chips
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        items(filterOptions) { (key, label) ->
-                            val isSelected = selectedFilter == key
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .border(
-                                        BorderStroke(
-                                            1.dp,
-                                            if (isSelected) WisdomCyan else WisdomBorderWhite
-                                        ),
-                                        RoundedCornerShape(20.dp)
-                                    )
-                                    .background(
-                                        if (isSelected) WisdomCyan.copy(alpha = 0.15f)
-                                        else Color(0xFF111B2E).copy(alpha = 0.6f)
-                                    )
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
-                                        onClick = { selectedFilter = key }
-                                    )
-                                    .padding(horizontal = 14.dp, vertical = 7.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = label,
-                                    fontSize = 12.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) WisdomCyan else WisdomMuted
+                        Box(modifier = Modifier.weight(1f)) {
+                            PackageCatalogCard(
+                                pkg = first,
+                                onClick = { onSelectPackage(first) }
+                            )
+                        }
+                        if (second != null) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                PackageCatalogCard(
+                                    pkg = second,
+                                    onClick = { onSelectPackage(second) }
                                 )
                             }
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
                         }
                     }
                 }
             }
 
-            // Results count / section label
-            item(key = "results_count") {
-                Text(
-                    text = "${filteredList.size} ${if (filteredList.size == 1) "Program" else "Programs"} Available",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = WisdomMuted,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
+            // Section 2: Other branches
+            if (branches.isNotEmpty()) {
+                item(key = "section_branches_heading") {
+                    Text(
+                        text = "Other branches",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 24.dp, bottom = 4.dp)
+                    )
+                }
 
-            // 2-Column Package Cards Grid
-            items(
-                count = (filteredList.size + 1) / 2,
-                key = { rowIndex -> "pkg_row_$rowIndex" }
-            ) { rowIndex ->
-                val first = filteredList[rowIndex * 2]
-                val second = filteredList.getOrNull(rowIndex * 2 + 1)
+                items(
+                    count = (branches.size + 1) / 2,
+                    key = { rowIndex -> "branches_row_$rowIndex" }
+                ) { rowIndex ->
+                    val first = branches[rowIndex * 2]
+                    val second = branches.getOrNull(rowIndex * 2 + 1)
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        PackageCardItem(
-                            pkg = first,
-                            onClick = { onSelectPackage(first) }
-                        )
-                    }
-                    if (second != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         Box(modifier = Modifier.weight(1f)) {
-                            PackageCardItem(
-                                pkg = second,
-                                onClick = { onSelectPackage(second) }
+                            PackageCatalogCard(
+                                pkg = first,
+                                onClick = { onSelectPackage(first) }
                             )
                         }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
+                        if (second != null) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                PackageCatalogCard(
+                                    pkg = second,
+                                    onClick = { onSelectPackage(second) }
+                                )
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+
+            // Section 3: Special packages
+            if (specials.isNotEmpty()) {
+                item(key = "section_specials_heading") {
+                    Text(
+                        text = "Special packages",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 24.dp, bottom = 4.dp)
+                    )
+                }
+
+                items(
+                    count = (specials.size + 1) / 2,
+                    key = { rowIndex -> "specials_row_$rowIndex" }
+                ) { rowIndex ->
+                    val first = specials[rowIndex * 2]
+                    val second = specials.getOrNull(rowIndex * 2 + 1)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            PackageCatalogCard(
+                                pkg = first,
+                                onClick = { onSelectPackage(first) }
+                            )
+                        }
+                        if (second != null) {
+                            Box(modifier = Modifier.weight(1f)) {
+                                PackageCatalogCard(
+                                    pkg = second,
+                                    onClick = { onSelectPackage(second) }
+                                )
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
 
             // Bottom space above bottom nav
-            item(key = "bottom_spacer") {
-                Spacer(modifier = Modifier.height(28.dp))
+            item(key = "packages_bottom_spacer") {
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
 }
 
+/**
+ * Clean Package Catalog Card strictly mirroring website:
+ * <article className="card-modern group flex flex-col h-full justify-between shadow-lg shadow-black/25 overflow-hidden rounded-xl sm:rounded-2xl">
+ *   <div className="card-media-wrap aspect-video"><img src={pkg.image} alt={pkg.name} /></div>
+ *   <h2>{pkg.name}</h2>
+ *   <button className="btn-open"><BookOpen />Start Learning</button>
+ * </article>
+ */
 @Composable
-fun PackageCardItem(
+fun PackageCatalogCard(
     pkg: NativePackage,
     onClick: () -> Unit
 ) {
@@ -267,14 +266,13 @@ fun PackageCardItem(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
-
             }
 
-            // Card Body
+            // Card Body: Name + Start Learning button only
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp)
+                    .padding(horizontal = 10.dp, vertical = 12.dp)
             ) {
                 Text(
                     text = pkg.name,
@@ -285,49 +283,44 @@ fun PackageCardItem(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = pkg.description,
-                    fontSize = 11.sp,
-                    color = WisdomMuted,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 14.sp
-                )
-
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Action row
-                Row(
+                // Start Learning action button (btn-open style)
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(WisdomCyan.copy(alpha = 0.08f))
-                        .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.4f)), RoundedCornerShape(8.dp))
-                        .padding(vertical = 6.dp, horizontal = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(WisdomCyan.copy(alpha = 0.12f))
+                        .border(
+                            BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.45f)),
+                            RoundedCornerShape(10.dp)
+                        )
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = ripple(color = WisdomCyan.copy(alpha = 0.25f)),
+                            onClick = onClick
+                        )
+                        .padding(vertical = 8.dp, horizontal = 10.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                        contentDescription = null,
-                        tint = WisdomCyan,
-                        modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = "Explore",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = WisdomCyan
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        tint = WisdomCyan,
-                        modifier = Modifier.size(11.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = null,
+                            tint = WisdomCyan,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Start Learning",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = WisdomCyan
+                        )
+                    }
                 }
             }
         }
