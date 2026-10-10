@@ -1629,6 +1629,70 @@ fun MainScreen(
     val density = LocalDensity.current
     val isKeyboardVisible = WindowInsets.ime.getBottom(density) > 0
 
+    // Unified Global Navigation Router (Guarantees zero 404s, routes directly to native screens)
+    val handleGlobalNav: (String) -> Unit = { targetPathOrUrl ->
+        val clean = targetPathOrUrl.trim()
+        val pathPart = if (clean.startsWith("http")) {
+            try { Uri.parse(clean).path ?: clean } catch (_: Exception) { clean }
+        } else clean
+
+        if (pathPart == "/about" || pathPart.endsWith("/about")) {
+            activeDrawerScreen = "about"
+        } else if (pathPart == "/contact" || pathPart.endsWith("/contact")) {
+            activeDrawerScreen = "contact"
+        } else if (pathPart.contains("/faq")) {
+            activeDrawerScreen = "faq"
+        } else if (pathPart == "/privacy" || pathPart.endsWith("/privacy")) {
+            activeDrawerScreen = "privacy"
+        } else if (pathPart == "/terms" || pathPart.endsWith("/terms")) {
+            activeDrawerScreen = "terms"
+        } else if (pathPart.contains("/academy/success-stories") || pathPart == "/success-stories") {
+            activeGuideSlug = "success-stories"
+        } else if (pathPart.contains("/academy/study-techniques") || pathPart == "/study-techniques") {
+            activeGuideSlug = "study-techniques"
+        } else if (pathPart.contains("/academy/campus-life") || pathPart == "/campus-life") {
+            activeGuideSlug = "campus-life"
+        } else if (pathPart.contains("/academy/universities") || pathPart == "/universities") {
+            activeGuideSlug = "universities"
+        } else if (pathPart.contains("/academy/departments") || pathPart == "/departments") {
+            activeGuideSlug = "departments"
+        } else if (pathPart.contains("/academy/scholarships") || pathPart == "/scholarships") {
+            activeGuideSlug = "scholarships"
+        } else {
+            val matchedPkg = catalogPackages.find {
+                it.path.equals(pathPart, ignoreCase = true) ||
+                it.id.equals(pathPart.removePrefix("/academy/"), ignoreCase = true) ||
+                it.id.equals(pathPart.removePrefix("/packages/"), ignoreCase = true)
+            }
+            if (matchedPkg != null) {
+                selectedPackage = matchedPkg
+                selectedIndex = 2
+            } else if (pathPart == "/academy" || pathPart == "/packages") {
+                selectedPackage = null
+                selectedIndex = 2
+            } else if (pathPart == "/learning" || pathPart == "/my-learning") {
+                activeStudyUrl = null
+                selectedIndex = 1
+            } else if (pathPart == "/account" || pathPart == "/login" || pathPart == "/signup") {
+                selectedIndex = 3
+            } else if (pathPart == "/settings") {
+                selectedIndex = 4
+            } else {
+                val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
+                if (fullUrl.contains("/books") || fullUrl.contains("/short-notes") || fullUrl.contains("/flashcards") || fullUrl.contains("/question-banks") || fullUrl.contains("/exams") || fullUrl.contains("/life-savers")) {
+                    activeStudyUrl = fullUrl
+                    navigateTo(fullUrl, 1)
+                } else {
+                    val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
+                    if (targetTab == 1) {
+                        activeStudyUrl = fullUrl
+                    }
+                    navigateTo(fullUrl, targetTab)
+                }
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -2822,70 +2886,6 @@ fun MainScreen(
                     },
                     modifier = Modifier.fillMaxSize()
                 )
-
-                // Unified Global Navigation Router (Guarantees zero 404s, routes directly to native screens)
-                val handleGlobalNav: (String) -> Unit = { targetPathOrUrl ->
-                    val clean = targetPathOrUrl.trim()
-                    val pathPart = if (clean.startsWith("http")) {
-                        try { Uri.parse(clean).path ?: clean } catch (_: Exception) { clean }
-                    } else clean
-
-                    if (pathPart == "/about" || pathPart.endsWith("/about")) {
-                        activeDrawerScreen = "about"
-                    } else if (pathPart == "/contact" || pathPart.endsWith("/contact")) {
-                        activeDrawerScreen = "contact"
-                    } else if (pathPart.contains("/faq")) {
-                        activeDrawerScreen = "faq"
-                    } else if (pathPart == "/privacy" || pathPart.endsWith("/privacy")) {
-                        activeDrawerScreen = "privacy"
-                    } else if (pathPart == "/terms" || pathPart.endsWith("/terms")) {
-                        activeDrawerScreen = "terms"
-                    } else if (pathPart.contains("/academy/success-stories") || pathPart == "/success-stories") {
-                        activeGuideSlug = "success-stories"
-                    } else if (pathPart.contains("/academy/study-techniques") || pathPart == "/study-techniques") {
-                        activeGuideSlug = "study-techniques"
-                    } else if (pathPart.contains("/academy/campus-life") || pathPart == "/campus-life") {
-                        activeGuideSlug = "campus-life"
-                    } else if (pathPart.contains("/academy/universities") || pathPart == "/universities") {
-                        activeGuideSlug = "universities"
-                    } else if (pathPart.contains("/academy/departments") || pathPart == "/departments") {
-                        activeGuideSlug = "departments"
-                    } else if (pathPart.contains("/academy/scholarships") || pathPart == "/scholarships") {
-                        activeGuideSlug = "scholarships"
-                    } else {
-                        val matchedPkg = catalogPackages.find {
-                            it.path.equals(pathPart, ignoreCase = true) ||
-                            it.id.equals(pathPart.removePrefix("/academy/"), ignoreCase = true) ||
-                            it.id.equals(pathPart.removePrefix("/packages/"), ignoreCase = true)
-                        }
-                        if (matchedPkg != null) {
-                            selectedPackage = matchedPkg
-                            selectedIndex = 2
-                        } else if (pathPart == "/academy" || pathPart == "/packages") {
-                            selectedPackage = null
-                            selectedIndex = 2
-                        } else if (pathPart == "/learning" || pathPart == "/my-learning") {
-                            activeStudyUrl = null
-                            selectedIndex = 1
-                        } else if (pathPart == "/account" || pathPart == "/login" || pathPart == "/signup") {
-                            selectedIndex = 3
-                        } else if (pathPart == "/settings") {
-                            selectedIndex = 4
-                        } else {
-                            val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
-                            if (fullUrl.contains("/books") || fullUrl.contains("/short-notes") || fullUrl.contains("/flashcards") || fullUrl.contains("/question-banks") || fullUrl.contains("/exams") || fullUrl.contains("/life-savers")) {
-                                activeStudyUrl = fullUrl
-                                navigateTo(fullUrl, 1)
-                            } else {
-                                val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
-                                if (targetTab == 1) {
-                                    activeStudyUrl = fullUrl
-                                }
-                                navigateTo(fullUrl, targetTab)
-                            }
-                        }
-                    }
-                }
 
                 // Native Home Screen (Phase A2 / B)
                 if (selectedIndex == 0) {

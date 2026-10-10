@@ -67,5 +67,24 @@
 * **Cause:** When moving to 100% free academic access, `priceEtb` was removed from `NativePackage` in `PackagesData.kt`. However, `AcademyRepository.kt` lines 48 & 51 still attempted to access `existing.priceEtb` and `existing.copy(priceEtb = price)`.
 * **Fix:** Replaced the price parsing block in `AcademyRepository.kt` to filter by active status (`if (active) map[id] = existing else map.remove(id)`) without referencing `priceEtb`. Grepped `app/src` to guarantee 0 remaining references to `priceEtb`.
 * **DO NOT:** **When removing a data model field, always grep the entire codebase (`app/src`) to verify all repositories, serializers, and UI components are updated simultaneously.**
+### 2026-10-10 – Run #13 failed (`:app:compileReleaseKotlin`)
 
+#### Problem 1: Unresolved reference 'handleGlobalNav' in `MainActivity.kt` (line 3705)
+* **Cause:** `handleGlobalNav` was declared inside the inner `AndroidView` body of `Scaffold`'s content lambda (around line 2827). When the drawer slide-out menu composable (`AnimatedVisibility` at line 3492) attempted to invoke `handleGlobalNav(link.url)` in `overflowMenuLinks.forEach`, it was outside the lexical scope of `handleGlobalNav`.
+* **Fix:** Hoisted `handleGlobalNav` up to the top level of `MainScreen` (before `Scaffold`), making it universally accessible to both the main content tabs and the drawer navigation menu without duplicate routers.
+* **DO NOT:** **Never define global or shared navigation lambdas/handlers inside nested view composable closures (`AndroidView`, inner `Box`). Declare them at the root composable scope so all sub-views, side sheets, and drawers can access them.**
 
+#### Problem 2: Unresolved reference 'Sparkles' in `AccountScreen.kt` and 'Brain' in `GuidesScreen.kt`
+* **Cause:** `Sparkles` and `Brain` were copied from web icon sets (Lucide React / Feather from the Next.js website reference) and imported as `androidx.compose.material.icons.filled.Sparkles` and `androidx.compose.material.icons.filled.Brain`. Neither exists in Android Jetpack Compose Material Icons (core or extended).
+* **Fix:** Removed the invalid icon imports (`Sparkles` from `AccountScreen.kt` and `Brain` from `GuidesScreen.kt`), which were unused imports in both files. When sparkle or brain icons are needed in UI, Compose Material equivalents like `Icons.Filled.AutoAwesome` (for sparkles) and `Icons.Filled.Psychology` (for brain) from `material-icons-extended` must be used.
+* **DO NOT:** **Never import Lucide/web icon names into Jetpack Compose. Always verify the exact name exists in `androidx.compose.material.icons` before importing.**
+
+#### Problem 3: Argument type mismatch for `items(faqItems)` and missing `component1()`/`component2()` destructuring in `DrawerScreens.kt` (lines 543)
+* **Cause:** `DrawerScreens.kt` invoked `items(faqItems) { (q, a) -> ... }` in `LazyColumn`, but did not import `androidx.compose.foundation.lazy.items`. Without this extension function, Kotlin resolved `items` to the overload taking `count: Int`, causing type mismatch (`actual 'List<Pair<String, String>>', expected 'Int'`) and complaining that `Int` cannot be destructured into `(q, a)`.
+* **Fix:** Added `import androidx.compose.foundation.lazy.items` to `DrawerScreens.kt`.
+* **DO NOT:** **When passing a List or Collection to `items(...)` in a `LazyColumn` or `LazyRow`, always import `androidx.compose.foundation.lazy.items`. Do not assume it is part of `LazyColumn` or wildcard foundation imports.**
+
+#### Problem 4: Unresolved reference 'AnimatedVisibility' in `DrawerScreens.kt` (line 562)
+* **Cause:** `DrawerScreens.kt` used `AnimatedVisibility(visible = open)` to expand/collapse FAQ answers without importing `androidx.compose.animation.AnimatedVisibility`.
+* **Fix:** Added `import androidx.compose.animation.AnimatedVisibility` to `DrawerScreens.kt`.
+* **DO NOT:** **Always import `androidx.compose.animation.AnimatedVisibility` explicitly when animating visibility in Compose composables.**

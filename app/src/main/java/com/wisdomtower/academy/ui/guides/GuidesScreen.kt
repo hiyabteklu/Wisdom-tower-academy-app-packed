@@ -33,7 +33,6 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Brain
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
