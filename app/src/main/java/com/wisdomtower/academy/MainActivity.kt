@@ -1080,6 +1080,15 @@ fun MainScreen(
         toolOverlayWebView?.stopLoading()
     }
 
+    val resetOverlays: () -> Unit = {
+        selectedPackage = null
+        activeStudyUrl = null
+        activeGuideSlug = null
+        activeDrawerScreen = null
+        closeToolOverlay()
+        menuExpanded = false
+    }
+
     var pendingNavRunnable by remember { mutableStateOf<Runnable?>(null) }
     var softNavFallbackRunnable by remember { mutableStateOf<Runnable?>(null) }
 
@@ -1367,10 +1376,26 @@ fun MainScreen(
             isInitialLoading = false
         } else {
             val startWait = System.currentTimeMillis()
-            while (!pageRendered && (System.currentTimeMillis() - startWait) < 14_000L) {
-                delay(120L)
+            while (!pageRendered && (System.currentTimeMillis() - startWait) < 3_000L) {
+                delay(100L)
             }
             isInitialLoading = false
+        }
+    }
+
+    // Hard fail-safe timeouts: loader states can NEVER stay visible or block touches
+    LaunchedEffect(isInitialLoading) {
+        if (isInitialLoading) {
+            delay(3500L)
+            isInitialLoading = false
+            minSplashElapsed = true
+        }
+    }
+
+    LaunchedEffect(isNavigating) {
+        if (isNavigating) {
+            delay(3500L)
+            isNavigating = false
         }
     }
 
@@ -1470,41 +1495,27 @@ fun MainScreen(
             menuExpanded = false
             return@BackHandler
         }
-        if (activeDrawerScreen != null) {
-            activeDrawerScreen = null
-            return@BackHandler
-        }
-        if (activeGuideSlug != null) {
-            activeGuideSlug = null
-            return@BackHandler
-        }
-        if (selectedPackage != null) {
-            selectedPackage = null
-            return@BackHandler
-        }
-        if (activeStudyUrl != null) {
-            val wv = webView
-            if (wv != null && wv.canGoBack()) {
-                val list = wv.copyBackForwardList()
-                if (list.currentIndex > 0) {
-                    wv.goBack()
-                    return@BackHandler
-                }
+        val twv = toolOverlayWebView
+        if (activeToolOverlayUrl != null && twv != null && twv.canGoBack()) {
+            val list = twv.copyBackForwardList()
+            if (list.currentIndex > 0) {
+                twv.goBack()
+                return@BackHandler
             }
-            activeStudyUrl = null
-            return@BackHandler
         }
-        if (activeToolOverlayUrl != null) {
-            val twv = toolOverlayWebView
-            if (twv != null && twv.canGoBack()) {
-                val list = twv.copyBackForwardList()
-                val currIdx = list.currentIndex
-                if (currIdx > 0) {
-                    twv.goBack()
-                    return@BackHandler
-                }
+        val swv = webView
+        if (activeStudyUrl != null && swv != null && swv.canGoBack()) {
+            val list = swv.copyBackForwardList()
+            if (list.currentIndex > 0) {
+                swv.goBack()
+                return@BackHandler
             }
-            closeToolOverlay()
+        }
+        val hasOverlay = activeDrawerScreen != null || activeGuideSlug != null ||
+                         selectedPackage != null || activeStudyUrl != null ||
+                         activeToolOverlayUrl != null
+        if (hasOverlay) {
+            resetOverlays()
             return@BackHandler
         }
         if (showOnboarding) return@BackHandler
@@ -1636,6 +1647,8 @@ fun MainScreen(
             try { Uri.parse(clean).path ?: clean } catch (_: Exception) { clean }
         } else clean
 
+        resetOverlays()
+
         if (pathPart == "/about" || pathPart.endsWith("/about")) {
             activeDrawerScreen = "about"
         } else if (pathPart == "/contact" || pathPart.endsWith("/contact")) {
@@ -1673,7 +1686,14 @@ fun MainScreen(
             } else if (pathPart == "/learning" || pathPart == "/my-learning") {
                 activeStudyUrl = null
                 selectedIndex = 1
-            } else if (pathPart == "/account" || pathPart == "/login" || pathPart == "/signup") {
+            } else if (pathPart.startsWith("/login") || pathPart.startsWith("/signin") ||
+                       pathPart.startsWith("/signup") || pathPart.startsWith("/register") ||
+                       pathPart == "login" || pathPart == "signin" ||
+                       pathPart == "signup" || pathPart == "register") {
+                val effectivePath = if (pathPart.startsWith("/")) pathPart else "/$pathPart"
+                val fullUrl = if (clean.startsWith("http")) clean else "https://www.wisdom-tower-academy.live$effectivePath"
+                navigateTo(fullUrl)
+            } else if (pathPart == "/account") {
                 selectedIndex = 3
             } else if (pathPart == "/settings") {
                 selectedIndex = 4
@@ -1921,9 +1941,8 @@ fun MainScreen(
                         items = items,
                         selectedIndex = selectedIndex,
                         onItemSelected = { index, _ ->
-                            selectedPackage = null
-                            activeStudyUrl = null
-                            activeGuideSlug = null
+                            resetOverlays()
+                            stopNavigationLoading(forceImmediate = true)
                             selectedIndex = index
                         }
                     )
@@ -3264,7 +3283,12 @@ fun MainScreen(
                                                 AuthStateManager.syncAuthSession(sessionJson)
                                                 if (!sessionJson.isNullOrBlank() && sessionJson != "null" && sessionJson.length > 20) {
                                                     val curUrl = toolOverlayWebView?.url.orEmpty()
-                                                    if (curUrl.contains("/login") || curUrl.contains("/signup")) {
+                                                    val overlayTarget = activeToolOverlayUrl.orEmpty()
+                                                    val isAuth = curUrl.contains("/login") || curUrl.contains("/signup") ||
+                                                                 curUrl.contains("/signin") || curUrl.contains("/register") ||
+                                                                 overlayTarget.contains("/login") || overlayTarget.contains("/signup") ||
+                                                                 overlayTarget.contains("/signin") || overlayTarget.contains("/register")
+                                                    if (isAuth) {
                                                         Toast.makeText(ctx, "Signed in successfully — Welcome back!", Toast.LENGTH_SHORT).show()
                                                         closeToolOverlay()
                                                     }

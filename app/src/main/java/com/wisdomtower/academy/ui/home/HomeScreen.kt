@@ -211,16 +211,6 @@ fun HomeScreen(
             }
 
             // 3. Program Cards Grid (2 columns on mobile, 16:10 top image, title + Open button)
-            item(key = "pathways_header") {
-                Text(
-                    text = "Structured Pathways",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WisdomTextPrimary,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
-                )
-            }
-
             items(
                 count = (HOME_PROGRAMS.size + 1) / 2,
                 key = { rowIndex -> "program_row_$rowIndex" }
@@ -632,13 +622,22 @@ private fun ResourceCompactCard(
                 modifier = Modifier.weight(1f)
             )
 
-            // Arrow
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = WisdomMuted,
-                modifier = Modifier.size(12.dp)
-            )
+            // Small round arrow badge on the right matching website span.rounded-full
+            Box(
+                modifier = Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.04f))
+                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    tint = WisdomMuted,
+                    modifier = Modifier.size(11.dp)
+                )
+            }
         }
     }
 }
