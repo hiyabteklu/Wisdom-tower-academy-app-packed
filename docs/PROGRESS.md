@@ -70,3 +70,39 @@ Working screen-by-screen in exact order:
 
 - [x] **Audit Documentation Rewrite** (`docs/FIDELITY_AUDIT.md`) [DONE]
   - Rewritten with genuine, transparent fidelity audit scores.
+
+## Phase B — Hubs & Full Screen Parity [DONE]
+
+- [x] **Parity Audit Mapping** (`docs/PARITY_AUDIT.md`) [DONE]
+  - Comprehensive screen-by-screen audit comparing every native screen to `website-reference/`.
+  - Mapped Matches, Missing, Invented elements, and justified NATIVE-ONLY architectures.
+
+- [x] **Account Screen Website Parity** (`ui/account/AccountScreen.kt`, `MainActivity.kt`) [DONE]
+  - Eliminated guest gate: Unsigned users now immediately see the website's clean Sign In / Sign Up tabbed authentication form.
+  - 3D Flippable Student ID Card: Implemented front face with golden seal and back face with barcode, serial, and institutional rules on tap.
+  - 3 Numbered Profile Sections matching website:
+    1. Character Avatar & Legal Identity
+    2. Academic Curriculum, Track & Institution
+    3. Contact Phone & Target Exam
+  - Deduplicated welcome toast: Single toast on auth session sync.
+
+- [x] **6 Learning Hub Cards & Native Study Workspace** (`ui/study/StudyWorkspaceScreen.kt`) [DONE]
+  - Bundled all official 16:9 hub cover images (`hubs/books.jpg`, `hubs/short-notes.jpg`, `hubs/flashcards.jpg`, `hubs/question-banks.jpg`, `hubs/exams.jpg`, `hubs/life-savers.jpg`) in `assets/images/hubs/`.
+  - Created native `StudyWorkspaceScreen`:
+    - Top Bar with back navigation and scope subtitle
+    - Academic Result Saver & Performance Gauge with score logging dialog
+    - Recent Activity & Exam History block (offline-capable with SharedPreferences persistence)
+    - 6 Learning Hub Cards (Books, Short Notes, Flashcards, Question Banks, Exams, Life Savers)
+    - Single Alive WebView Handoff on hub card tap with offline cache fallback.
+
+- [x] **Packages & Package Detail Hierarchies** (`ui/packages/PackageDetailScreen.kt`, `PackagesData.kt`) [DONE]
+  - Freshman: Natural & Social stream filter tabs, Semester 1 & Semester 2 filters, Collapsible GPA Calculator, Branch Leaderboard header, 20+ courses with direct Study Workspace handoff.
+  - Special Packages (ECE Year 3): Semester 1 & Semester 2 toggle cards, 14 official course codes (`ECEg3051`, `ECEg3071`, `ECEg3081`, etc.) with bundled course card thumbnails (`special-packages/courses/*.jpg`).
+  - Grades 9–12: Ethiopian curriculum subject lists for Grade 9, 10, 11, and 12 with subject hints, icons, and accent colors.
+  - Remedial Program: 7 core foundation prerequisite subjects with native study workspace routing.
+  - Packages Catalog: Direct hierarchical routing into package detail screens without bypassing native views.
+
+- [x] **Hierarchical Back Navigation & Shell State** (`MainActivity.kt`) [DONE]
+  - Sequential back-stack popping: Hardware and gesture back pops nested screens in order (`activeWorkspace` → `selectedPackage` → `activeStudyUrl` → `activeGuideSlug` → `activeDrawerScreen`).
+  - Seamless state retention across tab switches and sub-screens.
+

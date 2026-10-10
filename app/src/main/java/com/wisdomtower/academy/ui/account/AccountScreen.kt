@@ -4,6 +4,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,35 +34,49 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.ripple
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.data.auth.AuthStateManager
@@ -69,37 +86,20 @@ import com.wisdomtower.academy.data.model.UserProfile
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
-import com.wisdomtower.academy.ui.theme.WisdomAccentFuchsia
-import com.wisdomtower.academy.ui.theme.WisdomAccentIndigo
 import com.wisdomtower.academy.ui.theme.WisdomAccentPurple
 import com.wisdomtower.academy.ui.theme.WisdomAccentRose
 import com.wisdomtower.academy.ui.theme.WisdomAccentSky
 import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
-import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
-import com.wisdomtower.academy.ui.theme.WisdomPrimaryButton
-import com.wisdomtower.academy.ui.theme.WisdomSecondaryButton
-
-/**
- * Native Account screen strictly matching website reference:
- * - src/app/account/page.tsx
- * - src/components/StudentIdCard.tsx
- * - src/components/account/ProfileCompletionPanel.tsx
- *
- * Signed out: Sends guests to login (login card CTA).
- * Signed in:
- * - Digital Student ID card with verified details & golden crown if 100% complete
- * - Floating glassmorphic pill control bar (Folio + Copy, Your status, Learning Hub, Preferences, Log Out)
- * - Scholar Profile Verification panel (completion gauge, checklist, 3 collapsible steps, Save Profile Changes)
- */
+import kotlinx.coroutines.launch
 
 val EDUCATION_LEVEL_OPTIONS = listOf(
-    "Grade 9", "Grade 10", "Grade 11", "Grade 12",
-    "Remedial", "Freshman", "Senior University / Exit Exam", "Post-Graduate", "Other"
+    "Freshman", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
+    "Remedial", "Senior University / Exit Exam", "Post-Graduate", "Other"
 )
 
 val ACADEMIC_STREAM_OPTIONS = listOf(
@@ -130,6 +130,11 @@ val AVATAR_PRESETS_LIST = listOf(
     AvatarPresetOption("scholar-sky", "Scholar Sky", "Natural Explorer", WisdomAccentSky)
 )
 
+/**
+ * Native Account screen strictly matching website reference:
+ * - Signed-out: Direct port of website login/signup form (src/app/login, src/app/signup)
+ * - Signed-in: Flippable 3D Student ID Card, floating folio control bar, 3 numbered verification sections
+ */
 @Composable
 fun AccountScreen(
     modifier: Modifier = Modifier,
@@ -143,16 +148,15 @@ fun AccountScreen(
     val context = LocalContext.current
 
     if (!isLoggedIn) {
-        // Website sends guests to login
-        GuestLoginView(
+        // Faithful native port of website login/register page design
+        NativeAuthFormScreen(
             modifier = modifier,
-            onSignIn = { onNavigateToUrl("/login") },
-            onSignUp = { onNavigateToUrl("/signup") }
+            onNavigateToUrl = onNavigateToUrl
         )
         return
     }
 
-    // Signed-in state: read & update live profile
+    // Signed-in state
     var currentProfile by remember(userProfile) {
         mutableStateOf(
             userProfile ?: UserProfile(
@@ -197,25 +201,17 @@ fun AccountScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. Digital Student ID Card
-            item(key = "student_id_card") {
-                DigitalStudentIdCard(
+            // 1. Flippable Digital Student ID Card (Front & Back)
+            item(key = "flippable_student_id_card") {
+                FlippableStudentIdCard(
                     displayName = currentProfile.fullName ?: userName ?: "Student Scholar",
                     idData = studentIdData,
-                    userEmail = currentProfile.email ?: userEmail,
                     userProfile = currentProfile,
-                    hasCrown = hasCrown,
-                    onCopyFolio = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("Student Folio", studentIdData.folioNumber))
-                        copiedFolio = true
-                        Toast.makeText(context, "Student Folio copied to clipboard", Toast.LENGTH_SHORT).show()
-                    },
-                    copied = copiedFolio
+                    hasCrown = hasCrown
                 )
             }
 
-            // 2. Floating Glassmorphic Pill Control Bar
+            // 2. Floating Glassmorphic Pill Control Bar (Folio + Copy, Status, Learning, Preferences, Log Out)
             item(key = "floating_control_bar") {
                 FloatingPillControlBar(
                     folioNumber = studentIdData.folioNumber,
@@ -231,7 +227,7 @@ fun AccountScreen(
                 )
             }
 
-            // 3. Scholar Profile Verification Panel
+            // 3. Scholar Profile Verification Panel (Exact 3 numbered steps + fixed width gauge badge)
             item(key = "profile_completion_panel") {
                 ScholarProfileVerificationPanel(
                     profile = currentProfile,
@@ -244,6 +240,14 @@ fun AccountScreen(
                 )
             }
 
+            // 4. Enrolled Curriculums & Access
+            item(key = "enrolled_curriculum_section") {
+                EnrolledCurriculumSection(
+                    educationLevel = currentProfile.educationLevel ?: "Freshman",
+                    onNavigateToUrl = onNavigateToUrl
+                )
+            }
+
             item(key = "bottom_space") {
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -252,98 +256,654 @@ fun AccountScreen(
 }
 
 /**
- * Guest Login View matching website when not logged in
+ * Native Auth Form Screen directly matching website src/app/login/page.tsx
  */
 @Composable
-private fun GuestLoginView(
+private fun NativeAuthFormScreen(
     modifier: Modifier = Modifier,
-    onSignIn: () -> Unit,
-    onSignUp: () -> Unit
+    onNavigateToUrl: (String) -> Unit
 ) {
+    var mode by remember { mutableStateOf<"signin" | "signup">("signin") }
+    var identifier by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var fullName by remember { mutableStateOf("") }
+    var educationLevel by remember { mutableStateOf("Freshman") }
+    var customEducationLevel by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
+    var agreedToTerms by remember { mutableStateOf(true) }
+    var levelPickerExpanded by remember { mutableStateOf(false) }
+    var noticeText by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(WisdomCyan.copy(alpha = 0.15f))
-                    .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.4f)), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Badge,
-                    contentDescription = null,
-                    tint = WisdomCyan,
-                    modifier = Modifier.size(32.dp)
-                )
+            // Header Logo & Branding
+            item(key = "auth_header") {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(WisdomCyan.copy(alpha = 0.15f))
+                            .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.35f)), RoundedCornerShape(16.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.School,
+                            contentDescription = null,
+                            tint = WisdomCyan,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+
+                    Text(
+                        text = "Wisdom Tower Academy",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        letterSpacing = (-0.5).sp
+                    )
+
+                    Text(
+                        text = if (mode == "signin") "Sign in to your scholar folio" else "Create your official scholar folio",
+                        fontSize = 12.sp,
+                        color = WisdomMuted
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Auth Card
+            item(key = "auth_card") {
+                WisdomModernCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadius = 24.dp,
+                    borderColor = WisdomBorderWhite
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFF132038), Color(0xFF0E172A), Color(0xFF0A101D))
+                                )
+                            )
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        // Top Radiant Highlight
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(2.dp)
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(WisdomCyan, WisdomAccentSky, WisdomCyan)
+                                    )
+                                )
+                        )
 
-            Text(
-                text = "Scholar Sign In Required",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
+                        // Mode Switcher Tabs
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color(0xFF070D18))
+                                .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(14.dp))
+                                .padding(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (mode == "signin") Color.White.copy(alpha = 0.15f) else Color.Transparent)
+                                    .clickable {
+                                        mode = "signin"
+                                        noticeText = null
+                                    }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Sign In",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (mode == "signin") Color.White else WisdomMuted
+                                )
+                            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(if (mode == "signup") Color.White.copy(alpha = 0.15f) else Color.Transparent)
+                                    .clickable {
+                                        mode = "signup"
+                                        noticeText = null
+                                    }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Create Account",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (mode == "signup") Color.White else WisdomMuted
+                                )
+                            }
+                        }
 
-            Text(
-                text = "Sign in to access your official Digital Student ID, save study goals, and manage your academic profile.",
-                fontSize = 13.sp,
-                color = WisdomMuted,
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+                        // Full Name (Only for signup)
+                        if (mode == "signup") {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(
+                                    text = "FULL LEGAL NAME",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFCBD5E1),
+                                    letterSpacing = 0.5.sp
+                                )
+                                OutlinedTextField(
+                                    value = fullName,
+                                    onValueChange = { fullName = it },
+                                    placeholder = { Text("e.g. Abebe Bikila", fontSize = 12.5.sp, color = WisdomMuted) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Person, contentDescription = null, tint = WisdomMuted, modifier = Modifier.size(18.dp))
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = fieldColors()
+                                )
+                            }
+                        }
 
-            Spacer(modifier = Modifier.height(28.dp))
+                        // Email or Phone Number
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = "EMAIL OR PHONE NUMBER",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFCBD5E1),
+                                letterSpacing = 0.5.sp
+                            )
+                            OutlinedTextField(
+                                value = identifier,
+                                onValueChange = { identifier = it },
+                                placeholder = { Text("name@email.com or 09xxxxxxxx", fontSize = 12.5.sp, color = WisdomMuted) },
+                                leadingIcon = {
+                                    val icon = if (identifier.contains("@")) Icons.Default.Email else Icons.Default.Phone
+                                    Icon(icon, contentDescription = null, tint = WisdomMuted, modifier = Modifier.size(18.dp))
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = fieldColors()
+                            )
+                        }
 
-            WisdomPrimaryButton(
-                text = "Sign In to Account",
-                onClick = onSignIn,
-                modifier = Modifier.fillMaxWidth()
-            )
+                        // Academic Level (Only for signup)
+                        if (mode == "signup") {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(
+                                    text = "ACADEMIC LEVEL",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFCBD5E1),
+                                    letterSpacing = 0.5.sp
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(Color(0xFF0A101D))
+                                        .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
+                                        .clickable { levelPickerExpanded = !levelPickerExpanded }
+                                        .padding(horizontal = 14.dp, vertical = 13.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Icon(Icons.Default.School, contentDescription = null, tint = WisdomMuted, modifier = Modifier.size(18.dp))
+                                            Text(
+                                                text = educationLevel,
+                                                fontSize = 13.sp,
+                                                color = Color.White
+                                            )
+                                        }
+                                        Icon(
+                                            Icons.Default.KeyboardArrowDown,
+                                            contentDescription = null,
+                                            tint = WisdomMuted,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                                if (levelPickerExpanded) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(Color(0xFF0F1829))
+                                            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
+                                            .padding(vertical = 4.dp)
+                                    ) {
+                                        EDUCATION_LEVEL_OPTIONS.forEach { opt ->
+                                            val isSel = educationLevel == opt
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        educationLevel = opt
+                                                        levelPickerExpanded = false
+                                                    }
+                                                    .background(if (isSel) WisdomCyan.copy(alpha = 0.15f) else Color.Transparent)
+                                                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = opt,
+                                                    fontSize = 12.5.sp,
+                                                    color = if (isSel) WisdomCyan else Color.White,
+                                                    fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal
+                                                )
+                                                if (isSel) {
+                                                    Icon(Icons.Default.Check, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(16.dp))
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
 
-            WisdomSecondaryButton(
-                text = "Create Free Account",
-                onClick = onSignUp,
-                modifier = Modifier.fillMaxWidth()
-            )
+                                if (educationLevel == "Other") {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    OutlinedTextField(
+                                        value = customEducationLevel,
+                                        onValueChange = { customEducationLevel = it },
+                                        placeholder = { Text("Specify academic level...", fontSize = 12.sp, color = WisdomMuted) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = fieldColors()
+                                    )
+                                }
+                            }
+                        }
+
+                        // Password Field
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "PASSWORD",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFCBD5E1),
+                                    letterSpacing = 0.5.sp
+                                )
+                                if (mode == "signin") {
+                                    Text(
+                                        text = "Forgot password?",
+                                        fontSize = 11.sp,
+                                        color = WisdomCyan,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.clickable {
+                                            onNavigateToUrl("/forgot-password")
+                                        }
+                                    )
+                                }
+                            }
+
+                            OutlinedTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                placeholder = { Text("••••••••", fontSize = 13.sp, color = WisdomMuted) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Lock, contentDescription = null, tint = WisdomMuted, modifier = Modifier.size(18.dp))
+                                },
+                                trailingIcon = {
+                                    Icon(
+                                        imageVector = if (showPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = null,
+                                        tint = WisdomMuted,
+                                        modifier = Modifier
+                                            .size(18.dp)
+                                            .clickable { showPassword = !showPassword }
+                                    )
+                                },
+                                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = fieldColors()
+                            )
+                        }
+
+                        // Confirm Password (Only for signup)
+                        if (mode == "signup") {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(
+                                    text = "CONFIRM PASSWORD",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFCBD5E1),
+                                    letterSpacing = 0.5.sp
+                                )
+                                OutlinedTextField(
+                                    value = confirmPassword,
+                                    onValueChange = { confirmPassword = it },
+                                    placeholder = { Text("••••••••", fontSize = 13.sp, color = WisdomMuted) },
+                                    leadingIcon = {
+                                        Icon(Icons.Default.Lock, contentDescription = null, tint = WisdomMuted, modifier = Modifier.size(18.dp))
+                                    },
+                                    visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = fieldColors()
+                                )
+                            }
+
+                            // Terms Agreement Checkbox
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = agreedToTerms,
+                                    onCheckedChange = { agreedToTerms = it },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = WisdomCyan,
+                                        checkmarkColor = Color(0xFF090D16)
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "I agree to Terms of Service and Privacy Policy.",
+                                    fontSize = 11.5.sp,
+                                    color = Color(0xFFCBD5E1)
+                                )
+                            }
+                        }
+
+                        // Notice Text
+                        noticeText?.let { notice ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF1E293B).copy(alpha = 0.8f))
+                                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(10.dp))
+                                    .padding(10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = notice,
+                                    fontSize = 11.5.sp,
+                                    color = WisdomAccentAmber,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+
+                        // Primary Submit Button
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isLoading) WisdomCyan.copy(alpha = 0.6f) else WisdomCyan)
+                                .clickable(enabled = !isLoading) {
+                                    val id = identifier.trim()
+                                    if (id.isBlank()) {
+                                        noticeText = "Please enter your email or phone number."
+                                        return@clickable
+                                    }
+                                    if (password.isBlank()) {
+                                        noticeText = "Please enter your password."
+                                        return@clickable
+                                    }
+                                    if (mode == "signup") {
+                                        if (fullName.trim().isBlank()) {
+                                            noticeText = "Please enter your full legal name."
+                                            return@clickable
+                                        }
+                                        if (password.length < 6) {
+                                            noticeText = "Password must be at least 6 characters."
+                                            return@clickable
+                                        }
+                                        if (password != confirmPassword) {
+                                            noticeText = "Passwords do not match."
+                                            return@clickable
+                                        }
+                                        if (!agreedToTerms) {
+                                            noticeText = "Please accept the Terms of Service to continue."
+                                            return@clickable
+                                        }
+                                    }
+
+                                    isLoading = true
+                                    noticeText = null
+
+                                    // Hand off through authenticated web session for live Supabase sign-in
+                                    val authTargetUrl = if (mode == "signin") {
+                                        "/login?identifier=${android.net.Uri.encode(id)}"
+                                    } else {
+                                        "/signup?identifier=${android.net.Uri.encode(id)}&name=${android.net.Uri.encode(fullName)}"
+                                    }
+                                    onNavigateToUrl(authTargetUrl)
+                                    isLoading = false
+                                }
+                                .padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isLoading) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = WisdomDarkOnCyan,
+                                        strokeWidth = 2.dp
+                                    )
+                                    Text(
+                                        text = if (mode == "signin") "Signing In..." else "Creating Account...",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = WisdomDarkOnCyan
+                                    )
+                                }
+                            } else {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = if (mode == "signin") "Sign In" else "Create Account",
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = WisdomDarkOnCyan
+                                    )
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = null,
+                                        tint = WisdomDarkOnCyan,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Bottom Switcher
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (mode == "signin") {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(text = "Don't have an account?", fontSize = 12.sp, color = WisdomMuted)
+                                    Text(
+                                        text = "Create a free account",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = WisdomCyan,
+                                        modifier = Modifier.clickable {
+                                            mode = "signup"
+                                            noticeText = null
+                                        }
+                                    )
+                                }
+                            } else {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(text = "Already have an account?", fontSize = 12.sp, color = WisdomMuted)
+                                    Text(
+                                        text = "Sign in here",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = WisdomCyan,
+                                        modifier = Modifier.clickable {
+                                            mode = "signin"
+                                            noticeText = null
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 /**
- * Digital Student ID Card mirroring website StudentIdCard.tsx
+ * Flippable 3D Student ID Card mirroring website StudentIdCard.tsx
  */
 @Composable
-private fun DigitalStudentIdCard(
+private fun FlippableStudentIdCard(
     displayName: String,
     idData: StudentIdData,
-    userEmail: String?,
     userProfile: UserProfile?,
-    hasCrown: Boolean,
-    onCopyFolio: () -> Unit,
-    copied: Boolean
+    hasCrown: Boolean
 ) {
-    val borderColor = if (hasCrown) WisdomAccentAmber.copy(alpha = 0.8f) else WisdomCyan.copy(alpha = 0.45f)
+    var isFlipped by remember { mutableStateOf(false) }
+    val rotation by animateFloatAsState(
+        targetValue = if (isFlipped) 180f else 0f,
+        animationSpec = tween(durationMillis = 500),
+        label = "card_flip"
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        // Card Box with 3D Y rotation
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    rotationY = rotation
+                    cameraDistance = 12f * density
+                }
+                .clickable { isFlipped = !isFlipped }
+        ) {
+            if (rotation <= 90f) {
+                // FRONT FACE
+                StudentIdCardFront(
+                    displayName = displayName,
+                    idData = idData,
+                    userProfile = userProfile,
+                    hasCrown = hasCrown
+                )
+            } else {
+                // BACK FACE (rotated 180 so it appears upright)
+                Box(modifier = Modifier.graphicsLayer { rotationY = 180f }) {
+                    StudentIdCardBack(
+                        idData = idData
+                    )
+                }
+            }
+        }
+
+        // Tap Card to Flip Button
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color.White.copy(alpha = 0.05f))
+                .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(20.dp))
+                .clickable { isFlipped = !isFlipped }
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    tint = WisdomCyan,
+                    modifier = Modifier.size(13.dp)
+                )
+                Text(
+                    text = if (isFlipped) "View front side" else "Tap card to flip",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFCBD5E1)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * FRONT FACE of Student ID Card
+ */
+@Composable
+private fun StudentIdCardFront(
+    displayName: String,
+    idData: StudentIdData,
+    userProfile: UserProfile?,
+    hasCrown: Boolean
+) {
+    val borderColor = if (hasCrown) WisdomAccentAmber.copy(alpha = 0.7f) else WisdomCyan.copy(alpha = 0.4f)
     val cardBg = if (hasCrown) {
-        listOf(Color(0xFF1F1B10), Color(0xFF0F1424))
+        listOf(Color(0xFF1E1A11), Color(0xFF0F1424), Color(0xFF090D18))
     } else {
-        listOf(Color(0xFF132238), Color(0xFF091220))
+        listOf(Color(0xFF121C32), Color(0xFF0D1527), Color(0xFF0A1020))
     }
 
     WisdomModernCard(
@@ -356,9 +916,10 @@ private fun DigitalStudentIdCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Brush.verticalGradient(cardBg))
-                .padding(18.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Card Header
+            // Institutional Top Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -370,13 +931,14 @@ private fun DigitalStudentIdCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(if (hasCrown) WisdomAccentAmber.copy(alpha = 0.2f) else WisdomCyan.copy(alpha = 0.15f)),
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White.copy(alpha = 0.06f))
+                            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(10.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (hasCrown) Icons.Default.EmojiEvents else Icons.Default.Badge,
+                            imageVector = Icons.Default.School,
                             contentDescription = null,
                             tint = if (hasCrown) WisdomAccentAmber else WisdomCyan,
                             modifier = Modifier.size(18.dp)
@@ -385,140 +947,323 @@ private fun DigitalStudentIdCard(
                     Column {
                         Text(
                             text = "Wisdom Tower Academy",
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
+                            letterSpacing = 0.5.sp
                         )
                         Text(
-                            text = idData.idNumber,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (hasCrown) WisdomAccentAmber else WisdomCyan,
-                            letterSpacing = 0.5.sp
+                            text = "OFFICIAL STUDENT CREDENTIAL",
+                            fontSize = 8.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = WisdomMuted,
+                            letterSpacing = 0.8.sp
                         )
                     }
                 }
 
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(if (hasCrown) WisdomAccentAmber.copy(alpha = 0.15f) else WisdomAccentEmerald.copy(alpha = 0.15f))
-                        .border(
-                            BorderStroke(1.dp, if (hasCrown) WisdomAccentAmber.copy(alpha = 0.6f) else WisdomAccentEmerald.copy(alpha = 0.5f)),
-                            CircleShape
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(WisdomAccentEmerald)
                         )
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
+                        Text(
+                            text = idData.status,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = WisdomAccentEmerald,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
                     Text(
-                        text = if (hasCrown) "VERIFIED SCHOLAR 👑" else idData.status,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (hasCrown) WisdomAccentAmber else WisdomAccentEmerald,
+                        text = "ETHIOPIA",
+                        fontSize = 8.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = WisdomMuted,
                         letterSpacing = 0.5.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Student Avatar + Info
+            // Main Card Body (Avatar, Legal Name, ID, Folio, Scope)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Avatar with VERIFIED badge
                 Box(
-                    modifier = Modifier
-                        .size(54.dp)
-                        .clip(CircleShape)
-                        .background(if (hasCrown) WisdomAccentAmber.copy(alpha = 0.15f) else WisdomCyan.copy(alpha = 0.12f))
-                        .border(BorderStroke(2.dp, if (hasCrown) WisdomAccentAmber else WisdomCyan.copy(alpha = 0.6f)), CircleShape),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.BottomCenter
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        tint = if (hasCrown) WisdomAccentAmber else WisdomCyan,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = displayName,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(CircleShape)
+                            .background(if (hasCrown) WisdomAccentAmber.copy(alpha = 0.15f) else WisdomCyan.copy(alpha = 0.12f))
+                            .border(
+                                BorderStroke(1.5.dp, if (hasCrown) WisdomAccentAmber else WisdomCyan.copy(alpha = 0.5f)),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (hasCrown) Icons.Default.EmojiEvents else Icons.Default.Person,
+                            contentDescription = null,
+                            tint = if (hasCrown) WisdomAccentAmber else WisdomCyan,
+                            modifier = Modifier.size(28.dp)
                         )
-                        if (hasCrown) {
-                            Text(text = "👑", fontSize = 14.sp)
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(Color(0xFF0F172A))
+                            .border(BorderStroke(0.8.dp, WisdomCyan.copy(alpha = 0.5f)), CircleShape)
+                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(Icons.Default.Shield, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(7.dp))
+                            Text(
+                                text = "VERIFIED",
+                                fontSize = 7.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = WisdomCyan,
+                                letterSpacing = 0.5.sp
+                            )
                         }
                     }
+                }
+
+                // Student Metadata Information
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = userEmail ?: "Higher Education Stream",
-                        fontSize = 11.sp,
-                        color = WisdomMuted
+                        text = "FULL LEGAL NAME",
+                        fontSize = 7.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = WisdomMuted,
+                        letterSpacing = 0.5.sp
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "${userProfile?.educationLevel ?: idData.academicTrack} · ${userProfile?.schoolName ?: idData.institutionName}",
-                        fontSize = 10.5.sp,
+                        text = displayName,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                text = "STUDENT ID NO.",
+                                fontSize = 7.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = WisdomMuted,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = idData.idNumber,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (hasCrown) WisdomAccentAmber else WisdomCyan,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "REGISTRY FOLIO",
+                                fontSize = 7.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = WisdomMuted,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = idData.folioNumber,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFCBD5E1),
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = "${userProfile?.educationLevel ?: idData.academicTrack} · ${userProfile?.stream ?: "Core Curriculum"}",
+                        fontSize = 10.sp,
                         color = if (hasCrown) WisdomAccentAmber.copy(alpha = 0.9f) else WisdomCyan.copy(alpha = 0.85f),
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Bottom Validity Bar with Barcode
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(
+                        text = "Issued: ${idData.issueDateFull} · Valid: ${idData.expiryDateFull}",
+                        fontSize = 8.5.sp,
+                        color = WisdomMuted
+                    )
+                    Text(
+                        text = "${userProfile?.schoolName ?: idData.institutionName} (${userProfile?.townRegion ?: "Ethiopia"})",
+                        fontSize = 8.5.sp,
+                        color = WisdomMuted.copy(alpha = 0.8f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
 
-            // Folio Row
+                // Realistic Barcode Graphic
+                Column(horizontalAlignment = Alignment.End) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(Color.White)
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(1.5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val barWidths = listOf(1, 2, 1, 3, 1, 2, 1, 1, 3, 2, 1, 2, 1, 3)
+                        barWidths.forEach { w ->
+                            Box(
+                                modifier = Modifier
+                                    .width(w.dp)
+                                    .height(14.dp)
+                                    .background(Color.Black)
+                            )
+                        }
+                    }
+                    Text(
+                        text = idData.numericId,
+                        fontSize = 7.sp,
+                        fontFamily = FontFamily.Monospace,
+                        color = WisdomMuted,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * BACK FACE of Student ID Card (Institutional Terms, Validity, Registrar Seal)
+ */
+@Composable
+private fun StudentIdCardBack(
+    idData: StudentIdData
+) {
+    WisdomModernCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 20.dp,
+        borderWidth = 1.dp,
+        borderColor = WisdomBorderWhite
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF121C32), Color(0xFF0D1527), Color(0xFF0A1020))
+                    )
+                )
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Terms Header
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = "INSTITUTIONAL TERMS & CONDITIONS",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    letterSpacing = 0.5.sp
+                )
+                Text(
+                    text = "This digital credential certifies active enrollment in Wisdom Tower Academy. It authorizes the named scholar to access designated curriculum repositories, examination simulations, and academic resource hubs.",
+                    fontSize = 8.5.sp,
+                    color = WisdomMuted,
+                    lineHeight = 11.5.sp
+                )
+            }
+
+            // 4-Item Information Box
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFF070C16).copy(alpha = 0.6f))
+                    .background(Color.White.copy(alpha = 0.03f))
                     .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(10.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Column {
+                        Text(text = "ACADEMIC REGISTRY", fontSize = 7.5.sp, color = WisdomMuted)
+                        Text(text = "Wisdom Tower Academy", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    }
+                    Column {
+                        Text(text = "OFFICIAL SUPPORT", fontSize = 7.5.sp, color = WisdomMuted)
+                        Text(text = "support@wisdomtower.tech", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = WisdomCyan)
+                    }
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.End) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(text = "VALIDITY PERIOD", fontSize = 7.5.sp, color = WisdomMuted)
+                        Text(text = "1 Academic Year", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomCyan)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(text = "CREDENTIAL VERIFICATION", fontSize = 7.5.sp, color = WisdomMuted)
+                        Text(text = "wisdomtower.tech/verify", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color.White)
+                    }
+                }
+            }
+
+            // Registrar Signature & Seal
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
+                    Text(text = "AUTHORIZATION SEAL", fontSize = 7.5.sp, fontFamily = FontFamily.Monospace, color = WisdomMuted)
                     Text(
-                        text = "FOLIO NUMBER",
-                        fontSize = 9.sp,
-                        color = WisdomMuted,
-                        letterSpacing = 0.5.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = idData.folioNumber,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (hasCrown) WisdomAccentAmber else WisdomCyan,
-                        fontFamily = FontFamily.Monospace,
-                        letterSpacing = 1.sp
-                    )
-                    Text(
-                        text = "ISSUED: ${idData.issueDateFull}",
-                        fontSize = 8.5.sp,
-                        color = WisdomMuted.copy(alpha = 0.7f)
+                        text = "Academic Affairs Registrar",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = WisdomCyan
                     )
                 }
-
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.08f))
-                        .clickable(onClick = onCopyFolio),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
-                        contentDescription = "Copy Folio",
-                        tint = if (copied) WisdomAccentEmerald else Color.White,
-                        modifier = Modifier.size(15.dp)
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(text = "REF: ${idData.idNumber}", fontSize = 8.sp, fontFamily = FontFamily.Monospace, color = WisdomMuted)
+                    Text(
+                        text = "DIGITALLY SIGNED & VERIFIED",
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = WisdomAccentEmerald
                     )
                 }
             }
@@ -539,7 +1284,7 @@ private fun FloatingPillControlBar(
 ) {
     WisdomModernCard(
         modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 16.dp,
+        cornerRadius = 18.dp,
         borderColor = WisdomBorderWhite
     ) {
         Column(
@@ -573,7 +1318,7 @@ private fun FloatingPillControlBar(
                 ) {
                     Icon(
                         imageVector = if (copiedFolio) Icons.Default.Check else Icons.Default.ContentCopy,
-                        contentDescription = null,
+                        contentDescription = "Copy Folio",
                         tint = if (copiedFolio) WisdomAccentEmerald else WisdomCyan,
                         modifier = Modifier.size(13.dp)
                     )
@@ -674,6 +1419,7 @@ private fun ScholarProfileVerificationPanel(
     var step1Expanded by remember { mutableStateOf(false) }
     var step2Expanded by remember { mutableStateOf(false) }
     var step3Expanded by remember { mutableStateOf(false) }
+    var checklistExpanded by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -686,17 +1432,22 @@ private fun ScholarProfileVerificationPanel(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(14.dp)
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(42.dp)
                                 .clip(CircleShape)
                                 .background(if (completionScore >= 100) WisdomAccentAmber.copy(alpha = 0.2f) else WisdomCyan.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
@@ -709,34 +1460,102 @@ private fun ScholarProfileVerificationPanel(
                             )
                         }
 
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = if (completionScore >= 100) "Scholar Profile Verified 👑" else "Scholar Profile Verification",
-                                fontSize = 14.sp,
+                                fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (completionScore >= 100) WisdomAccentAmber else Color.White
                             )
                             Text(
-                                text = if (completionScore >= 100) "Golden Scholar Crown active on student ID" else "Avatar, academic track, institution & phone required",
-                                fontSize = 11.sp,
-                                color = WisdomMuted
+                                text = if (completionScore >= 100) "👑 Golden Scholar Crown active on student ID" else "Avatar, academic track, institution & phone required",
+                                fontSize = 10.5.sp,
+                                color = WisdomMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
+                    // Completion percentage badge: softWrap=false, maxLines=1 to prevent vertical text wrap
                     Box(
                         modifier = Modifier
                             .clip(CircleShape)
                             .background(if (completionScore >= 100) WisdomAccentAmber.copy(alpha = 0.15f) else WisdomCyan.copy(alpha = 0.15f))
                             .border(BorderStroke(1.dp, if (completionScore >= 100) WisdomAccentAmber.copy(alpha = 0.5f) else WisdomCyan.copy(alpha = 0.4f)), CircleShape)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                            .padding(horizontal = 9.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = "$completionScore% Complete",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (completionScore >= 100) WisdomAccentAmber else WisdomCyan
+                            color = if (completionScore >= 100) WisdomAccentAmber else WisdomCyan,
+                            maxLines = 1,
+                            softWrap = false
                         )
+                    }
+                }
+
+                // Expandable Checklist Trigger
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { checklistExpanded = !checklistExpanded }
+                        .padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (checklistExpanded) "Hide verification checklist" else "View 7 verification milestones",
+                        fontSize = 10.5.sp,
+                        color = WisdomCyan,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = WisdomCyan,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                AnimatedVisibility(visible = checklistExpanded) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.03f))
+                            .padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        val milestones = listOf(
+                            "Character Avatar & Legal Name" to (firstName.isNotBlank()),
+                            "Education Level" to (educationLevel.isNotBlank()),
+                            "Academic Stream" to (stream.isNotBlank()),
+                            "School / University" to (schoolName.isNotBlank()),
+                            "Town / Region" to (townRegion.isNotBlank()),
+                            "Target Exam" to (targetExam.isNotBlank()),
+                            "Contact Phone" to (phone.isNotBlank())
+                        )
+                        milestones.forEach { (label, done) ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = if (done) "✓" else "○",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (done) WisdomAccentEmerald else WisdomMuted
+                                )
+                                Text(
+                                    text = label,
+                                    fontSize = 10.sp,
+                                    color = if (done) Color.White else WisdomMuted
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1020,6 +1839,95 @@ private fun StepAccordionCard(
                         .border(BorderStroke(1.dp, WisdomBorderWhite.copy(alpha = 0.5f)))
                 ) {
                     content()
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Enrolled Curriculum Section matching website Orders / Enrolled Courses
+ */
+@Composable
+private fun EnrolledCurriculumSection(
+    educationLevel: String,
+    onNavigateToUrl: (String) -> Unit
+) {
+    WisdomModernCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 16.dp,
+        borderColor = WisdomBorderWhite
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "CURRICULUM ENROLLMENTS",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = WisdomMuted,
+                    letterSpacing = 0.5.sp
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(WisdomAccentEmerald.copy(alpha = 0.15f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "100% Free Access",
+                        fontSize = 9.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = WisdomAccentEmerald
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFF0F1829))
+                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Active Academic Pass: $educationLevel",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "All books, question banks, flashcards, exams & life savers unlocked",
+                        fontSize = 10.5.sp,
+                        color = WisdomMuted
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(WisdomCyan.copy(alpha = 0.15f))
+                        .clickable { onNavigateToUrl("/learning") }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "Study →",
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = WisdomCyan
+                    )
                 }
             }
         }

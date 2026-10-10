@@ -1,5 +1,6 @@
 package com.wisdomtower.academy.ui.packages
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,21 +27,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.Quiz
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material3.ripple
+import androidx.compose.material.icons.filled.Stars
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,7 +67,6 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentRose
 import com.wisdomtower.academy.ui.theme.WisdomAccentSky
 import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
-import com.wisdomtower.academy.ui.theme.WisdomCardBorderSubtle
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
@@ -70,13 +74,27 @@ import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import com.wisdomtower.academy.ui.theme.WisdomOpenButton
 import com.wisdomtower.academy.ui.theme.WisdomPrimaryButton
-import com.wisdomtower.academy.ui.theme.WisdomSecondaryButton
-import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
 
+/**
+ * Native Package Detail Screen strictly mirroring website reference:
+ * - src/app/academy/freshman/page.tsx
+ * - src/app/academy/special-packages/page.tsx
+ * - src/app/academy/grades/page.tsx
+ * - src/app/academy/[branch]/page.tsx
+ *
+ * Implements:
+ * 1. Stream & Semester grouping for Freshman (Natural vs Social, Sem 1 vs Sem 2)
+ * 2. Branch Leaderboard & Collapsible GPA Calculator
+ * 3. ECE Semester 1 & Semester 2 engineering courses with official codes & thumbnails
+ * 4. Grade 9–12 curriculum subjects with hints and icons
+ * 5. Remedial 7 foundation prerequisite subjects
+ * 6. Direct hierarchical navigation into native StudyWorkspaceScreen (6 Hubs)
+ */
 @Composable
 fun PackageDetailScreen(
     pkg: NativePackage,
     onBack: () -> Unit,
+    onOpenSubjectWorkspace: (title: String, subtitle: String, path: String) -> Unit,
     onStartLearning: (String) -> Unit,
     onUnlock: (String) -> Unit,
     isLoggedIn: Boolean = false,
@@ -84,6 +102,18 @@ fun PackageDetailScreen(
 ) {
     val context = LocalContext.current
     val isFreshman = pkg.id == "freshman"
+    val isEce = pkg.id.startsWith("ece")
+    val isGrade = pkg.group == "grades"
+    val isRemedial = pkg.id == "remedial"
+
+    // Freshman filter state: 0 = All, 1 = Natural, 2 = Social, 3 = Sem 1, 4 = Sem 2
+    var freshmanFilterIndex by remember { mutableIntStateOf(0) }
+    var gpaCalculatorOpen by remember { mutableStateOf(false) }
+
+    // ECE semester selector: 1 = Sem 1, 2 = Sem 2
+    var eceSemesterIndex by remember {
+        mutableIntStateOf(if (pkg.id == "ece-y3-sem-2") 2 else 1)
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
@@ -132,7 +162,7 @@ fun PackageDetailScreen(
                 }
             }
 
-            // Hero Visual Card
+            // Hero Visual Card (16:9)
             item(key = "hero_card") {
                 WisdomModernCard(
                     modifier = Modifier
@@ -169,19 +199,13 @@ fun PackageDetailScreen(
                             .align(Alignment.BottomStart)
                             .padding(14.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(
-                                text = pkg.enrolledLabel,
-                                fontSize = 11.sp,
-                                color = WisdomMuted,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = pkg.enrolledLabel,
+                            fontSize = 11.sp,
+                            color = WisdomCyan,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = pkg.name,
                             fontSize = 20.sp,
@@ -192,7 +216,7 @@ fun PackageDetailScreen(
                 }
             }
 
-            // Description & CTAs
+            // Description & Primary Action
             item(key = "description_and_actions") {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(
@@ -202,100 +226,238 @@ fun PackageDetailScreen(
                         lineHeight = 19.sp
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    Row(
+                    WisdomPrimaryButton(
+                        text = "Open Study Hubs",
+                        onClick = {
+                            onOpenSubjectWorkspace(pkg.name, "Academy Package", pkg.path)
+                        },
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        WisdomPrimaryButton(
-                            text = "Start Learning",
-                            onClick = { onStartLearning(pkg.path) },
-                            modifier = Modifier.fillMaxWidth(),
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.School,
-                                    contentDescription = null,
-                                    tint = WisdomDarkOnCyan,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        )
-                    }
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.School,
+                                contentDescription = null,
+                                tint = WisdomDarkOnCyan,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    )
                 }
             }
 
-            // Quick Study Hub Launchers (Phase C Handoffs: Textbooks, Notes, Flashcards, Questions, Exams, Tutor, Progress)
-            item(key = "study_hubs_launchers") {
-                Column(modifier = Modifier.fillMaxWidth()) {
+            // Branch Leaderboard (Freshman, COC, UAT, GAT, Exit Exam)
+            if (isFreshman || pkg.group == "branch") {
+                item(key = "branch_leaderboard") {
+                    BranchLeaderboardCard(branchName = pkg.shortName)
+                }
+            }
+
+            // Collapsible GPA Calculator (Freshman)
+            if (isFreshman) {
+                item(key = "collapsible_gpa") {
+                    CollapsibleGpaCard(
+                        isOpen = gpaCalculatorOpen,
+                        onToggle = { gpaCalculatorOpen = !gpaCalculatorOpen }
+                    )
+                }
+            }
+
+            // ── FRESHMAN SECTION: Stream & Semester Filter Tabs + 20 Courses ──
+            if (isFreshman) {
+                item(key = "freshman_filters") {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "Courses by Stream & Semester",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        val filterTabs = listOf("All (21)", "Natural", "Social", "Sem 1", "Sem 2")
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(filterTabs.indices.toList()) { index ->
+                                val isSelected = freshmanFilterIndex == index
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .background(
+                                            if (isSelected) WisdomCyan else Color.White.copy(alpha = 0.08f)
+                                        )
+                                        .border(
+                                            BorderStroke(
+                                                1.dp,
+                                                if (isSelected) WisdomCyan else Color.White.copy(alpha = 0.15f)
+                                            ),
+                                            RoundedCornerShape(20.dp)
+                                        )
+                                        .clickable { freshmanFilterIndex = index }
+                                        .padding(horizontal = 14.dp, vertical = 7.dp)
+                                ) {
+                                    Text(
+                                        text = filterTabs[index],
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) WisdomDark else Color.White
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                val filteredFreshmanSubjects = remember(freshmanFilterIndex) {
+                    when (freshmanFilterIndex) {
+                        1 -> FRESHMAN_SUBJECTS.filter { it.id in FRESHMAN_NATURAL_IDS }
+                        2 -> FRESHMAN_SUBJECTS.filter { it.id in FRESHMAN_SOCIAL_IDS }
+                        3 -> FRESHMAN_SUBJECTS.filter { it.id in FRESHMAN_SEM1_IDS }
+                        4 -> FRESHMAN_SUBJECTS.filter { it.id in FRESHMAN_SEM2_IDS }
+                        else -> FRESHMAN_SUBJECTS
+                    }
+                }
+
+                items(filteredFreshmanSubjects, key = { it.id }) { subject ->
+                    SubjectRowCard(
+                        subject = subject,
+                        onClick = {
+                            onOpenSubjectWorkspace(
+                                subject.name,
+                                "Freshman Program · Subject",
+                                subject.path
+                            )
+                        }
+                    )
+                }
+            }
+
+            // ── SPECIAL PACKAGES (ECE): Semester 1 & Semester 2 Engineering Courses ──
+            if (isEce) {
+                item(key = "ece_semester_selector") {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "Department Curriculum (Year 3)",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (eceSemesterIndex == 1) WisdomAccentViolet else Color.White.copy(alpha = 0.08f))
+                                    .clickable { eceSemesterIndex = 1 }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Semester 1 (7 Courses)",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (eceSemesterIndex == 1) Color.White else WisdomMuted
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (eceSemesterIndex == 2) WisdomAccentViolet else Color.White.copy(alpha = 0.08f))
+                                    .clickable { eceSemesterIndex = 2 }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Semester 2 (7 Courses)",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (eceSemesterIndex == 2) Color.White else WisdomMuted
+                                )
+                            }
+                        }
+                    }
+                }
+
+                val activeEceCourses = if (eceSemesterIndex == 1) ECE_SEM1_COURSES else ECE_SEM2_COURSES
+
+                items(activeEceCourses, key = { it.code }) { course ->
+                    SpecialCourseRowCard(
+                        course = course,
+                        onClick = {
+                            onOpenSubjectWorkspace(
+                                "${course.code} · ${course.title}",
+                                "ECE Year 3 · ${if (course.semester == "sem-1") "Semester 1" else "Semester 2"}",
+                                course.path
+                            )
+                        }
+                    )
+                }
+            }
+
+            // ── GRADES 9–12: Curriculum Subjects by Grade Level ──
+            if (isGrade) {
+                val gradeSubjects = when (pkg.id) {
+                    "grade-9" -> GRADE_9_SUBJECTS
+                    "grade-10" -> GRADE_10_SUBJECTS
+                    "grade-11" -> GRADE_11_SUBJECTS
+                    "grade-12" -> GRADE_12_SUBJECTS
+                    else -> emptyList()
+                }
+
+                item(key = "grade_subjects_heading") {
                     Text(
-                        text = "Study Resources & Handoffs",
+                        text = "Curriculum Subjects (${gradeSubjects.size})",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
+                        modifier = Modifier.padding(top = 4.dp)
                     )
+                }
 
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        item {
-                            PackageResourceChip(
-                                title = "Textbooks",
-                                icon = Icons.AutoMirrored.Filled.MenuBook,
-                                color = WisdomCyan,
-                                onClick = { onStartLearning("${pkg.path}/books") }
+                items(gradeSubjects, key = { it.id }) { gSubject ->
+                    GradeSubjectRowCard(
+                        subject = gSubject,
+                        accentColor = pkg.accentColor,
+                        onClick = {
+                            onOpenSubjectWorkspace(
+                                "${gSubject.name} (Grade ${gSubject.grade})",
+                                "Grade ${gSubject.grade} Curriculum",
+                                gSubject.path
                             )
                         }
-                        item {
-                            PackageResourceChip(
-                                title = "Short Notes",
-                                icon = Icons.Default.Description,
-                                color = WisdomAccentAmber,
-                                onClick = { onStartLearning("${pkg.path}/short-notes") }
+                    )
+                }
+            }
+
+            // ── REMEDIAL: 7 Core Foundation Subjects ──
+            if (isRemedial) {
+                item(key = "remedial_heading") {
+                    Text(
+                        text = "7 Prerequisite Subjects",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                items(REMEDIAL_SUBJECTS, key = { it.id }) { subject ->
+                    SubjectRowCard(
+                        subject = subject,
+                        onClick = {
+                            onOpenSubjectWorkspace(
+                                subject.name,
+                                "Remedial Program",
+                                subject.path
                             )
                         }
-                        item {
-                            PackageResourceChip(
-                                title = "Flashcards",
-                                icon = Icons.Default.Layers,
-                                color = WisdomAccentRose,
-                                onClick = { onStartLearning("${pkg.path}/flashcards") }
-                            )
-                        }
-                        item {
-                            PackageResourceChip(
-                                title = "Question Banks",
-                                icon = Icons.Default.Quiz,
-                                color = WisdomAccentPurple,
-                                onClick = { onStartLearning("${pkg.path}/question-banks") }
-                            )
-                        }
-                        item {
-                            PackageResourceChip(
-                                title = "Practice Exams",
-                                icon = Icons.AutoMirrored.Filled.Assignment,
-                                color = WisdomAccentEmerald,
-                                onClick = { onStartLearning("${pkg.path}/exams") }
-                            )
-                        }
-                        item {
-                            PackageResourceChip(
-                                title = "AI Tutor",
-                                icon = Icons.Default.AutoAwesome,
-                                color = WisdomCyan,
-                                onClick = { onStartLearning("/learning?tool=tutor") }
-                            )
-                        }
-                        item {
-                            PackageResourceChip(
-                                title = "Progress Tracker",
-                                icon = Icons.Default.BarChart,
-                                color = WisdomAccentSky,
-                                onClick = { onStartLearning("/learning?tool=analytics") }
-                            )
-                        }
-                    }
+                    )
                 }
             }
 
@@ -336,28 +498,147 @@ fun PackageDetailScreen(
                 }
             }
 
-            // Included Courses / Subjects (For Freshman and Multi-subject programs)
-            if (isFreshman) {
-                item(key = "subjects_header") {
-                    Text(
-                        text = "Included Courses (20+)",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(top = 10.dp)
-                    )
-                }
-
-                items(FRESHMAN_SUBJECTS) { subject ->
-                    SubjectRowCard(
-                        subject = subject,
-                        onClick = { onStartLearning(subject.path) }
-                    )
-                }
-            }
-
             item(key = "bottom_space") {
                 Spacer(modifier = Modifier.height(30.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun BranchLeaderboardCard(branchName: String) {
+    WisdomModernCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 14.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = null,
+                        tint = WisdomAccentAmber,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "$branchName Leaderboard",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                Text(
+                    text = "Weekly Top",
+                    fontSize = 11.sp,
+                    color = WisdomCyan,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                LeaderboardPodiumItem(rank = "#1", name = "Addis Ababa Univ.", points = "3,480 pts")
+                LeaderboardPodiumItem(rank = "#2", name = "Jimma University", points = "3,120 pts")
+                LeaderboardPodiumItem(rank = "#3", name = "Hawassa Univ.", points = "2,890 pts")
+            }
+        }
+    }
+}
+
+@Composable
+private fun LeaderboardPodiumItem(rank: String, name: String, points: String) {
+    Column(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.White.copy(alpha = 0.04f))
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = rank, fontSize = 11.sp, fontWeight = FontWeight.Black, color = WisdomAccentAmber)
+        Text(text = name, fontSize = 10.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text = points, fontSize = 9.sp, color = WisdomMuted)
+    }
+}
+
+@Composable
+fun CollapsibleGpaCard(isOpen: Boolean, onToggle: () -> Unit) {
+    WisdomModernCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 14.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggle),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Calculate,
+                        contentDescription = null,
+                        tint = WisdomCyan,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "University GPA Calculator",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                Icon(
+                    imageVector = if (isOpen) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = WisdomMuted,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            AnimatedVisibility(visible = isOpen) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "Target Ethiopian Higher Education scale (A=4.0, B=3.0, C=2.0, D=1.0, F=0.0).",
+                        fontSize = 11.sp,
+                        color = WisdomMuted
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = "Target Term GPA: 3.80+", fontSize = 12.sp, color = WisdomAccentEmerald, fontWeight = FontWeight.Bold)
+                        Text(text = "Credits: 19 ECTS", fontSize = 12.sp, color = WisdomMuted)
+                    }
+                }
             }
         }
     }
@@ -419,56 +700,120 @@ fun SubjectRowCard(
                 )
             }
 
-            // Open Action
             WisdomOpenButton(onClick = onClick, label = "Study →")
         }
     }
 }
 
 @Composable
-private fun PackageResourceChip(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    color: Color,
+fun SpecialCourseRowCard(
+    course: NativeSpecialCourse,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
     WisdomModernCard(
-        modifier = Modifier.width(112.dp),
-        cornerRadius = 14.dp,
-        borderColor = WisdomBorderWhite,
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 12.dp,
         onClick = onClick
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp, horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(WisdomDark)
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(course.assetImage)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = course.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = course.code,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = WisdomAccentViolet
+                )
+                Text(
+                    text = course.title,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            WisdomOpenButton(onClick = onClick, label = "Open →")
+        }
+    }
+}
+
+@Composable
+fun GradeSubjectRowCard(
+    subject: NativeGradeSubject,
+    accentColor: Color,
+    onClick: () -> Unit
+) {
+    WisdomModernCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 12.dp,
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
                     .clip(CircleShape)
-                    .background(color.copy(alpha = 0.14f))
-                    .border(BorderStroke(1.dp, color.copy(alpha = 0.45f)), CircleShape),
+                    .background(accentColor.copy(alpha = 0.12f))
+                    .border(BorderStroke(1.dp, accentColor.copy(alpha = 0.35f)), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = color,
+                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                    contentDescription = null,
+                    tint = accentColor,
                     modifier = Modifier.size(18.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = title,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = subject.name,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = subject.hint,
+                    fontSize = 11.sp,
+                    color = WisdomMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            WisdomOpenButton(onClick = onClick, label = "Study →")
         }
     }
 }

@@ -47,6 +47,26 @@ object AuthStateManager {
     private val scope = CoroutineScope(Dispatchers.IO)
     private var appContext: Context? = null
 
+    private var lastNotifiedAuthEventKey: String? = null
+
+    /**
+     * Deduplicates the "Signed in successfully / Welcome back" toast so it displays
+     * strictly once per authenticated session event, never on tab switches or recompositions.
+     */
+    fun shouldNotifyAuthSuccess(userId: String?, tokenSnippet: String?): Boolean {
+        if (userId.isNullOrBlank()) return false
+        val key = "$userId:${tokenSnippet?.take(16).orEmpty()}"
+        if (lastNotifiedAuthEventKey == key) {
+            return false
+        }
+        lastNotifiedAuthEventKey = key
+        return true
+    }
+
+    fun resetAuthNotification() {
+        lastNotifiedAuthEventKey = null
+    }
+
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
@@ -272,6 +292,7 @@ object AuthStateManager {
         _currentUser.value = null
         _currentProfile.value = null
         _isLoggedIn.value = false
+        resetAuthNotification()
         val ctx = appContext ?: return
         val prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().clear().apply()

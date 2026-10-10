@@ -54,6 +54,7 @@ import com.wisdomtower.academy.ui.home.HomeScreen
 import com.wisdomtower.academy.ui.learning.LearningScreen
 import com.wisdomtower.academy.ui.packages.PackagesScreen
 import com.wisdomtower.academy.ui.packages.PackageDetailScreen
+import com.wisdomtower.academy.ui.study.StudyWorkspaceScreen
 import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.settings.SettingsScreen
@@ -983,6 +984,7 @@ fun MainScreen(
 
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedPackage by remember { mutableStateOf<NativePackage?>(null) }
+    var activeWorkspace by remember { mutableStateOf<Triple<String, String, String>?>(null) }
     var activeStudyUrl by remember { mutableStateOf<String?>(null) }
     var activeGuideSlug by remember { mutableStateOf<String?>(null) }
     var activeDrawerScreen by remember { mutableStateOf<String?>(null) }
@@ -1081,6 +1083,7 @@ fun MainScreen(
     }
 
     val resetOverlays: () -> Unit = {
+        activeWorkspace = null
         selectedPackage = null
         activeStudyUrl = null
         activeGuideSlug = null
@@ -1511,11 +1514,28 @@ fun MainScreen(
                 return@BackHandler
             }
         }
-        val hasOverlay = activeDrawerScreen != null || activeGuideSlug != null ||
-                         selectedPackage != null || activeStudyUrl != null ||
-                         activeToolOverlayUrl != null
-        if (hasOverlay) {
-            resetOverlays()
+        if (activeToolOverlayUrl != null) {
+            closeToolOverlay()
+            return@BackHandler
+        }
+        if (activeWorkspace != null) {
+            activeWorkspace = null
+            return@BackHandler
+        }
+        if (selectedPackage != null) {
+            selectedPackage = null
+            return@BackHandler
+        }
+        if (activeStudyUrl != null) {
+            activeStudyUrl = null
+            return@BackHandler
+        }
+        if (activeGuideSlug != null) {
+            activeGuideSlug = null
+            return@BackHandler
+        }
+        if (activeDrawerScreen != null) {
+            activeDrawerScreen = null
             return@BackHandler
         }
         if (showOnboarding) return@BackHandler
@@ -2933,9 +2953,14 @@ fun MainScreen(
                             navigateTo("https://www.wisdom-tower-academy.live$toolUrl")
                         },
                         onOpenHub = { hubPath ->
-                            val fullUrl = "https://www.wisdom-tower-academy.live$hubPath"
-                            activeStudyUrl = fullUrl
-                            navigateTo(fullUrl, 1)
+                            val matchedPkg = catalogPackages.find { it.path == hubPath || hubPath.startsWith(it.path) }
+                            if (matchedPkg != null) {
+                                activeWorkspace = Triple(matchedPkg.name, "Enrolled Course", hubPath)
+                            } else {
+                                val fullUrl = if (hubPath.startsWith("http")) hubPath else "https://www.wisdom-tower-academy.live$hubPath"
+                                activeStudyUrl = fullUrl
+                                navigateTo(fullUrl, 1)
+                            }
                         },
                         onSelectCourse = { pkg ->
                             selectedPackage = pkg
@@ -2952,14 +2977,15 @@ fun MainScreen(
                         PackageDetailScreen(
                             pkg = currentPkg,
                             onBack = { selectedPackage = null },
+                            onOpenSubjectWorkspace = { title, subtitle, path ->
+                                activeWorkspace = Triple(title, subtitle, path)
+                            },
                             onStartLearning = { studyPath ->
                                 val fullUrl = if (studyPath.startsWith("http")) studyPath else "https://www.wisdom-tower-academy.live$studyPath"
                                 if (fullUrl.contains("tool=")) {
                                     navigateTo(fullUrl)
                                 } else {
-                                    selectedPackage = null
-                                    activeStudyUrl = fullUrl
-                                    navigateTo(fullUrl, 1) // Switch to Learning tab
+                                    activeWorkspace = Triple(currentPkg.name, "Academy Package", studyPath)
                                 }
                             },
                             onUnlock = { checkoutPath ->
@@ -2980,14 +3006,30 @@ fun MainScreen(
                                 .zIndex(10f),
                             packageList = catalogPackages,
                             onSelectPackage = { pkg ->
-                                val fullUrl = if (pkg.path.startsWith("http")) pkg.path else "https://www.wisdom-tower-academy.live${pkg.path}"
-                                selectedPackage = null
-                                activeStudyUrl = fullUrl
-                                navigateTo(fullUrl, 1)
+                                selectedPackage = pkg
                             },
                             onNavigateToUrl = handleGlobalNav
                         )
                     }
+                }
+
+                // Native Study Workspace (6 Learning Hubs Depth)
+                val currentWs = activeWorkspace
+                if (currentWs != null) {
+                    StudyWorkspaceScreen(
+                        title = currentWs.first,
+                        scopeSubtitle = currentWs.second,
+                        basePath = currentWs.third,
+                        onBack = { activeWorkspace = null },
+                        onOpenHub = { _, hubUrl ->
+                            activeStudyUrl = hubUrl
+                            navigateTo(hubUrl, 1)
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(WisdomNavy)
+                            .zIndex(18f)
+                    )
                 }
 
                 // Native Account Command Center Shell (Phase A5 / B)
@@ -3289,7 +3331,11 @@ fun MainScreen(
                                                                  overlayTarget.contains("/login") || overlayTarget.contains("/signup") ||
                                                                  overlayTarget.contains("/signin") || overlayTarget.contains("/register")
                                                     if (isAuth) {
-                                                        Toast.makeText(ctx, "Signed in successfully — Welcome back!", Toast.LENGTH_SHORT).show()
+                                                        val uId = AuthStateManager.currentUser.value?.id
+                                                        val tok = AuthStateManager.currentUser.value?.accessToken
+                                                        if (AuthStateManager.shouldNotifyAuthSuccess(uId, tok)) {
+                                                            Toast.makeText(ctx, "Signed in successfully — Welcome back!", Toast.LENGTH_SHORT).show()
+                                                        }
                                                         closeToolOverlay()
                                                     }
                                                 }

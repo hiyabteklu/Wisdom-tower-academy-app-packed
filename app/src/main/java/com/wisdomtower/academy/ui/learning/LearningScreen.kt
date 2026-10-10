@@ -464,7 +464,8 @@ fun LearningScreen(
                             pkg = first,
                             onClick = {
                                 onOpenHub(first.path)
-                            }
+                            },
+                            onOpenHubLink = onOpenHub
                         )
                     }
                     if (second != null) {
@@ -473,7 +474,8 @@ fun LearningScreen(
                                 pkg = second,
                                 onClick = {
                                     onOpenHub(second.path)
-                                }
+                                },
+                                onOpenHubLink = onOpenHub
                             )
                         }
                     } else {
@@ -543,7 +545,8 @@ private fun ToolTileButton(
 @Composable
 private fun CurriculumCourseCard(
     pkg: NativePackage,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onOpenHubLink: (String) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -568,6 +571,37 @@ private fun CurriculumCourseCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
+
+                // Level tag overlay
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color(0xEE060B15))
+                            )
+                        )
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = pkg.name,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = pkg.enrolledLabel.uppercase(),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = WisdomCyan,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
             }
 
             Column(
@@ -575,23 +609,88 @@ private fun CurriculumCourseCard(
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp, vertical = 10.dp)
             ) {
-                Text(
-                    text = pkg.name,
-                    fontSize = 12.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                // Progress Indicator
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Progress",
+                        fontSize = 10.sp,
+                        color = WisdomMuted
+                    )
+                    Text(
+                        text = "Active",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = WisdomAccentEmerald
+                    )
+                }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color.White.copy(alpha = 0.08f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.35f)
+                            .height(4.dp)
+                            .background(WisdomCyan)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Fast Hub Links (Books, Notes, Cards, Questions, Exams, Life Savers)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    val quickHubs = listOf(
+                        "books" to "Books",
+                        "short-notes" to "Notes",
+                        "flashcards" to "Cards",
+                        "question-banks" to "Quizzes",
+                        "exams" to "Exams",
+                        "life-savers" to "Guides"
+                    )
+                    quickHubs.take(4).forEach { (hubId, hubLabel) ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color.White.copy(alpha = 0.04f))
+                                .border(BorderStroke(0.5.dp, Color.White.copy(alpha = 0.1f)), RoundedCornerShape(6.dp))
+                                .clickable { onOpenHubLink("${pkg.path}/$hubId") }
+                                .padding(vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = hubLabel,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = WisdomMuted,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Continue action button
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
                         .background(WisdomCyan.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.45f)), RoundedCornerShape(10.dp))
+                        .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.45f)), RoundedCornerShape(8.dp))
                         .clickable(onClick = onClick)
                         .padding(vertical = 6.dp),
                     contentAlignment = Alignment.Center
@@ -605,7 +704,7 @@ private fun CurriculumCourseCard(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Start Learning",
+                            text = "Continue",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = WisdomCyan
@@ -616,3 +715,4 @@ private fun CurriculumCourseCard(
         }
     }
 }
+

@@ -225,3 +225,168 @@ val FRESHMAN_SUBJECTS = listOf(
     NativeSubject("entrepreneurship", "Entrepreneurship", "Venture creation methodologies, business model canvas, market validation, and financial projections.", "file:///android_asset/images/freshman/entrepreneurship.jpg", "/academy/freshman/entrepreneurship"),
     NativeSubject("physical-fitness", "Physical Fitness", "Cardiovascular conditioning, musculoskeletal development, nutrition, and lifelong wellness principles.", "file:///android_asset/images/freshman/physical-fitness.jpg", "/academy/freshman/physical-fitness")
 )
+
+val FRESHMAN_NATURAL_IDS = setOf(
+    "math-natural", "physics", "chemistry", "biology", "emerging-technology",
+    "cpp-programming", "applied-math-1", "physical-fitness", "english-1", "english-2", "logic"
+)
+
+val FRESHMAN_SOCIAL_IDS = setOf(
+    "math-social", "economics", "geography", "history", "civics",
+    "psychology", "anthropology", "inclusiveness", "global-trends", "entrepreneurship",
+    "english-1", "english-2", "logic"
+)
+
+val FRESHMAN_SEM1_IDS = setOf(
+    "math-natural", "math-social", "physics", "chemistry", "biology",
+    "english-1", "psychology", "logic", "geography", "physical-fitness"
+)
+
+val FRESHMAN_SEM2_IDS = setOf(
+    "anthropology", "civics", "economics", "emerging-technology", "cpp-programming",
+    "applied-math-1", "english-2", "inclusiveness", "global-trends", "entrepreneurship"
+)
+
+data class NativeLearningHub(
+    val id: String,
+    val name: String,
+    val description: String,
+    val accentColor: Color,
+    val assetImage: String
+)
+
+val NATIVE_LEARNING_HUBS = listOf(
+    NativeLearningHub(
+        id = "books",
+        name = "Books",
+        description = "Core textbooks and curated reading lists",
+        accentColor = WisdomAccentSky,
+        assetImage = "file:///android_asset/images/hubs/books.jpg"
+    ),
+    NativeLearningHub(
+        id = "short-notes",
+        name = "Short Notes",
+        description = "Concise notes, summaries, and study guides",
+        accentColor = WisdomAccentViolet,
+        assetImage = "file:///android_asset/images/hubs/short-notes.jpg"
+    ),
+    NativeLearningHub(
+        id = "flashcards",
+        name = "Flashcards",
+        description = "Quick recall decks for key concepts",
+        accentColor = WisdomAccentAmber,
+        assetImage = "file:///android_asset/images/hubs/flashcards.jpg"
+    ),
+    NativeLearningHub(
+        id = "question-banks",
+        name = "Question Banks",
+        description = "Practice sets by topic and difficulty",
+        accentColor = WisdomCyan,
+        assetImage = "file:///android_asset/images/hubs/question-banks.jpg"
+    ),
+    NativeLearningHub(
+        id = "exams",
+        name = "Exams",
+        description = "Past papers, mocks, and timed drills",
+        accentColor = WisdomAccentEmerald,
+        assetImage = "file:///android_asset/images/hubs/exams.jpg"
+    ),
+    NativeLearningHub(
+        id = "life-savers",
+        name = "Life Savers",
+        description = "High-yield summaries, cheat sheets, and exam lifesavers",
+        accentColor = WisdomAccentRose,
+        assetImage = "file:///android_asset/images/hubs/life-savers.jpg"
+    )
+)
+
+data class NativeSpecialCourse(
+    val code: String,
+    val title: String,
+    val slug: String,
+    val semester: String,
+    val assetImage: String,
+    val path: String
+)
+
+val ECE_SEM1_COURSES = listOf(
+    NativeSpecialCourse("ECEg3071", "Applied Electronics II", "eceg3071", "sem-1", "file:///android_asset/images/special-packages/courses/eceg3071.jpg", "/academy/special-packages/electrical-computer-engineering/sem-1/eceg3071"),
+    NativeSpecialCourse("Econ1011", "Economics", "econ1011", "sem-1", "file:///android_asset/images/special-packages/courses/econ1011.jpg", "/academy/special-packages/electrical-computer-engineering/sem-1/econ1011"),
+    NativeSpecialCourse("ECEg3051", "Electromagnetic Fields", "eceg3051", "sem-1", "file:///android_asset/images/special-packages/courses/eceg3051.jpg", "/academy/special-packages/electrical-computer-engineering/sem-1/eceg3051"),
+    NativeSpecialCourse("ECEg3081", "Signals and Systems Analysis", "eceg3081", "sem-1", "file:///android_asset/images/special-packages/courses/eceg3081.jpg", "/academy/special-packages/electrical-computer-engineering/sem-1/eceg3081"),
+    NativeSpecialCourse("ECEg3073", "Electrical Engineering Laboratory III", "eceg3073", "sem-1", "file:///android_asset/images/special-packages/courses/eceg3073.jpg", "/academy/special-packages/electrical-computer-engineering/sem-1/eceg3073"),
+    NativeSpecialCourse("ECEg3101", "Object Oriented Programming", "eceg3101", "sem-1", "file:///android_asset/images/special-packages/courses/eceg3101.jpg", "/academy/special-packages/electrical-computer-engineering/sem-1/eceg3101"),
+    NativeSpecialCourse("ECEg3061", "Computational Methods", "eceg3061", "sem-1", "file:///android_asset/images/special-packages/courses/eceg3061.jpg", "/academy/special-packages/electrical-computer-engineering/sem-1/eceg3061")
+)
+
+val ECE_SEM2_COURSES = listOf(
+    NativeSpecialCourse("MEng3052", "Engineering Thermodynamics", "meng3052", "sem-2", "file:///android_asset/images/special-packages/courses/meng3052.jpg", "/academy/special-packages/electrical-computer-engineering/sem-2/meng3052"),
+    NativeSpecialCourse("ECEg3082", "Network Analysis and Synthesis", "eceg3082", "sem-2", "file:///android_asset/images/special-packages/courses/eceg3082.jpg", "/academy/special-packages/electrical-computer-engineering/sem-2/eceg3082"),
+    NativeSpecialCourse("ECEg3092", "Introduction to Electrical Machines", "eceg3092", "sem-2", "file:///android_asset/images/special-packages/courses/eceg3092.jpg", "/academy/special-packages/electrical-computer-engineering/sem-2/eceg3092"),
+    NativeSpecialCourse("ECEg3094", "Electrical Engineering Lab IV", "eceg3094", "sem-2", "file:///android_asset/images/special-packages/courses/eceg3094.jpg", "/academy/special-packages/electrical-computer-engineering/sem-2/eceg3094"),
+    NativeSpecialCourse("ECEg3102", "Digital Logic Design", "eceg3102", "sem-2", "file:///android_asset/images/special-packages/courses/eceg3102.jpg", "/academy/special-packages/electrical-computer-engineering/sem-2/eceg3102"),
+    NativeSpecialCourse("ECEg3052", "Electrical Materials and Technology", "eceg3052", "sem-2", "file:///android_asset/images/special-packages/courses/eceg3052.jpg", "/academy/special-packages/electrical-computer-engineering/sem-2/eceg3052"),
+    NativeSpecialCourse("ECEg3096", "Electrical Workshop Practice II", "eceg3096", "sem-2", "file:///android_asset/images/special-packages/courses/eceg3096.jpg", "/academy/special-packages/electrical-computer-engineering/sem-2/eceg3096")
+)
+
+data class NativeGradeSubject(
+    val id: String,
+    val name: String,
+    val hint: String,
+    val grade: String,
+    val path: String
+)
+
+val GRADE_9_SUBJECTS = listOf(
+    NativeGradeSubject("chemistry", "Chemistry", "Matter, atoms, reactions", "9", "/academy/grades/9/chemistry"),
+    NativeGradeSubject("mathematics", "Math", "Algebra, geometry, number work", "9", "/academy/grades/9/mathematics"),
+    NativeGradeSubject("physics", "Physics", "Motion, forces, energy", "9", "/academy/grades/9/physics"),
+    NativeGradeSubject("biology", "Biology", "Cells, organisms, life processes", "9", "/academy/grades/9/biology"),
+    NativeGradeSubject("geography", "Geography", "Earth systems and places", "9", "/academy/grades/9/geography"),
+    NativeGradeSubject("history", "History", "Past societies and change", "9", "/academy/grades/9/history"),
+    NativeGradeSubject("economics", "Economics", "Resources, markets, choices", "9", "/academy/grades/9/economics")
+)
+
+val GRADE_10_SUBJECTS = listOf(
+    NativeGradeSubject("mathematics", "Math", "Functions, geometry, statistics", "10", "/academy/grades/10/mathematics"),
+    NativeGradeSubject("biology", "Biology", "Systems, ecology, health", "10", "/academy/grades/10/biology"),
+    NativeGradeSubject("chemistry", "Chemistry", "Bonding, stoichiometry", "10", "/academy/grades/10/chemistry"),
+    NativeGradeSubject("physics", "Physics", "Waves, electricity foundations", "10", "/academy/grades/10/physics"),
+    NativeGradeSubject("geography", "Geography", "Human and physical geography", "10", "/academy/grades/10/geography"),
+    NativeGradeSubject("history", "History", "Regional and world contexts", "10", "/academy/grades/10/history"),
+    NativeGradeSubject("economics", "Economics", "Production and national economy", "10", "/academy/grades/10/economics")
+)
+
+val GRADE_11_SUBJECTS = listOf(
+    NativeGradeSubject("mathematics", "Math", "Advanced algebra and exam path", "11", "/academy/grades/11/mathematics"),
+    NativeGradeSubject("biology", "Biology", "Genetics, physiology, ecology", "11", "/academy/grades/11/biology"),
+    NativeGradeSubject("physics", "Physics", "Mechanics, energy, fields", "11", "/academy/grades/11/physics"),
+    NativeGradeSubject("chemistry", "Chemistry", "Structure, reactions, equilibrium", "11", "/academy/grades/11/chemistry"),
+    NativeGradeSubject("economics", "Economics", "Markets, macro, development", "11", "/academy/grades/11/economics"),
+    NativeGradeSubject("geography", "Geography", "Population, development, Ethiopia", "11", "/academy/grades/11/geography"),
+    NativeGradeSubject("history", "History", "Ethiopia and global history", "11", "/academy/grades/11/history")
+)
+
+val GRADE_12_SUBJECTS = listOf(
+    NativeGradeSubject("english", "English", "Leaving-exam English", "12", "/academy/grades/12/english"),
+    NativeGradeSubject("chemistry", "Chemistry", "Organic and physical chemistry", "12", "/academy/grades/12/chemistry"),
+    NativeGradeSubject("biology", "Biology", "Exam depth across life sciences", "12", "/academy/grades/12/biology"),
+    NativeGradeSubject("mathematics", "Math", "Exam-ready pure and applied math", "12", "/academy/grades/12/mathematics"),
+    NativeGradeSubject("physics", "Physics", "Electromagnetism, modern physics", "12", "/academy/grades/12/physics"),
+    NativeGradeSubject("geography", "Geography", "Exam depth in geo systems", "12", "/academy/grades/12/geography"),
+    NativeGradeSubject("economics", "Economics", "Exam depth in economic theory", "12", "/academy/grades/12/economics"),
+    NativeGradeSubject("history", "History", "Exam depth in historical analysis", "12", "/academy/grades/12/history"),
+    NativeGradeSubject("sat", "SAT", "SAT-style practice and strategies", "12", "/academy/grades/12/sat"),
+    NativeGradeSubject("exam-tips", "Exam tips", "Study tactics and exam-day guidance", "12", "/academy/grades/12/exam-tips")
+)
+
+val REMEDIAL_SUBJECTS = listOf(
+    NativeSubject("english", "English", "Catch-up core grammar, reading comprehension and writing mechanics.", "file:///android_asset/images/freshman/english-1.jpg", "/academy/remedial/english"),
+    NativeSubject("mathematics", "Mathematics", "Foundational algebra, geometry, functions, and quantitative problems.", "file:///android_asset/images/freshman/math-natural.jpg", "/academy/remedial/mathematics"),
+    NativeSubject("physics", "Physics", "Mechanics, kinematics, work, heat, and basic physical sciences.", "file:///android_asset/images/freshman/physics.jpg", "/academy/remedial/physics"),
+    NativeSubject("chemistry", "Chemistry", "Atomic structure, chemical equations, solutions, and acids/bases.", "file:///android_asset/images/freshman/chemistry.jpg", "/academy/remedial/chemistry"),
+    NativeSubject("biology", "Biology", "Cell biology, genetics, ecosystems, and human physiology.", "file:///android_asset/images/freshman/biology.jpg", "/academy/remedial/biology"),
+    NativeSubject("history", "History", "Ethiopian and regional Horn history, statecraft, and modernization.", "file:///android_asset/images/freshman/history.jpg", "/academy/remedial/history"),
+    NativeSubject("geography", "Geography", "Physical geography, natural resources, cartography, and population.", "file:///android_asset/images/freshman/geography.jpg", "/academy/remedial/geography")
+)
+
