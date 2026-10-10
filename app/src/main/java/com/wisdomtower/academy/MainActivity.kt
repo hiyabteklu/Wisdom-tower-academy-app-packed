@@ -1847,11 +1847,9 @@ fun MainScreen(
                         items = items,
                         selectedIndex = selectedIndex,
                         onItemSelected = { index, _ ->
-                            if (index != selectedIndex) {
-                                selectedPackage = null
-                                activeStudyUrl = null
-                                activeGuideSlug = null
-                            }
+                            selectedPackage = null
+                            activeStudyUrl = null
+                            activeGuideSlug = null
                             selectedIndex = index
                         }
                     )
@@ -2254,8 +2252,8 @@ fun MainScreen(
                                         // Early hide-chrome CSS injection at onPageStarted (before first paint)
                                         wv.evaluateJavascript(EARLY_HIDE_CHROME_JS, null)
 
+                                        val newIdx = tabIndexForUrl(url, selectedIndex)
                                         if (activeStudyUrl != null) {
-                                            val newIdx = tabIndexForUrl(url, selectedIndex)
                                             val targetIdx = tabIndexForUrl(lastTargetUrl, selectedIndex)
                                             if (!isNavigating || newIdx == targetIdx) {
                                                 selectedIndex = newIdx
@@ -2931,11 +2929,17 @@ fun MainScreen(
                                 .zIndex(10f),
                             packageList = catalogPackages,
                             onSelectPackage = { pkg ->
-                                selectedPackage = pkg
+                                val fullUrl = if (pkg.path.startsWith("http")) pkg.path else "https://www.wisdom-tower-academy.live${pkg.path}"
+                                selectedPackage = null
+                                activeStudyUrl = fullUrl
+                                navigateTo(fullUrl, 1)
                             },
                             onNavigateToUrl = { targetPathOrUrl ->
                                 val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
                                 val targetTab = tabIndexForUrl(fullUrl, selectedIndex)
+                                if (targetTab == 1) {
+                                    activeStudyUrl = fullUrl
+                                }
                                 navigateTo(fullUrl, targetTab)
                             }
                         )
