@@ -53,3 +53,19 @@
   3. Grepped the entire `app/src` repository to confirm zero remaining references to `packagePath` or missing `WisdomOpenButton` imports.
 * **DO NOT:** **Phase C: AccountScreen used packagePath and WisdomOpenButton that did not exist. Never reference a property or composable you have not defined or grepped for.**
 
+### 2026-10-10 – Phase D: Bottom Navigation Bounce-Back & `priceEtb` Cleanup
+
+#### Problem 1: Bottom Navigation tab switching bounce-back & blinking
+* **Cause:** Bottom navigation tabs (Home, Learning, Packages, Account, Settings) are native Jetpack Compose screens. When a user tapped a tab in `AliveBottomNav`, `navigateTo(item.url, index)` triggered a background WebView `loadUrl(...)`. Subsequent web routing callbacks (`handleOnPageReady`, `onPageStarted`, `onPageCommitVisible`, `onPageFinished`, `doUpdateVisitedHistory`, `onRouteChanged`) called `selectedIndex = tabIndexForUrl(...)`, which overwrote the active tab whenever Next.js executed client-side redirects or loaded cached paths.
+* **Fix:**
+  1. Made `selectedIndex` in Compose the authoritative single source of truth for native tab selection.
+  2. In `AliveBottomNav.onItemSelected`, updated `selectedIndex = index` immediately without triggering background WebView URL loads.
+  3. Guarded all WebView URL listeners (`handleOnPageReady`, `onRouteChanged`, `onPageStarted`, `onPageCommitVisible`, `onPageFinished`, `doUpdateVisitedHistory`) with `if (activeStudyUrl != null)`. Web events never mutate `selectedIndex` while the user is browsing native Compose screens.
+* **DO NOT:** **Never allow background WebView page lifecycle callbacks to mutate native Jetpack Compose tab indices (`selectedIndex`). Keep native navigation state decoupled from web navigation.**
+
+#### Problem 2: Unresolved reference `priceEtb` in `AcademyRepository.kt`
+* **Cause:** When moving to 100% free academic access, `priceEtb` was removed from `NativePackage` in `PackagesData.kt`. However, `AcademyRepository.kt` lines 48 & 51 still attempted to access `existing.priceEtb` and `existing.copy(priceEtb = price)`.
+* **Fix:** Replaced the price parsing block in `AcademyRepository.kt` to filter by active status (`if (active) map[id] = existing else map.remove(id)`) without referencing `priceEtb`. Grepped `app/src` to guarantee 0 remaining references to `priceEtb`.
+* **DO NOT:** **When removing a data model field, always grep the entire codebase (`app/src`) to verify all repositories, serializers, and UI components are updated simultaneously.**
+
+

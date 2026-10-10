@@ -268,23 +268,6 @@ fun PackageCardItem(
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Top right price pill badge
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xE6060B15))
-                        .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.6f)), CircleShape)
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Text(
-                        text = if (pkg.priceEtb > 0) "${pkg.priceEtb} ETB" else "Coming Soon",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (pkg.priceEtb > 0) WisdomCyan else WisdomMuted
-                    )
-                }
             }
 
             // Card Body

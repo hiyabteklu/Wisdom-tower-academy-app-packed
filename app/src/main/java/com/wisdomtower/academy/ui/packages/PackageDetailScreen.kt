@@ -173,22 +173,6 @@ fun PackageDetailScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            if (pkg.priceEtb > 0) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(6.dp))
-                                        .background(WisdomCyan.copy(alpha = 0.2f))
-                                        .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.6f)), RoundedCornerShape(6.dp))
-                                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "${pkg.priceEtb} ETB",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = WisdomCyan
-                                    )
-                                }
-                            }
                             Text(
                                 text = pkg.enrolledLabel,
                                 fontSize = 11.sp,
@@ -227,7 +211,7 @@ fun PackageDetailScreen(
                         WisdomPrimaryButton(
                             text = "Start Learning",
                             onClick = { onStartLearning(pkg.path) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                             icon = {
                                 Icon(
                                     imageVector = Icons.Default.School,
@@ -237,40 +221,6 @@ fun PackageDetailScreen(
                                 )
                             }
                         )
-
-                        if (isLoggedIn) {
-                            WisdomSecondaryButton(
-                                text = "Access Granted",
-                                onClick = { onStartLearning(pkg.path) },
-                                modifier = Modifier.weight(1f),
-                                borderColor = WisdomAccentEmerald.copy(alpha = 0.6f),
-                                textColor = WisdomAccentEmerald,
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = WisdomAccentEmerald,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            )
-                        } else if (pkg.priceEtb > 0) {
-                            WisdomSecondaryButton(
-                                text = "Unlock Package",
-                                onClick = { onUnlock("/checkout?package=${pkg.id}") },
-                                modifier = Modifier.weight(1f),
-                                borderColor = WisdomCyan.copy(alpha = 0.5f),
-                                textColor = WisdomCyan,
-                                icon = {
-                                    Icon(
-                                        imageVector = Icons.Default.LockOpen,
-                                        contentDescription = null,
-                                        tint = WisdomCyan,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            )
-                        }
                     }
                 }
             }

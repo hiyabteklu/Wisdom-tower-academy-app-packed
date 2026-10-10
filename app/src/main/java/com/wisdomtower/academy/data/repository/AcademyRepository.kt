@@ -45,10 +45,11 @@ object AcademyRepository {
                                 val id = item.optString("id")
                                 val existing = map[id]
                                 if (existing != null) {
-                                    val price = item.optInt("price_etb", existing.priceEtb)
                                     val active = item.optBoolean("active", true)
                                     if (active) {
-                                        map[id] = existing.copy(priceEtb = price)
+                                        map[id] = existing
+                                    } else {
+                                        map.remove(id)
                                     }
                                 }
                             }

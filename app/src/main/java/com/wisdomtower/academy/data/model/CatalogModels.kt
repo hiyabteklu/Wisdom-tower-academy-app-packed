@@ -5,7 +5,6 @@ data class DynamicCatalogItem(
     val name: String,
     val shortName: String,
     val description: String,
-    val priceEtb: Int,
     val href: String,
     val image: String,
     val includes: List<String> = emptyList(),

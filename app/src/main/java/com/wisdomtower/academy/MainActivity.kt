@@ -1098,7 +1098,9 @@ fun MainScreen(
         if (!cleanPath.contains("offline.html") && !cleanPath.startsWith("file://")) {
             lastOnlineUrl = fullUrl
             lastTargetUrl = fullUrl
-            selectedIndex = tabIndexForUrl(fullUrl, selectedIndex)
+            if (activeStudyUrl != null) {
+                selectedIndex = tabIndexForUrl(fullUrl, selectedIndex)
+            }
         }
 
         val wv = webView ?: return
@@ -1422,7 +1424,7 @@ fun MainScreen(
                         } else {
                             wv.evaluateJavascript("(function(){return window.location.pathname||'';})();") { rawPath ->
                                 val p = rawPath?.trim('"')?.trim() ?: ""
-                                if (p.isNotBlank() && p != "null") {
+                                if (activeStudyUrl != null && p.isNotBlank() && p != "null") {
                                     selectedIndex = tabIndexForUrl(p, selectedIndex)
                                 }
                             }
@@ -1844,14 +1846,13 @@ fun MainScreen(
                     AliveBottomNav(
                         items = items,
                         selectedIndex = selectedIndex,
-                        onItemSelected = { index, item ->
+                        onItemSelected = { index, _ ->
                             if (index != selectedIndex) {
                                 selectedPackage = null
                                 activeStudyUrl = null
                                 activeGuideSlug = null
                             }
                             selectedIndex = index
-                            navigateTo(item.url, index)
                         }
                     )
                 }
@@ -2008,7 +2009,9 @@ fun MainScreen(
                                 fun onRouteChanged(path: String?) {
                                     if (!path.isNullOrBlank()) {
                                         mainHandler.post {
-                                            selectedIndex = tabIndexForUrl(path, selectedIndex)
+                                            if (activeStudyUrl != null) {
+                                                selectedIndex = tabIndexForUrl(path, selectedIndex)
+                                            }
                                             mainHandler.postDelayed({
                                                 stopNavigationLoading()
                                             }, 100L)
@@ -2251,10 +2254,12 @@ fun MainScreen(
                                         // Early hide-chrome CSS injection at onPageStarted (before first paint)
                                         wv.evaluateJavascript(EARLY_HIDE_CHROME_JS, null)
 
-                                        val newIdx = tabIndexForUrl(url, selectedIndex)
-                                        val targetIdx = tabIndexForUrl(lastTargetUrl, selectedIndex)
-                                        if (!isNavigating || newIdx == targetIdx) {
-                                            selectedIndex = newIdx
+                                        if (activeStudyUrl != null) {
+                                            val newIdx = tabIndexForUrl(url, selectedIndex)
+                                            val targetIdx = tabIndexForUrl(lastTargetUrl, selectedIndex)
+                                            if (!isNavigating || newIdx == targetIdx) {
+                                                selectedIndex = newIdx
+                                            }
                                         }
                                         if (!isInitialLoading) {
                                             val title = if (newIdx in items.indices) items[newIdx].title else "Wisdom Tower Academy"
@@ -2275,7 +2280,7 @@ fun MainScreen(
                                         view?.let { showOffline(it, force = true) }
                                         return
                                     }
-                                    if (u.isNotBlank() && !u.startsWith("file://")) {
+                                    if (activeStudyUrl != null && u.isNotBlank() && !u.startsWith("file://")) {
                                         val newIdx = tabIndexForUrl(u, selectedIndex)
                                         val targetIdx = tabIndexForUrl(lastTargetUrl, selectedIndex)
                                         if (!isNavigating || newIdx == targetIdx) {
@@ -2307,10 +2312,12 @@ fun MainScreen(
                                         return
                                     }
                                     if (u.isNotBlank() && !u.startsWith("file://") && !u.contains("offline.html")) {
-                                        val newIdx = tabIndexForUrl(u, selectedIndex)
-                                        val targetIdx = tabIndexForUrl(lastTargetUrl, selectedIndex)
-                                        if (!isNavigating || newIdx == targetIdx) {
-                                            selectedIndex = newIdx
+                                        if (activeStudyUrl != null) {
+                                            val newIdx = tabIndexForUrl(u, selectedIndex)
+                                            val targetIdx = tabIndexForUrl(lastTargetUrl, selectedIndex)
+                                            if (!isNavigating || newIdx == targetIdx) {
+                                                selectedIndex = newIdx
+                                            }
                                         }
                                         lastOnlineUrl = u
                                         lastTargetUrl = u
@@ -2367,7 +2374,7 @@ fun MainScreen(
 
                                 override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
                                     super.doUpdateVisitedHistory(view, url, isReload)
-                                    if (url != null && !url.startsWith("file://")) {
+                                    if (activeStudyUrl != null && url != null && !url.startsWith("file://")) {
                                         selectedIndex = tabIndexForUrl(url, selectedIndex)
                                     }
                                 }
