@@ -281,7 +281,8 @@ fun StudyWorkspaceScreen(
                 url = LearningContentRepository.appwriteViewUrl(shown.item.storagePath),
                 cacheKey = shown.item.id,
                 onBack = { view = WorkspaceView.HubList("books") },
-                modifier = modifier
+                modifier = modifier,
+                resourceId = shown.item.id
             )
 
             is WorkspaceView.Note -> NotesReaderScreen(
