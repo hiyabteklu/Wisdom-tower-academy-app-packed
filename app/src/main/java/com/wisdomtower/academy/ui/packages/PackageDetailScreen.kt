@@ -84,7 +84,9 @@ import com.wisdomtower.academy.ui.theme.WisdomPrimaryButton
  *
  * Implements:
  * 1. Stream & Semester grouping for Freshman (Natural vs Social, Sem 1 vs Sem 2)
- * 2. Branch Leaderboard & Collapsible GPA Calculator
+ * 2. Collapsible GPA Calculator
+ *    (the Branch Leaderboard was removed in S4: it showed invented universities and points.
+ *     The website reads real ranks from Supabase `get_leaderboard`; re-add only with that real data.)
  * 3. ECE Semester 1 & Semester 2 engineering courses with official codes & thumbnails
  * 4. Grade 9–12 curriculum subjects with hints and icons
  * 5. Remedial 7 foundation prerequisite subjects
@@ -243,13 +245,6 @@ fun PackageDetailScreen(
                             )
                         }
                     )
-                }
-            }
-
-            // Branch Leaderboard (Freshman, COC, UAT, GAT, Exit Exam)
-            if (isFreshman || pkg.group == "branch") {
-                item(key = "branch_leaderboard") {
-                    BranchLeaderboardCard(branchName = pkg.shortName)
                 }
             }
 
@@ -502,76 +497,6 @@ fun PackageDetailScreen(
                 Spacer(modifier = Modifier.height(30.dp))
             }
         }
-    }
-}
-
-@Composable
-fun BranchLeaderboardCard(branchName: String) {
-    WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 14.dp
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.EmojiEvents,
-                        contentDescription = null,
-                        tint = WisdomAccentAmber,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "$branchName Leaderboard",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-
-                Text(
-                    text = "Weekly Top",
-                    fontSize = 11.sp,
-                    color = WisdomCyan,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                LeaderboardPodiumItem(rank = "#1", name = "Addis Ababa Univ.", points = "3,480 pts")
-                LeaderboardPodiumItem(rank = "#2", name = "Jimma University", points = "3,120 pts")
-                LeaderboardPodiumItem(rank = "#3", name = "Hawassa Univ.", points = "2,890 pts")
-            }
-        }
-    }
-}
-
-@Composable
-private fun LeaderboardPodiumItem(rank: String, name: String, points: String) {
-    Column(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color.White.copy(alpha = 0.04f))
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = rank, fontSize = 11.sp, fontWeight = FontWeight.Black, color = WisdomAccentAmber)
-        Text(text = name, fontSize = 10.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(text = points, fontSize = 9.sp, color = WisdomMuted)
     }
 }
 
