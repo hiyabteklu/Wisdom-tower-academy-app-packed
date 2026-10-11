@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,10 +53,32 @@ private const val SITE_ORIGIN = "https://www.wisdom-tower-academy.live"
  *  - there is NO hub directly under /academy/freshman, /academy/remedial, /academy/grades/{grade}
  *    or /academy/special-packages/{slug}/{semester}: "{base}/books" there would be read as a subject
  *    or course called "books" and give "404 Page Not Found".
+ *  - Entrance Questions: the YEAR page /academy/entrance-questions/{stream}/{subject}/{year} IS the exams
+ *    hub (website `HubContentView` with hub `exams`); there are no six hubs below it.
  */
 private val NEEDS_SUBJECT_LEVEL = Regex(
     "^/academy/(freshman|remedial|grades/[^/]+|special-packages/[^/]+/[^/]+)$"
 )
+
+private val ENTRANCE_YEAR_PATH = Regex(
+    "^/academy/entrance-questions/[^/]+/[^/]+/[0-9]{4}$"
+)
+
+private fun cleanBase(basePath: String): String {
+    var base = basePath.trim()
+    if (base.startsWith("http")) {
+        base = base.removePrefix(SITE_ORIGIN)
+    }
+    base = base.substringBefore('?').substringBefore('#').trimEnd('/')
+    if (base.isEmpty()) base = "/academy"
+    return base
+}
+
+/** Address of an Entrance Questions year page (the exams page itself), or null for any other path. */
+internal fun entranceYearUrl(basePath: String): String? {
+    val base = cleanBase(basePath)
+    return if (ENTRANCE_YEAR_PATH.matches(base)) SITE_ORIGIN + base else null
+}
 
 /**
  * Builds the address of a learning hub so it can never point at a page that does not exist:
@@ -65,12 +88,7 @@ private val NEEDS_SUBJECT_LEVEL = Regex(
  *     a hub that does not exist there.
  */
 internal fun safeHubUrl(basePath: String, hubId: String): String {
-    var base = basePath.trim()
-    if (base.startsWith("http")) {
-        base = base.removePrefix(SITE_ORIGIN)
-    }
-    base = base.substringBefore('?').substringBefore('#').trimEnd('/')
-    if (base.isEmpty()) base = "/academy"
+    var base = cleanBase(basePath)
 
     val last = base.substringAfterLast('/')
     if (NATIVE_LEARNING_HUBS.any { it.id == last }) {
@@ -91,7 +109,11 @@ internal fun safeHubUrl(basePath: String, hubId: String): String {
  * Owner card rule (2026-10-11): every card is the shared [OpenCard] (picture, title, "Open") in a
  * two-column grid. The old hub card had a dark gradient over the picture, a category tag and a
  * description; all three are gone. Hub names are the website's (`data/academy.ts` `resourceHubs`).
- * Links: see [safeHubUrl]. STATUS: not compiled.
+ * Links: see [safeHubUrl].
+ *
+ * Entrance Questions year (2026-10-11): the year page is the exams page itself, so this screen opens it
+ * straight away (LaunchedEffect) and, as a fallback if that is ever missed, shows a single "Exams" card.
+ * STATUS: not compiled.
  */
 @Composable
 fun StudyWorkspaceScreen(
@@ -102,6 +124,18 @@ fun StudyWorkspaceScreen(
     onOpenHub: (hubId: String, hubUrl: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val entranceUrl = remember(basePath) { entranceYearUrl(basePath) }
+    if (entranceUrl != null) {
+        LaunchedEffect(entranceUrl) {
+            onOpenHub("exams", entranceUrl)
+        }
+    }
+    val hubs = if (entranceUrl != null) {
+        NATIVE_LEARNING_HUBS.filter { it.id == "exams" }
+    } else {
+        NATIVE_LEARNING_HUBS
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
@@ -164,7 +198,7 @@ fun StudyWorkspaceScreen(
             // "Learning Hubs" label: same wording as the website course pages (small, uppercase, muted)
             item(key = "learning_hubs_title") {
                 Text(
-                    text = "Learning Hubs".uppercase(),
+                    text = (if (entranceUrl != null) "Exams" else "Learning Hubs").uppercase(),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = WisdomMuted,
@@ -173,10 +207,11 @@ fun StudyWorkspaceScreen(
                 )
             }
 
-            // The 6 hub cards (Books, Short Notes, Flashcards, Question Banks, Exams, Life Savers)
-            openGrid("hubs", NATIVE_LEARNING_HUBS) { hub ->
+            // The 6 hub cards (Books, Short Notes, Flashcards, Question Banks, Exams, Life Savers);
+            // for an Entrance Questions year only the Exams card (the year page itself)
+            openGrid("hubs", hubs) { hub ->
                 OpenCard(hub.name, hub.assetImage) {
-                    onOpenHub(hub.id, safeHubUrl(basePath, hub.id))
+                    onOpenHub(hub.id, entranceUrl ?: safeHubUrl(basePath, hub.id))
                 }
             }
 

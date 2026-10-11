@@ -1,5 +1,6 @@
 package com.wisdomtower.academy.ui.packages
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,7 +26,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,10 +51,15 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
  *
  * Headings copied from the website pages (website-reference/src/app/academy/):
  *  - freshman/page.tsx: "Freshman courses" + "including preengineering & others", label "Subjects"
- *  - grades/[grade]/page.tsx: "Secondary Curriculum" + grade label, label "Subjects"
+ *  - grades/[grade]/page.tsx: "Secondary Curriculum" + grade label ("Grade 9" ...), label "Subjects"
  *  - remedial/page.tsx: "Remedial", label "Subjects"
  *  - special-packages/[slug]/page.tsx: package name (the website's "Department track · year" line is not copied
  *    because the year text is not in the app data)
+ *  - entrance-questions (2026-10-11 website update): root "Past Exams" / "Entrance Questions" with the two stream
+ *    cards; stream page "Entrance Questions" / stream label with subject cards; subject page
+ *    "Entrance Questions · {stream}" / subject name, label "Exam year", year cards. A year opens the website
+ *    exams page (see StudyWorkspaceScreen). The three Entrance levels are inside this one screen and the
+ *    Back button / phone back key go up one level first.
  * The Freshman GPA calculator is kept (the website shows it on the same page).
  * The unused parameters are kept so the caller in MainActivity.kt does not change.
  */
@@ -67,7 +77,40 @@ fun PackageDetailScreen(
     val isEce = pkg.id.startsWith("ece")
     val isGrade = pkg.group == "grades"
     val isRemedial = pkg.id == "remedial"
-    val hasSubjectList = isFreshman || isEce || isGrade || isRemedial
+    val isEntrance = pkg.id == ENTRANCE_PACKAGE_ID
+    val hasSubjectList = isFreshman || isEce || isGrade || isRemedial || isEntrance
+
+    // Entrance Questions drill-down state (stream -> subject)
+    var streamId by rememberSaveable { mutableStateOf<String?>(null) }
+    var subjectId by rememberSaveable { mutableStateOf<String?>(null) }
+    val stream = if (isEntrance) ENTRANCE_STREAMS.firstOrNull { it.id == streamId } else null
+    val subject = stream?.subjects?.firstOrNull { it.id == subjectId }
+
+    val goBack: () -> Unit = {
+        if (subject != null) {
+            subjectId = null
+        } else if (stream != null) {
+            streamId = null
+        } else {
+            onBack()
+        }
+    }
+    BackHandler(enabled = stream != null) { goBack() }
+
+    val eyebrow: String? = when {
+        isGrade -> "Secondary Curriculum"
+        isEntrance && stream != null && subject != null -> "Entrance Questions · ${stream.label}"
+        isEntrance && stream != null -> "Entrance Questions"
+        isEntrance -> "Past Exams"
+        else -> null
+    }
+    val pageTitle: String = when {
+        isFreshman -> "Freshman courses"
+        isGrade -> "Grade ${pkg.id.removePrefix("grade-")}"
+        isEntrance && subject != null -> subject.name
+        isEntrance && stream != null -> stream.label
+        else -> pkg.name
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
@@ -91,7 +134,7 @@ fun PackageDetailScreen(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
-                                onClick = onBack
+                                onClick = goBack
                             ),
                         contentAlignment = Alignment.Center
                     ) {
@@ -109,9 +152,9 @@ fun PackageDetailScreen(
             // Page heading (website wording)
             item(key = "page_heading") {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    if (isGrade) {
+                    if (eyebrow != null) {
                         Text(
-                            text = "Secondary Curriculum",
+                            text = eyebrow,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = WisdomMuted
@@ -119,7 +162,7 @@ fun PackageDetailScreen(
                         Spacer(modifier = Modifier.height(2.dp))
                     }
                     Text(
-                        text = if (isFreshman) "Freshman courses" else pkg.name,
+                        text = pageTitle,
                         fontSize = 26.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
@@ -177,7 +220,7 @@ fun PackageDetailScreen(
                 }
             }
 
-            // ── Grades 9–12 ──
+            // ── Grades 9–12 (subject photos from the website, packed by `copyWebsiteImages`) ──
             if (isGrade) {
                 val gradeSubjects = when (pkg.id) {
                     "grade-9" -> GRADE_9_SUBJECTS
@@ -188,12 +231,36 @@ fun PackageDetailScreen(
                 }
                 item(key = "subjects_label") { SubjectsLabel() }
                 openGrid("grade", gradeSubjects) { gSubject ->
-                    OpenCard(gSubject.name, null) {
+                    OpenCard(gSubject.name, gSubject.image) {
                         onOpenSubjectWorkspace(
                             "${gSubject.name} (Grade ${gSubject.grade})",
                             "Grade ${gSubject.grade} Curriculum",
                             gSubject.path
                         )
+                    }
+                }
+            }
+
+            // ── Entrance Questions: streams -> subjects -> years ──
+            if (isEntrance) {
+                if (stream == null) {
+                    openGrid("entrance_streams", ENTRANCE_STREAMS) { s ->
+                        OpenCard(s.label, s.image) { streamId = s.id }
+                    }
+                } else if (subject == null) {
+                    openGrid("entrance_subjects", stream.subjects) { sub ->
+                        OpenCard(sub.name, null) { subjectId = sub.id }
+                    }
+                } else {
+                    item(key = "entrance_years_label") { SubjectsLabel("Exam year") }
+                    openGrid("entrance_years", ENTRANCE_YEARS) { year ->
+                        OpenCard(year, null) {
+                            onOpenSubjectWorkspace(
+                                "${subject.name} $year",
+                                "Entrance Questions · ${stream.label}",
+                                entranceYearPath(stream.id, subject.id, year)
+                            )
+                        }
                     }
                 }
             }
