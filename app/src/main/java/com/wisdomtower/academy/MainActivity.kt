@@ -1877,6 +1877,13 @@ fun MainScreen(
                             IconButton(
                                 onClick = {
                                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                    // S12-P3: a native screen covers the WebView, so refresh the native data
+                                    if (!(selectedIndex == 1 && activeStudyUrl != null)) {
+                                        NotificationRepository.refreshNotifications(currentUser?.id, currentUser?.email)
+                                        AcademyRepository.refreshCatalog()
+                                        Toast.makeText(context, "Refreshing…", Toast.LENGTH_SHORT).show()
+                                        return@IconButton
+                                    }
                                     val wv = webView
                                     val currentUrl = wv?.url.orEmpty()
                                     if (wv != null) {
@@ -1923,7 +1930,11 @@ fun MainScreen(
                                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                     requestNotificationPermission()
                                     NotificationRepository.markAllRead()
-                                    navigateTo("https://www.wisdom-tower-academy.live/notifications", null)
+                                    // S12-P2: show the page (tab 1 + activeStudyUrl makes the WebView visible)
+                                    val notifUrl = "https://www.wisdom-tower-academy.live/notifications"
+                                    resetOverlays()
+                                    activeStudyUrl = notifUrl
+                                    navigateTo(notifUrl, 1)
                                 },
                                 modifier = Modifier.size(44.dp)
                             ) {
@@ -3022,6 +3033,9 @@ fun MainScreen(
                         basePath = currentWs.third,
                         onBack = { activeWorkspace = null },
                         onOpenHub = { _, hubUrl ->
+                            // S12-P1: close the overlays, otherwise the hub loads UNDER the workspace
+                            activeWorkspace = null
+                            selectedPackage = null
                             activeStudyUrl = hubUrl
                             navigateTo(hubUrl, 1)
                         },
