@@ -1,6 +1,5 @@
 package com.wisdomtower.academy.ui.packages
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,80 +18,40 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Calculate
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Layers
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Stars
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
-import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
-import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
-import com.wisdomtower.academy.ui.theme.WisdomAccentPurple
-import com.wisdomtower.academy.ui.theme.WisdomAccentRose
-import com.wisdomtower.academy.ui.theme.WisdomAccentSky
-import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
-import com.wisdomtower.academy.ui.theme.WisdomDark
-import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
-import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
-import com.wisdomtower.academy.ui.theme.WisdomOpenButton
-import com.wisdomtower.academy.ui.theme.WisdomPrimaryButton
 
 /**
- * Native Package Detail Screen strictly mirroring website reference:
- * - src/app/academy/freshman/page.tsx
- * - src/app/academy/special-packages/page.tsx
- * - src/app/academy/grades/page.tsx
- * - src/app/academy/[branch]/page.tsx
+ * Package page. Rewritten 2026-10-11 (owner rules): every card is the shared [OpenCard]
+ * (picture, title, Open button) in a TWO-column grid. No hero picture with gradient or tag, no
+ * descriptions, no "What is included" list, no filter chips, no invented headings, nothing locked.
  *
- * Implements:
- * 1. Stream & Semester grouping for Freshman (Natural vs Social, Sem 1 vs Sem 2)
- * 2. GPA Calculator for Freshman (`GpaCalculatorCard.kt`, a port of the website calculator)
- *    (the Branch Leaderboard was removed in S4: it showed invented universities and points.
- *     The website reads real ranks from Supabase `get_leaderboard`; re-add only with that real data.)
- * 3. ECE Semester 1 & Semester 2 engineering courses with official codes & thumbnails
- * 4. Grade 9–12 curriculum subjects with hints and icons
- * 5. Remedial 7 foundation prerequisite subjects
- * 6. Direct hierarchical navigation into native StudyWorkspaceScreen (6 Hubs)
- *
- * Course counts shown on filter chips / semester buttons are computed from the real lists
- * (S4 item c): never type a count by hand.
+ * Headings copied from the website pages (website-reference/src/app/academy/):
+ *  - freshman/page.tsx: "Freshman courses" + "including preengineering & others", label "Subjects"
+ *  - grades/[grade]/page.tsx: "Secondary Curriculum" + grade label, label "Subjects"
+ *  - remedial/page.tsx: "Remedial", label "Subjects"
+ *  - special-packages/[slug]/page.tsx: package name (the website's "Department track · year" line is not copied
+ *    because the year text is not in the app data)
+ * The Freshman GPA calculator is kept (the website shows it on the same page).
+ * The unused parameters are kept so the caller in MainActivity.kt does not change.
  */
 @Composable
 fun PackageDetailScreen(
@@ -105,19 +63,11 @@ fun PackageDetailScreen(
     isLoggedIn: Boolean = false,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
     val isFreshman = pkg.id == "freshman"
     val isEce = pkg.id.startsWith("ece")
     val isGrade = pkg.group == "grades"
     val isRemedial = pkg.id == "remedial"
-
-    // Freshman filter state: 0 = All, 1 = Natural, 2 = Social, 3 = Sem 1, 4 = Sem 2
-    var freshmanFilterIndex by remember { mutableIntStateOf(0) }
-
-    // ECE semester selector: 1 = Sem 1, 2 = Sem 2
-    var eceSemesterIndex by remember {
-        mutableIntStateOf(if (pkg.id == "ece-y3-sem-2") 2 else 1)
-    }
+    val hasSubjectList = isFreshman || isEce || isGrade || isRemedial
 
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
@@ -127,7 +77,6 @@ fun PackageDetailScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Top Navigation Bar
             item(key = "top_nav") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -153,255 +102,82 @@ fun PackageDetailScreen(
                             modifier = Modifier.size(18.dp)
                         )
                     }
-
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = pkg.name,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
                 }
             }
 
-            // Hero Visual Card (16:9)
-            item(key = "hero_card") {
-                WisdomModernCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f),
-                    cornerRadius = 18.dp
-                ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(pkg.assetImage)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = pkg.name,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color(0x99000000),
-                                        Color(0xEE060B15)
-                                    )
-                                )
-                            )
-                    )
-
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(14.dp)
-                    ) {
+            // Page heading (website wording)
+            item(key = "page_heading") {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    if (isGrade) {
                         Text(
-                            text = pkg.enrolledLabel,
+                            text = "Secondary Curriculum",
                             fontSize = 11.sp,
-                            color = WisdomCyan,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            color = WisdomMuted
                         )
                         Spacer(modifier = Modifier.height(2.dp))
+                    }
+                    Text(
+                        text = if (isFreshman) "Freshman courses" else pkg.name,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (isFreshman) {
                         Text(
-                            text = pkg.name,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White
+                            text = "including preengineering & others",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = WisdomMuted
                         )
                     }
                 }
             }
 
-            // Description & Primary Action
-            item(key = "description_and_actions") {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = pkg.description,
-                        fontSize = 13.sp,
-                        color = WisdomMuted,
-                        lineHeight = 19.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    WisdomPrimaryButton(
-                        text = "Open Study Hubs",
-                        onClick = {
-                            onOpenSubjectWorkspace(pkg.name, "Academy Package", pkg.path)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        icon = {
-                            Icon(
-                                imageVector = Icons.Default.School,
-                                contentDescription = null,
-                                tint = WisdomDarkOnCyan,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    )
-                }
-            }
-
-            // GPA Calculator (Freshman), ported from the website calculator
             if (isFreshman) {
                 item(key = "gpa_calculator") {
                     GpaCalculatorCard()
                 }
             }
 
-            // ── FRESHMAN SECTION: Stream & Semester Filter Tabs + Courses ──
+            // ── Freshman: all subjects (the website has no stream/semester filters) ──
             if (isFreshman) {
-                item(key = "freshman_filters") {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Courses by Stream & Semester",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
-                        // Count comes from the real list, not a typed number (S4 item c)
-                        val filterTabs = listOf(
-                            "All (${FRESHMAN_SUBJECTS.size})",
-                            "Natural",
-                            "Social",
-                            "Sem 1",
-                            "Sem 2"
-                        )
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(filterTabs.indices.toList()) { index ->
-                                val isSelected = freshmanFilterIndex == index
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .background(
-                                            if (isSelected) WisdomCyan else Color.White.copy(alpha = 0.08f)
-                                        )
-                                        .border(
-                                            BorderStroke(
-                                                1.dp,
-                                                if (isSelected) WisdomCyan else Color.White.copy(alpha = 0.15f)
-                                            ),
-                                            RoundedCornerShape(20.dp)
-                                        )
-                                        .clickable { freshmanFilterIndex = index }
-                                        .padding(horizontal = 14.dp, vertical = 7.dp)
-                                ) {
-                                    Text(
-                                        text = filterTabs[index],
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) WisdomDark else Color.White
-                                    )
-                                }
-                            }
-                        }
+                item(key = "subjects_label") { SubjectsLabel() }
+                openGrid("freshman", FRESHMAN_SUBJECTS) { subject ->
+                    OpenCard(subject.name, subject.assetImage) {
+                        onOpenSubjectWorkspace(subject.name, "Freshman Program · Subject", subject.path)
                     }
-                }
-
-                val filteredFreshmanSubjects = run {
-                    when (freshmanFilterIndex) {
-                        1 -> FRESHMAN_SUBJECTS.filter { it.id in FRESHMAN_NATURAL_IDS }
-                        2 -> FRESHMAN_SUBJECTS.filter { it.id in FRESHMAN_SOCIAL_IDS }
-                        3 -> FRESHMAN_SUBJECTS.filter { it.id in FRESHMAN_SEM1_IDS }
-                        4 -> FRESHMAN_SUBJECTS.filter { it.id in FRESHMAN_SEM2_IDS }
-                        else -> FRESHMAN_SUBJECTS
-                    }
-                }
-
-                items(filteredFreshmanSubjects, key = { it.id }) { subject ->
-                    SubjectRowCard(
-                        subject = subject,
-                        onClick = {
-                            onOpenSubjectWorkspace(
-                                subject.name,
-                                "Freshman Program · Subject",
-                                subject.path
-                            )
-                        }
-                    )
                 }
             }
 
-            // ── SPECIAL PACKAGES (ECE): Semester 1 & Semester 2 Engineering Courses ──
+            // ── ECE: both semesters, each as its own two-column grid ──
             if (isEce) {
-                item(key = "ece_semester_selector") {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Department Curriculum (Year 3)",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                item(key = "ece_sem1_label") { SubjectsLabel("Semester 1") }
+                openGrid("ece1", ECE_SEM1_COURSES) { course ->
+                    OpenCard("${course.code} · ${course.title}", course.assetImage) {
+                        onOpenSubjectWorkspace(
+                            "${course.code} · ${course.title}",
+                            "ECE Year 3 · Semester 1",
+                            course.path
                         )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(if (eceSemesterIndex == 1) WisdomAccentViolet else Color.White.copy(alpha = 0.08f))
-                                    .clickable { eceSemesterIndex = 1 }
-                                    .padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Semester 1 (${ECE_SEM1_COURSES.size} Courses)",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (eceSemesterIndex == 1) Color.White else WisdomMuted
-                                )
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(if (eceSemesterIndex == 2) WisdomAccentViolet else Color.White.copy(alpha = 0.08f))
-                                    .clickable { eceSemesterIndex = 2 }
-                                    .padding(vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "Semester 2 (${ECE_SEM2_COURSES.size} Courses)",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (eceSemesterIndex == 2) Color.White else WisdomMuted
-                                )
-                            }
-                        }
                     }
                 }
-
-                val activeEceCourses = if (eceSemesterIndex == 1) ECE_SEM1_COURSES else ECE_SEM2_COURSES
-
-                items(activeEceCourses, key = { it.code }) { course ->
-                    SpecialCourseRowCard(
-                        course = course,
-                        onClick = {
-                            onOpenSubjectWorkspace(
-                                "${course.code} · ${course.title}",
-                                "ECE Year 3 · ${if (course.semester == "sem-1") "Semester 1" else "Semester 2"}",
-                                course.path
-                            )
-                        }
-                    )
+                item(key = "ece_sem2_label") { SubjectsLabel("Semester 2") }
+                openGrid("ece2", ECE_SEM2_COURSES) { course ->
+                    OpenCard("${course.code} · ${course.title}", course.assetImage) {
+                        onOpenSubjectWorkspace(
+                            "${course.code} · ${course.title}",
+                            "ECE Year 3 · Semester 2",
+                            course.path
+                        )
+                    }
                 }
             }
 
-            // ── GRADES 9–12: Curriculum Subjects by Grade Level ──
+            // ── Grades 9–12 ──
             if (isGrade) {
                 val gradeSubjects = when (pkg.id) {
                     "grade-9" -> GRADE_9_SUBJECTS
@@ -410,92 +186,34 @@ fun PackageDetailScreen(
                     "grade-12" -> GRADE_12_SUBJECTS
                     else -> emptyList()
                 }
-
-                item(key = "grade_subjects_heading") {
-                    Text(
-                        text = "Curriculum Subjects (${gradeSubjects.size})",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                items(gradeSubjects, key = { it.id }) { gSubject ->
-                    GradeSubjectRowCard(
-                        subject = gSubject,
-                        accentColor = pkg.accentColor,
-                        onClick = {
-                            onOpenSubjectWorkspace(
-                                "${gSubject.name} (Grade ${gSubject.grade})",
-                                "Grade ${gSubject.grade} Curriculum",
-                                gSubject.path
-                            )
-                        }
-                    )
+                item(key = "subjects_label") { SubjectsLabel() }
+                openGrid("grade", gradeSubjects) { gSubject ->
+                    OpenCard(gSubject.name, null) {
+                        onOpenSubjectWorkspace(
+                            "${gSubject.name} (Grade ${gSubject.grade})",
+                            "Grade ${gSubject.grade} Curriculum",
+                            gSubject.path
+                        )
+                    }
                 }
             }
 
-            // ── REMEDIAL: Core Foundation Subjects ──
+            // ── Remedial ──
             if (isRemedial) {
-                item(key = "remedial_heading") {
-                    Text(
-                        text = "${REMEDIAL_SUBJECTS.size} Prerequisite Subjects",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-
-                items(REMEDIAL_SUBJECTS, key = { it.id }) { subject ->
-                    SubjectRowCard(
-                        subject = subject,
-                        onClick = {
-                            onOpenSubjectWorkspace(
-                                subject.name,
-                                "Remedial Program",
-                                subject.path
-                            )
-                        }
-                    )
+                item(key = "subjects_label") { SubjectsLabel() }
+                openGrid("remedial", REMEDIAL_SUBJECTS) { subject ->
+                    OpenCard(subject.name, subject.assetImage) {
+                        onOpenSubjectWorkspace(subject.name, "Remedial Program", subject.path)
+                    }
                 }
             }
 
-            // What's Included Section
-            item(key = "includes_header") {
-                Text(
-                    text = "What is Included",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            items(pkg.includes) { feature ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFF111B2E).copy(alpha = 0.5f))
-                        .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(10.dp))
-                        .padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = WisdomCyan,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = feature,
-                        fontSize = 12.sp,
-                        color = Color.White,
-                        fontWeight = FontWeight.Medium
-                    )
+            // Any other package (COC, UAT, GAT, Exit Exam ...): one card that opens its study hubs
+            if (!hasSubjectList) {
+                openGrid("package", listOf(pkg)) { p ->
+                    OpenCard(p.name, p.assetImage) {
+                        onOpenSubjectWorkspace(p.name, "Academy Package", p.path)
+                    }
                 }
             }
 
@@ -507,175 +225,12 @@ fun PackageDetailScreen(
 }
 
 @Composable
-fun SubjectRowCard(
-    subject: NativeSubject,
-    onClick: () -> Unit
-) {
-    val context = LocalContext.current
-
-    WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 12.dp,
-        onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Subject Thumbnail
-            Box(
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(WisdomDark)
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(subject.assetImage)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = subject.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            // Subject Info
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = subject.name,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subject.description,
-                    fontSize = 11.sp,
-                    color = WisdomMuted,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 14.sp
-                )
-            }
-
-            WisdomOpenButton(onClick = onClick, label = "Study →")
-        }
-    }
-}
-
-@Composable
-fun SpecialCourseRowCard(
-    course: NativeSpecialCourse,
-    onClick: () -> Unit
-) {
-    val context = LocalContext.current
-
-    WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 12.dp,
-        onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(WisdomDark)
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(course.assetImage)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = course.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = course.code,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WisdomAccentViolet
-                )
-                Text(
-                    text = course.title,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            WisdomOpenButton(onClick = onClick, label = "Open →")
-        }
-    }
-}
-
-@Composable
-fun GradeSubjectRowCard(
-    subject: NativeGradeSubject,
-    accentColor: Color,
-    onClick: () -> Unit
-) {
-    WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 12.dp,
-        onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(accentColor.copy(alpha = 0.12f))
-                    .border(BorderStroke(1.dp, accentColor.copy(alpha = 0.35f)), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = subject.name,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = subject.hint,
-                    fontSize = 11.sp,
-                    color = WisdomMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            WisdomOpenButton(onClick = onClick, label = "Study →")
-        }
-    }
+private fun SubjectsLabel(text: String = "Subjects") {
+    Text(
+        text = text.uppercase(),
+        fontSize = 12.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = WisdomMuted,
+        letterSpacing = 1.5.sp
+    )
 }
