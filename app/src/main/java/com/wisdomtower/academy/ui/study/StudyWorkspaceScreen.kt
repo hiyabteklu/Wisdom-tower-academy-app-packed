@@ -53,17 +53,19 @@ private const val SITE_ORIGIN = "https://www.wisdom-tower-academy.live"
 
 /**
  * Hubs that open in a NATIVE screen (list from Supabase + native viewer) instead of the website page.
- * "books" (native PDF reader, plan steps N2 + N4) and "short-notes" (local KaTeX page, step N6).
+ * "books" (native PDF reader, plan steps N2 + N4), "short-notes" (local KaTeX page, step N6) and
+ * "flashcards" (local deck page, step N3).
  * To switch a hub back to the website page (for example if the native screen misbehaves on a phone),
  * remove its id from this set: nothing else changes.
  */
-private val NATIVE_HUB_IDS = setOf("books", "short-notes")
+private val NATIVE_HUB_IDS = setOf("books", "short-notes", "flashcards")
 
 /** Which native screen is open on top of the six hub cards (null = the cards themselves). */
 private sealed interface WorkspaceView {
     data class HubList(val hubId: String) : WorkspaceView
     data class Pdf(val item: LearningResource) : WorkspaceView
     data class Note(val item: LearningResource) : WorkspaceView
+    data class Cards(val item: LearningResource) : WorkspaceView
 }
 
 /**
@@ -161,11 +163,11 @@ internal fun safeHubUrl(basePath: String, hubId: String): String {
  * Entrance Questions year (2026-10-11): the year page is the exams page itself, so this screen opens it
  * straight away (LaunchedEffect) and, as a fallback if that is ever missed, shows a single "Exams" card.
  *
- * Native hubs (2026-10-11, plan N2 + N4 + N6): a hub listed in [NATIVE_HUB_IDS] opens [HubItemListScreen]
- * (rows read from Supabase) and then [PdfReaderScreen] (books) or [NotesReaderScreen] (short notes), all
- * inside this screen, so `MainActivity` is not involved. System Back goes viewer -> list -> the six cards.
+ * Native hubs (2026-10-11, plan N2 + N3 + N4 + N6): a hub listed in [NATIVE_HUB_IDS] opens [HubItemListScreen]
+ * (rows read from Supabase) and then [PdfReaderScreen] (books), [NotesReaderScreen] (short notes) or
+ * [FlashcardsScreen] (flashcard decks), all inside this screen, so `MainActivity` is not involved.
+ * System Back goes viewer -> list -> the six cards.
  * The other hubs still open the website page through `onOpenHub`.
- * STATUS: not compiled.
  */
 @Composable
 fun StudyWorkspaceScreen(
@@ -190,6 +192,7 @@ fun StudyWorkspaceScreen(
         view = when (view) {
             is WorkspaceView.Pdf -> WorkspaceView.HubList("books")
             is WorkspaceView.Note -> WorkspaceView.HubList("short-notes")
+            is WorkspaceView.Cards -> WorkspaceView.HubList("flashcards")
             else -> null
         }
     }
@@ -207,6 +210,7 @@ fun StudyWorkspaceScreen(
                     when (item.contentType) {
                         "pdf" -> view = WorkspaceView.Pdf(item)
                         "markdown" -> view = WorkspaceView.Note(item)
+                        "flashcard_deck" -> view = WorkspaceView.Cards(item)
                     }
                 },
                 modifier = modifier
@@ -224,6 +228,13 @@ fun StudyWorkspaceScreen(
                 title = shown.item.title,
                 resourceId = shown.item.id,
                 onBack = { view = WorkspaceView.HubList("short-notes") },
+                modifier = modifier
+            )
+
+            is WorkspaceView.Cards -> FlashcardsScreen(
+                title = shown.item.title,
+                resourceId = shown.item.id,
+                onBack = { view = WorkspaceView.HubList("flashcards") },
                 modifier = modifier
             )
         }
