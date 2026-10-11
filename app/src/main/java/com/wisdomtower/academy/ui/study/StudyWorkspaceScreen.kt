@@ -1,5 +1,6 @@
 package com.wisdomtower.academy.ui.study
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,7 +27,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +39,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wisdomtower.academy.data.content.LearningContentRepository
+import com.wisdomtower.academy.data.content.LearningResource
 import com.wisdomtower.academy.ui.packages.NATIVE_LEARNING_HUBS
 import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
@@ -44,6 +50,19 @@ import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 
 private const val SITE_ORIGIN = "https://www.wisdom-tower-academy.live"
+
+/**
+ * Hubs that open in a NATIVE screen (list from Supabase + native viewer) instead of the website page.
+ * Only "books" for now (native PDF reader, plan steps N2 + N4). To switch a hub back to the website page
+ * (for example if the native screen misbehaves on a phone), remove its id from this set: nothing else changes.
+ */
+private val NATIVE_HUB_IDS = setOf("books")
+
+/** Which native screen is open on top of the six hub cards (null = the cards themselves). */
+private sealed interface WorkspaceView {
+    data class HubList(val hubId: String) : WorkspaceView
+    data class Pdf(val item: LearningResource) : WorkspaceView
+}
 
 /**
  * Website route shapes (website-reference/src/app/academy):
@@ -64,6 +83,13 @@ private val ENTRANCE_YEAR_PATH = Regex(
     "^/academy/entrance-questions/[^/]+/[^/]+/[0-9]{4}$"
 )
 
+// Course page -> `learning_resources.scope_path`, as the website hub pages build it (`scopePath` in
+// website-reference/src/app/academy/.../[resource]/page.tsx and `eceScope` in lib/content.ts).
+private val SCOPE_FRESHMAN = Regex("^/academy/freshman/([^/]+)$")
+private val SCOPE_REMEDIAL = Regex("^/academy/remedial/([^/]+)$")
+private val SCOPE_GRADE = Regex("^/academy/grades/([^/]+)/([^/]+)$")
+private val SCOPE_ECE = Regex("^/academy/special-packages/[^/]+/(sem-[12])/([^/]+)$")
+
 private fun cleanBase(basePath: String): String {
     var base = basePath.trim()
     if (base.startsWith("http")) {
@@ -78,6 +104,25 @@ private fun cleanBase(basePath: String): String {
 internal fun entranceYearUrl(basePath: String): String? {
     val base = cleanBase(basePath)
     return if (ENTRANCE_YEAR_PATH.matches(base)) SITE_ORIGIN + base else null
+}
+
+/**
+ * The `learning_resources.scope_path` of the course at [basePath] (for example `freshman/physics`,
+ * `grade/9/biology`, `remedial/maths`, `ece/sem-2/eceg3082`), or null when the path is not a course page
+ * the native screens can read (COC / UAT / GAT, Entrance Questions, package levels): those keep using
+ * the website page.
+ */
+internal fun contentScopePath(basePath: String): String? {
+    var base = cleanBase(basePath)
+    val last = base.substringAfterLast('/')
+    if (NATIVE_LEARNING_HUBS.any { it.id == last }) {
+        base = base.substringBeforeLast('/')
+    }
+    SCOPE_FRESHMAN.matchEntire(base)?.let { return "freshman/${it.groupValues[1]}" }
+    SCOPE_REMEDIAL.matchEntire(base)?.let { return "remedial/${it.groupValues[1]}" }
+    SCOPE_GRADE.matchEntire(base)?.let { return "grade/${it.groupValues[1]}/${it.groupValues[2]}" }
+    SCOPE_ECE.matchEntire(base)?.let { return "ece/${it.groupValues[1]}/${it.groupValues[2]}" }
+    return null
 }
 
 /**
@@ -113,6 +158,11 @@ internal fun safeHubUrl(basePath: String, hubId: String): String {
  *
  * Entrance Questions year (2026-10-11): the year page is the exams page itself, so this screen opens it
  * straight away (LaunchedEffect) and, as a fallback if that is ever missed, shows a single "Exams" card.
+ *
+ * Native hubs (2026-10-11, plan N2 + N4): a hub listed in [NATIVE_HUB_IDS] opens [HubItemListScreen]
+ * (rows read from Supabase) and then [PdfReaderScreen], all inside this screen, so `MainActivity` is not
+ * involved. System Back goes PDF -> list -> the six cards. The other hubs still open the website page
+ * through `onOpenHub`.
  * STATUS: not compiled.
  */
 @Composable
@@ -124,12 +174,48 @@ fun StudyWorkspaceScreen(
     onOpenHub: (hubId: String, hubUrl: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val entranceUrl = remember(basePath) { entranceYearUrl(basePath) }
+    val contentScope = remember(basePath) { contentScopePath(basePath) }
+    var view by remember(basePath) { mutableStateOf<WorkspaceView?>(null) }
+
     if (entranceUrl != null) {
         LaunchedEffect(entranceUrl) {
             onOpenHub("exams", entranceUrl)
         }
     }
+
+    BackHandler(enabled = view != null) {
+        view = when (view) {
+            is WorkspaceView.Pdf -> WorkspaceView.HubList("books")
+            else -> null
+        }
+    }
+
+    val shown = view
+    if (shown != null && contentScope != null) {
+        when (shown) {
+            is WorkspaceView.HubList -> HubItemListScreen(
+                scopePath = contentScope,
+                hubId = shown.hubId,
+                hubName = NATIVE_LEARNING_HUBS.firstOrNull { it.id == shown.hubId }?.name ?: shown.hubId,
+                courseTitle = title,
+                onBack = { view = null },
+                onOpenItem = { item -> view = WorkspaceView.Pdf(item) },
+                modifier = modifier
+            )
+
+            is WorkspaceView.Pdf -> PdfReaderScreen(
+                title = shown.item.title,
+                url = LearningContentRepository.appwriteViewUrl(shown.item.storagePath),
+                cacheKey = shown.item.id,
+                onBack = { view = WorkspaceView.HubList("books") },
+                modifier = modifier
+            )
+        }
+        return
+    }
+
     val hubs = if (entranceUrl != null) {
         NATIVE_LEARNING_HUBS.filter { it.id == "exams" }
     } else {
@@ -211,7 +297,11 @@ fun StudyWorkspaceScreen(
             // for an Entrance Questions year only the Exams card (the year page itself)
             openGrid("hubs", hubs) { hub ->
                 OpenCard(hub.name, hub.assetImage) {
-                    onOpenHub(hub.id, entranceUrl ?: safeHubUrl(basePath, hub.id))
+                    if (entranceUrl == null && contentScope != null && hub.id in NATIVE_HUB_IDS) {
+                        view = WorkspaceView.HubList(hub.id)
+                    } else {
+                        onOpenHub(hub.id, entranceUrl ?: safeHubUrl(basePath, hub.id))
+                    }
                 }
             }
 
