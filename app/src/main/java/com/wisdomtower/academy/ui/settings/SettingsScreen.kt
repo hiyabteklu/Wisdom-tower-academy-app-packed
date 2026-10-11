@@ -102,6 +102,8 @@ import java.io.File
  *
  * 2026-10-11: the password form used to show "updated successfully" without calling the server,
  * and the storage size and sync message were fixed texts. All three are now real.
+ * 2026-10-11 (session F): every label was compared with the website page; study-window hours, the
+ * password success text, the "Saved" confirmation and the default name now use the website wording.
  */
 @Composable
 fun SettingsScreen(
@@ -116,7 +118,8 @@ fun SettingsScreen(
     val currentUser by AuthStateManager.currentUser.collectAsState()
     val isLoggedIn by AuthStateManager.isLoggedIn.collectAsState()
 
-    val displayName = currentProfile?.fullName ?: currentUser?.fullName ?: if (isLoggedIn) "Enrolled Student" else "Guest Scholar"
+    // Website: profile.full_name || "Enrolled Student"
+    val displayName = currentProfile?.fullName ?: currentUser?.fullName ?: "Enrolled Student"
     val academicLevel = currentProfile?.educationLevel ?: "Academic Scholar"
     val institution = currentProfile?.schoolName
 
@@ -371,10 +374,10 @@ fun SettingsScreen(
                         )
 
                         val windows = listOf(
-                            "morning" to ("Early Morning" to "5:00 AM – 8:00 AM"),
-                            "afternoon" to ("Afternoon" to "1:00 PM – 4:00 PM"),
-                            "evening" to ("Evening" to "6:00 PM – 9:00 PM"),
-                            "night" to ("Late Night" to "10:00 PM – 1:00 AM")
+                            "morning" to ("Early Morning" to "5:00 AM to 8:00 AM"),
+                            "afternoon" to ("Afternoon" to "1:00 PM to 4:00 PM"),
+                            "evening" to ("Evening" to "6:00 PM to 9:00 PM"),
+                            "night" to ("Late Night" to "10:00 PM to 1:00 AM")
                         )
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -445,7 +448,7 @@ fun SettingsScreen(
                                             )
                                             savingGoals = false
                                             val text = when (result) {
-                                                is AccountCallResult.Success -> "Study goals saved"
+                                                is AccountCallResult.Success -> "Saved"
                                                 is AccountCallResult.Failure -> result.message
                                             }
                                             Toast.makeText(context, text, Toast.LENGTH_LONG).show()
@@ -833,7 +836,7 @@ fun SettingsScreen(
                                     .padding(10.dp)
                             ) {
                                 Text(
-                                    text = "Your password has been changed. Your next login will be with this new password.",
+                                    text = "Your password has been changed successfully. Your next login will be with this new password.",
                                     fontSize = 11.5.sp,
                                     color = WisdomAccentEmerald,
                                     fontWeight = FontWeight.SemiBold
