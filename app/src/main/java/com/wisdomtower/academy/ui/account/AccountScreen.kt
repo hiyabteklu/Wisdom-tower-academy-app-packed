@@ -98,21 +98,34 @@ import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.launch
 
+// ---------------------------------------------------------------------------
+// Option lists: copied from the website (S4 item d). Never invent options here:
+// the chosen value is written to the same Supabase `profiles` row the website uses.
+//  - levels:  website-reference/src/lib/academic-levels.ts  (ACADEMIC_LEVEL_OPTIONS)
+//  - streams, regions, avatar presets: website-reference/src/lib/profile.ts
+// ---------------------------------------------------------------------------
 val EDUCATION_LEVEL_OPTIONS = listOf(
-    "Freshman", "Grade 9", "Grade 10", "Grade 11", "Grade 12",
-    "Remedial", "Senior University / Exit Exam", "Post-Graduate", "Other"
+    "Grade 9", "Grade 10", "Grade 11", "Grade 12",
+    "Remedial", "Freshman", "3rd Year (ECE)", "Other"
 )
 
 val ACADEMIC_STREAM_OPTIONS = listOf(
-    "Natural Science", "Social Science", "Electrical & Computer Engineering",
-    "Other Engineering", "Medicine & Health Sciences", "Business & Economics",
-    "Law & Governance", "General / Other"
+    "Natural Science",
+    "Social Science",
+    "Electrical & Computer Engineering (ECE)",
+    "Software Engineering / Computer Science",
+    "Civil / Mechanical Engineering",
+    "Medicine / Health Sciences",
+    "Accounting & Finance",
+    "Economics & Management",
+    "Law & Jurisprudence",
+    "General / Undeclared"
 )
 
 val ETHIOPIAN_REGION_OPTIONS = listOf(
-    "Addis Ababa", "Dire Dawa", "Oromia", "Amhara", "Tigray", "Sidama",
-    "Somali", "SNNP", "Benishangul-Gumuz", "Afar", "Gambela", "Harari",
-    "South Ethiopia", "Central Ethiopia", "Southwest Ethiopia"
+    "Addis Ababa", "Oromia", "Amhara", "Tigray", "Sidama",
+    "Central Ethiopia", "South Ethiopia", "South West Ethiopia",
+    "Dire Dawa", "Harari", "Somali", "Afar", "Benishangul-Gumuz", "Gambela"
 )
 
 data class AvatarPresetOption(
@@ -122,21 +135,30 @@ data class AvatarPresetOption(
     val color: Color
 )
 
+// ids, names and roles are the website's AVATAR_PRESETS; the colour is only a native accent
 val AVATAR_PRESETS_LIST = listOf(
-    AvatarPresetOption("scholar-cyan", "Scholar Cyan", "Analytical Mind", WisdomCyan),
-    AvatarPresetOption("scholar-violet", "Scholar Violet", "Creative Scholar", WisdomAccentViolet),
-    AvatarPresetOption("scholar-amber", "Scholar Amber", "Dedicated Thinker", WisdomAccentAmber),
-    AvatarPresetOption("scholar-emerald", "Scholar Emerald", "Scientific Inquirer", WisdomAccentEmerald),
-    AvatarPresetOption("scholar-rose", "Scholar Rose", "Strategic Visionary", WisdomAccentRose),
-    AvatarPresetOption("scholar-sky", "Scholar Sky", "Natural Explorer", WisdomAccentSky)
+    AvatarPresetOption("scholar-cyan", "Apex Scholar", "Academic Excellence", WisdomCyan),
+    AvatarPresetOption("engineer-amber", "Architect & Engineer", "Engineering & Tech", WisdomAccentAmber),
+    AvatarPresetOption("scientist-emerald", "Natural Scientist", "Research & Discovery", WisdomAccentEmerald),
+    AvatarPresetOption("doctor-rose", "Medical Pioneer", "Health & Medicine", WisdomAccentRose),
+    AvatarPresetOption("coder-violet", "Software Innovator", "Computing & AI", WisdomAccentViolet),
+    AvatarPresetOption("astronomer-sky", "Cosmic Explorer", "Physics & Astronomy", WisdomAccentSky),
+    AvatarPresetOption("lawyer-gold", "Social Thinker", "Social Sciences & Law", WisdomAccentAmber),
+    AvatarPresetOption("visionary-neon", "Future Leader", "Leadership & Impact", WisdomAccentPurple)
 )
 
 /**
- * Native Account screen strictly matching website reference:
+ * Native Account screen strictly matching website reference
+ * (website-reference/src/app/account/page.tsx):
  * - Signed-out: native sign-in / create-account screen (ui/auth/NativeSignInScreen.kt), a copy of
  *   the website login page that talks to Supabase directly (S2d). On success the session is stored
  *   by AuthStateManager.applyNativeSession and this screen switches to the signed-in view.
- * - Signed-in: Flippable 3D Student ID Card, floating folio control bar, 3 numbered verification sections
+ * - Signed-in: Flippable 3D Student ID Card, folio + action bar, 3 numbered profile sections.
+ *
+ * S4 item d: the invented "Curriculum Enrollments / 100% Free Access / Active Academic Pass" card
+ * was removed (the website account page has no such section), and invented defaults (stream
+ * "Natural Science", region "Addis Ababa", "Core Curriculum", "Ethiopia") were removed.
+ * Not ported: the website's Admin button (shown only for admin e-mails).
  */
 @Composable
 fun AccountScreen(
@@ -161,23 +183,21 @@ fun AccountScreen(
         return
     }
 
-    // Signed-in state
+    // Signed-in state. When no saved profile exists yet, start empty (the website does the same);
+    // "Student Scholar" is the website's own display-name fallback.
     var currentProfile by remember(userProfile) {
         mutableStateOf(
             userProfile ?: UserProfile(
                 id = "student",
                 email = userEmail,
-                fullName = userName ?: "Student Scholar",
+                fullName = userName,
                 firstName = userName?.substringBefore(" "),
-                lastName = userName?.substringAfter(" ", ""),
-                educationLevel = "Freshman",
-                stream = "Natural Science",
-                avatarPreset = "scholar-cyan"
+                lastName = userName?.substringAfter(" ", "")
             )
         )
     }
 
-    // Calculate live profile score (matching website ProfileCompletionPanel.tsx)
+    // Same score as the website account page (crown only at 100)
     val profileScore = remember(currentProfile) {
         var score = 0
         if (!currentProfile.firstName.isNullOrBlank() || !currentProfile.fullName.isNullOrBlank()) score += 20
@@ -209,14 +229,16 @@ fun AccountScreen(
             // 1. Flippable Digital Student ID Card (Front & Back)
             item(key = "flippable_student_id_card") {
                 FlippableStudentIdCard(
-                    displayName = currentProfile.fullName ?: userName ?: "Student Scholar",
+                    displayName = currentProfile.fullName?.takeIf { it.isNotBlank() }
+                        ?: userName?.takeIf { it.isNotBlank() }
+                        ?: "Student Scholar",
                     idData = studentIdData,
                     userProfile = currentProfile,
                     hasCrown = hasCrown
                 )
             }
 
-            // 2. Floating Glassmorphic Pill Control Bar (Folio + Copy, Status, Learning, Preferences, Log Out)
+            // 2. Floating Pill Control Bar (Folio + Copy, Status, Learning, Preferences, Log Out)
             item(key = "floating_control_bar") {
                 FloatingPillControlBar(
                     folioNumber = studentIdData.folioNumber,
@@ -232,24 +254,15 @@ fun AccountScreen(
                 )
             }
 
-            // 3. Scholar Profile Verification Panel (Exact 3 numbered steps + fixed width gauge badge)
+            // 3. Scholar Profile Verification Panel (website ProfileCompletionPanel.tsx)
             item(key = "profile_completion_panel") {
                 ScholarProfileVerificationPanel(
                     profile = currentProfile,
-                    completionScore = profileScore,
                     onProfileUpdated = { updated ->
                         currentProfile = updated
                         AuthStateManager.updateProfile(updated)
-                        Toast.makeText(context, "Profile changes saved successfully", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Saved", Toast.LENGTH_SHORT).show()
                     }
-                )
-            }
-
-            // 4. Enrolled Curriculums & Access
-            item(key = "enrolled_curriculum_section") {
-                EnrolledCurriculumSection(
-                    educationLevel = currentProfile.educationLevel ?: "Freshman",
-                    onNavigateToUrl = onNavigateToUrl
                 )
             }
 
@@ -357,6 +370,13 @@ private fun StudentIdCardFront(
     } else {
         listOf(Color(0xFF121C32), Color(0xFF0D1527), Color(0xFF0A1020))
     }
+
+    // Same rules as website StudentIdCard.tsx: level (or default track) + stream only if present;
+    // school (or "Wisdom Tower Academy") + region only if present. No invented fallbacks.
+    val trackText = (userProfile?.educationLevel?.takeIf { it.isNotBlank() } ?: idData.academicTrack) +
+        (userProfile?.stream?.takeIf { it.isNotBlank() }?.let { " · $it" } ?: "")
+    val schoolText = (userProfile?.schoolName?.takeIf { it.isNotBlank() } ?: idData.institutionName) +
+        (userProfile?.townRegion?.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: "")
 
     WisdomModernCard(
         modifier = Modifier.fillMaxWidth(),
@@ -552,7 +572,14 @@ private fun StudentIdCardFront(
                     }
 
                     Text(
-                        text = "${userProfile?.educationLevel ?: idData.academicTrack} · ${userProfile?.stream ?: "Core Curriculum"}",
+                        text = "ACADEMIC SCOPE & LEVEL",
+                        fontSize = 7.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = WisdomMuted,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = trackText,
                         fontSize = 10.sp,
                         color = if (hasCrown) WisdomAccentAmber.copy(alpha = 0.9f) else WisdomCyan.copy(alpha = 0.85f),
                         fontWeight = FontWeight.Medium,
@@ -570,14 +597,14 @@ private fun StudentIdCardFront(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                     Text(
-                        text = "Issued: ${idData.issueDateFull} · Valid: ${idData.expiryDateFull}",
+                        text = "Issued: ${idData.issueDateFull} · Valid Until: ${idData.expiryDateFull}",
                         fontSize = 8.5.sp,
                         color = WisdomMuted
                     )
                     Text(
-                        text = "${userProfile?.schoolName ?: idData.institutionName} (${userProfile?.townRegion ?: "Ethiopia"})",
+                        text = schoolText,
                         fontSize = 8.5.sp,
                         color = WisdomMuted.copy(alpha = 0.8f),
                         maxLines = 1,
@@ -724,7 +751,7 @@ private fun StudentIdCardBack(
 }
 
 /**
- * Floating Glassmorphic Pill Control Bar mirroring website Account page
+ * Floating Pill Control Bar mirroring website Account page
  */
 @Composable
 private fun FloatingPillControlBar(
@@ -851,31 +878,66 @@ private fun PillActionBtn(
 
 /**
  * Scholar Profile Verification Panel strictly matching website ProfileCompletionPanel.tsx
+ * (texts, option lists, defaults, badges, checklist pills). The completion score is computed live
+ * from the form state, exactly like the website.
  */
 @Composable
 private fun ScholarProfileVerificationPanel(
     profile: UserProfile,
-    completionScore: Int,
     onProfileUpdated: (UserProfile) -> Unit
 ) {
-    var firstName by remember(profile.firstName) { mutableStateOf(profile.firstName ?: "") }
-    var lastName by remember(profile.lastName) { mutableStateOf(profile.lastName ?: "") }
-    var educationLevel by remember(profile.educationLevel) { mutableStateOf(profile.educationLevel ?: "Freshman") }
-    var stream by remember(profile.stream) { mutableStateOf(profile.stream ?: "Natural Science") }
+    // Website defaults: first/last name from full name; level "Freshman"; stream, region empty; avatar scholar-cyan
+    var firstName by remember(profile.firstName, profile.fullName) {
+        mutableStateOf(
+            profile.firstName?.takeIf { it.isNotBlank() }
+                ?: profile.fullName?.trim()?.substringBefore(" ").orEmpty()
+        )
+    }
+    var lastName by remember(profile.lastName, profile.fullName) {
+        mutableStateOf(
+            profile.lastName?.takeIf { it.isNotBlank() }
+                ?: profile.fullName?.trim()?.substringAfter(" ", "").orEmpty()
+        )
+    }
+    var educationLevel by remember(profile.educationLevel) {
+        mutableStateOf(profile.educationLevel?.takeIf { it.isNotBlank() } ?: "Freshman")
+    }
+    var stream by remember(profile.stream) { mutableStateOf(profile.stream ?: "") }
     var schoolName by remember(profile.schoolName) { mutableStateOf(profile.schoolName ?: "") }
-    var townRegion by remember(profile.townRegion) { mutableStateOf(profile.townRegion ?: "Addis Ababa") }
+    var townRegion by remember(profile.townRegion) { mutableStateOf(profile.townRegion ?: "") }
     var phone by remember(profile.phone) { mutableStateOf(profile.phone ?: "") }
     var targetExam by remember(profile.targetExam) { mutableStateOf(profile.targetExam ?: "") }
-    var selectedAvatarPreset by remember(profile.avatarPreset) { mutableStateOf(profile.avatarPreset ?: "scholar-cyan") }
+    var selectedAvatarPreset by remember(profile.avatarPreset) {
+        mutableStateOf(profile.avatarPreset?.takeIf { it.isNotBlank() } ?: "scholar-cyan")
+    }
+    // Website stores the free-text level under "Other" in bio as "Custom Level: ..."
+    var customLevel by remember(profile.bio) {
+        mutableStateOf(
+            profile.bio?.takeIf { it.startsWith("Custom Level: ") }?.removePrefix("Custom Level: ") ?: ""
+        )
+    }
 
     var step1Expanded by remember { mutableStateOf(false) }
     var step2Expanded by remember { mutableStateOf(false) }
     var step3Expanded by remember { mutableStateOf(false) }
-    var checklistExpanded by remember { mutableStateOf(false) }
+    var gaugeExpanded by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
 
+    val hasName = firstName.isNotBlank() || !profile.fullName.isNullOrBlank()
+    val completionScore = run {
+        var score = 0
+        if (hasName) score += 20
+        if (educationLevel.isNotBlank()) score += 20
+        if (stream.isNotBlank()) score += 15
+        if (schoolName.isNotBlank()) score += 15
+        if (townRegion.isNotBlank()) score += 10
+        if (targetExam.isNotBlank()) score += 10
+        if (phone.isNotBlank()) score += 10
+        minOf(100, score)
+    }
+
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        // Completion Gauge Header Card
+        // Completion Gauge Header Card (tap to open the checklist, like the website)
         WisdomModernCard(
             modifier = Modifier.fillMaxWidth(),
             cornerRadius = 16.dp,
@@ -888,7 +950,9 @@ private fun ScholarProfileVerificationPanel(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { gaugeExpanded = !gaugeExpanded },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -914,7 +978,7 @@ private fun ScholarProfileVerificationPanel(
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = if (completionScore >= 100) "Scholar Profile Verified 👑" else "Scholar Profile Verification",
+                                text = if (completionScore >= 100) "Scholar Profile Verified" else "Scholar Profile Verification",
                                 fontSize = 13.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (completionScore >= 100) WisdomAccentAmber else Color.White
@@ -929,66 +993,66 @@ private fun ScholarProfileVerificationPanel(
                         }
                     }
 
-                    // Completion percentage badge: softWrap=false, maxLines=1 to prevent vertical text wrap
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(if (completionScore >= 100) WisdomAccentAmber.copy(alpha = 0.15f) else WisdomCyan.copy(alpha = 0.15f))
-                            .border(BorderStroke(1.dp, if (completionScore >= 100) WisdomAccentAmber.copy(alpha = 0.5f) else WisdomCyan.copy(alpha = 0.4f)), CircleShape)
-                            .padding(horizontal = 9.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = "$completionScore% Complete",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (completionScore >= 100) WisdomAccentAmber else WisdomCyan,
-                            maxLines = 1,
-                            softWrap = false
+                        // softWrap=false, maxLines=1 to prevent vertical text wrap
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(if (completionScore >= 100) WisdomAccentAmber.copy(alpha = 0.15f) else WisdomCyan.copy(alpha = 0.15f))
+                                .border(BorderStroke(1.dp, if (completionScore >= 100) WisdomAccentAmber.copy(alpha = 0.5f) else WisdomCyan.copy(alpha = 0.4f)), CircleShape)
+                                .padding(horizontal = 9.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "$completionScore% Complete",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (completionScore >= 100) WisdomAccentAmber else WisdomCyan,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = WisdomMuted,
+                            modifier = Modifier
+                                .size(16.dp)
+                                .graphicsLayer { rotationZ = if (gaugeExpanded) 180f else 0f }
                         )
                     }
                 }
 
-                // Expandable Checklist Trigger
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { checklistExpanded = !checklistExpanded }
-                        .padding(top = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = if (checklistExpanded) "Hide verification checklist" else "View 7 verification milestones",
-                        fontSize = 10.5.sp,
-                        color = WisdomCyan,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = WisdomCyan,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-
-                AnimatedVisibility(visible = checklistExpanded) {
+                AnimatedVisibility(visible = gaugeExpanded) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
                             .background(Color.White.copy(alpha = 0.03f))
                             .padding(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        Text(
+                            text = if (completionScore >= 100) {
+                                "Academic profile verified! Golden Crown badge active on your Student ID card."
+                            } else {
+                                "Fill out the sections below to complete your scholar profile and activate the verified student ID crown."
+                            },
+                            fontSize = 11.sp,
+                            color = Color(0xFFCBD5E1),
+                            lineHeight = 15.sp
+                        )
+                        // Same six checklist items as the website
                         val milestones = listOf(
-                            "Character Avatar & Legal Name" to (firstName.isNotBlank()),
-                            "Education Level" to (educationLevel.isNotBlank()),
-                            "Academic Stream" to (stream.isNotBlank()),
-                            "School / University" to (schoolName.isNotBlank()),
-                            "Town / Region" to (townRegion.isNotBlank()),
-                            "Target Exam" to (targetExam.isNotBlank()),
-                            "Contact Phone" to (phone.isNotBlank())
+                            "Legal Name" to hasName,
+                            "Academic Level" to educationLevel.isNotBlank(),
+                            "Stream" to stream.isNotBlank(),
+                            "Institution" to schoolName.isNotBlank(),
+                            "Region" to townRegion.isNotBlank(),
+                            "Phone" to phone.isNotBlank()
                         )
                         milestones.forEach { (label, done) ->
                             Row(
@@ -1018,7 +1082,8 @@ private fun ScholarProfileVerificationPanel(
             stepNumber = 1,
             title = "Character Avatar & Legal Identity",
             subtitle = "Select your scholar avatar preset, first and last name",
-            isFilled = firstName.isNotBlank(),
+            isFilled = hasName,
+            unfilledLabel = "Required",
             isExpanded = step1Expanded,
             onToggle = { step1Expanded = !step1Expanded }
         ) {
@@ -1049,6 +1114,7 @@ private fun ScholarProfileVerificationPanel(
                         value = firstName,
                         onValueChange = { firstName = it },
                         label = { Text("First Name", fontSize = 11.sp) },
+                        placeholder = { Text("e.g. Abebe", fontSize = 11.sp, color = WisdomMuted) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         shape = RoundedCornerShape(10.dp),
@@ -1058,6 +1124,7 @@ private fun ScholarProfileVerificationPanel(
                         value = lastName,
                         onValueChange = { lastName = it },
                         label = { Text("Last Name", fontSize = 11.sp) },
+                        placeholder = { Text("e.g. Bikila", fontSize = 11.sp, color = WisdomMuted) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
                         shape = RoundedCornerShape(10.dp),
@@ -1072,7 +1139,8 @@ private fun ScholarProfileVerificationPanel(
             stepNumber = 2,
             title = "Academic Curriculum, Track & Institution",
             subtitle = "Academic level, stream, university/school, and region",
-            isFilled = schoolName.isNotBlank(),
+            isFilled = educationLevel.isNotBlank() && schoolName.isNotBlank(),
+            unfilledLabel = "Incomplete",
             isExpanded = step2Expanded,
             onToggle = { step2Expanded = !step2Expanded }
         ) {
@@ -1092,6 +1160,19 @@ private fun ScholarProfileVerificationPanel(
                             Text(text = level, fontSize = 11.sp, color = if (selected) WisdomCyan else Color.White, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
                         }
                     }
+                }
+
+                if (educationLevel == "Other") {
+                    OutlinedTextField(
+                        value = customLevel,
+                        onValueChange = { customLevel = it },
+                        label = { Text("Specify Your Academic Level", fontSize = 11.sp) },
+                        placeholder = { Text("e.g. Master's Degree, College Diploma, Self-learner...", fontSize = 11.sp, color = WisdomMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(10.dp),
+                        colors = fieldColors()
+                    )
                 }
 
                 Text(text = "STREAM / ACADEMIC TRACK", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
@@ -1115,7 +1196,7 @@ private fun ScholarProfileVerificationPanel(
                     value = schoolName,
                     onValueChange = { schoolName = it },
                     label = { Text("School / University Name", fontSize = 11.sp) },
-                    placeholder = { Text("e.g. Addis Ababa University", fontSize = 11.sp, color = WisdomMuted) },
+                    placeholder = { Text("e.g. Addis Ababa University / Millenium High", fontSize = 11.sp, color = WisdomMuted) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(10.dp),
@@ -1146,7 +1227,8 @@ private fun ScholarProfileVerificationPanel(
             stepNumber = 3,
             title = "Contact Phone & Target Exam",
             subtitle = "Phone number, target national exam, and score goal",
-            isFilled = phone.isNotBlank() || targetExam.isNotBlank(),
+            isFilled = phone.isNotBlank(),
+            unfilledLabel = "Incomplete",
             isExpanded = step3Expanded,
             onToggle = { step3Expanded = !step3Expanded }
         ) {
@@ -1184,6 +1266,12 @@ private fun ScholarProfileVerificationPanel(
                 .clickable {
                     isSaving = true
                     val composedName = listOf(firstName.trim(), lastName.trim()).filter { it.isNotBlank() }.joinToString(" ")
+                    // Website: bio is only rewritten while the level is "Other"
+                    val newBio = if (educationLevel == "Other") {
+                        if (customLevel.isNotBlank()) "Custom Level: ${customLevel.trim()}" else ""
+                    } else {
+                        profile.bio
+                    }
                     val updated = profile.copy(
                         fullName = if (composedName.isNotBlank()) composedName else profile.fullName,
                         firstName = firstName.trim(),
@@ -1194,7 +1282,8 @@ private fun ScholarProfileVerificationPanel(
                         townRegion = townRegion,
                         phone = phone.trim(),
                         targetExam = targetExam.trim(),
-                        avatarPreset = selectedAvatarPreset
+                        avatarPreset = selectedAvatarPreset,
+                        bio = newBio
                     )
                     onProfileUpdated(updated)
                     isSaving = false
@@ -1206,7 +1295,7 @@ private fun ScholarProfileVerificationPanel(
                 Icon(imageVector = Icons.Default.Save, contentDescription = null, tint = WisdomDarkOnCyan, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (isSaving) "Saving Changes..." else "Save Profile Changes",
+                    text = if (isSaving) "Saving Profile..." else "Save Profile Changes",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = WisdomDarkOnCyan
@@ -1222,6 +1311,7 @@ private fun StepAccordionCard(
     title: String,
     subtitle: String,
     isFilled: Boolean,
+    unfilledLabel: String,
     isExpanded: Boolean,
     onToggle: () -> Unit,
     content: @Composable () -> Unit
@@ -1267,7 +1357,7 @@ private fun StepAccordionCard(
                             .padding(horizontal = 7.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = if (isFilled) "Filled" else "Required",
+                            text = if (isFilled) "Filled" else unfilledLabel,
                             fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isFilled) WisdomAccentEmerald else WisdomAccentAmber
@@ -1278,7 +1368,9 @@ private fun StepAccordionCard(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
                         tint = WisdomMuted,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier
+                            .size(18.dp)
+                            .graphicsLayer { rotationZ = if (isExpanded) 180f else 0f }
                     )
                 }
             }
@@ -1291,95 +1383,6 @@ private fun StepAccordionCard(
                         .border(BorderStroke(1.dp, WisdomBorderWhite.copy(alpha = 0.5f)))
                 ) {
                     content()
-                }
-            }
-        }
-    }
-}
-
-/**
- * Enrolled Curriculum Section matching website Orders / Enrolled Courses
- */
-@Composable
-private fun EnrolledCurriculumSection(
-    educationLevel: String,
-    onNavigateToUrl: (String) -> Unit
-) {
-    WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 16.dp,
-        borderColor = WisdomBorderWhite
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "CURRICULUM ENROLLMENTS",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WisdomMuted,
-                    letterSpacing = 0.5.sp
-                )
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(WisdomAccentEmerald.copy(alpha = 0.15f))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "100% Free Access",
-                        fontSize = 9.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = WisdomAccentEmerald
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF0F1829))
-                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Active Academic Pass: $educationLevel",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "All books, question banks, flashcards, exams & life savers unlocked",
-                        fontSize = 10.5.sp,
-                        color = WisdomMuted
-                    )
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(WisdomCyan.copy(alpha = 0.15f))
-                        .clickable { onNavigateToUrl("/learning") }
-                        .padding(horizontal = 10.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = "Study →",
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = WisdomCyan
-                    )
                 }
             }
         }
