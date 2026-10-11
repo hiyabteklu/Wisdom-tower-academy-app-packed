@@ -53,12 +53,12 @@ private const val SITE_ORIGIN = "https://www.wisdom-tower-academy.live"
 
 /**
  * Hubs that open in a NATIVE screen (list from Supabase + native viewer) instead of the website page.
- * "books" (native PDF reader, plan steps N2 + N4), "short-notes" (local KaTeX page, step N6) and
- * "flashcards" (local deck page, step N3).
+ * "books" (native PDF reader, plan steps N2 + N4), "short-notes" (local KaTeX page, step N6),
+ * "flashcards" (local deck page, step N3) and "question-banks" + "exams" (local quiz page, step N5).
  * To switch a hub back to the website page (for example if the native screen misbehaves on a phone),
  * remove its id from this set: nothing else changes.
  */
-private val NATIVE_HUB_IDS = setOf("books", "short-notes", "flashcards")
+private val NATIVE_HUB_IDS = setOf("books", "short-notes", "flashcards", "question-banks", "exams")
 
 /** Which native screen is open on top of the six hub cards (null = the cards themselves). */
 private sealed interface WorkspaceView {
@@ -66,6 +66,8 @@ private sealed interface WorkspaceView {
     data class Pdf(val item: LearningResource) : WorkspaceView
     data class Note(val item: LearningResource) : WorkspaceView
     data class Cards(val item: LearningResource) : WorkspaceView
+    /** [hubId] is the hub the item was opened from (`question-banks` or `exams`), used for the tracker scope id. */
+    data class Quiz(val item: LearningResource, val isExam: Boolean, val hubId: String) : WorkspaceView
 }
 
 /**
@@ -93,6 +95,9 @@ private val SCOPE_FRESHMAN = Regex("^/academy/freshman/([^/]+)$")
 private val SCOPE_REMEDIAL = Regex("^/academy/remedial/([^/]+)$")
 private val SCOPE_GRADE = Regex("^/academy/grades/([^/]+)/([^/]+)$")
 private val SCOPE_ECE = Regex("^/academy/special-packages/[^/]+/(sem-[12])/([^/]+)$")
+
+// Same ECE route, but keeping the package slug too (needed for the website's `trackerScopeId`).
+private val TRACK_ECE = Regex("^/academy/special-packages/([^/]+)/(sem-[12])/([^/]+)$")
 
 private fun cleanBase(basePath: String): String {
     var base = basePath.trim()
@@ -130,6 +135,30 @@ internal fun contentScopePath(basePath: String): String? {
 }
 
 /**
+ * The website's `trackerScopeId` for the hub [hubId] of the course at [basePath] (the id its hub page passes to
+ * `HubContentView`, and that `saveExamAttempt` writes to `academic_results.scope_id`), copied from
+ * `website-reference/src/app/academy/.../[resource]/page.tsx`:
+ *  - Freshman: `freshman-<subject>` (no hub in it);
+ *  - Remedial: `remedial-<subject>-<hub>`; Grades: `grade-<grade>-<subject>-<hub>`;
+ *  - ECE: `special-<package slug>-<sem-1|sem-2>-<course>-<hub>`.
+ * Null for any path the native screens do not read (the website page then does the saving).
+ */
+internal fun trackerScopeIdFor(basePath: String, hubId: String): String? {
+    var base = cleanBase(basePath)
+    val last = base.substringAfterLast('/')
+    if (NATIVE_LEARNING_HUBS.any { it.id == last }) {
+        base = base.substringBeforeLast('/')
+    }
+    SCOPE_FRESHMAN.matchEntire(base)?.let { return "freshman-${it.groupValues[1]}" }
+    SCOPE_REMEDIAL.matchEntire(base)?.let { return "remedial-${it.groupValues[1]}-$hubId" }
+    SCOPE_GRADE.matchEntire(base)?.let { return "grade-${it.groupValues[1]}-${it.groupValues[2]}-$hubId" }
+    TRACK_ECE.matchEntire(base)?.let {
+        return "special-${it.groupValues[1]}-${it.groupValues[2]}-${it.groupValues[3]}-$hubId"
+    }
+    return null
+}
+
+/**
  * Builds the address of a learning hub so it can never point at a page that does not exist:
  *  1. a base that already ends with a hub id (for example "/academy/freshman/books") loses that hub id
  *     first, so the hub is never doubled ("/books/books");
@@ -163,10 +192,11 @@ internal fun safeHubUrl(basePath: String, hubId: String): String {
  * Entrance Questions year (2026-10-11): the year page is the exams page itself, so this screen opens it
  * straight away (LaunchedEffect) and, as a fallback if that is ever missed, shows a single "Exams" card.
  *
- * Native hubs (2026-10-11, plan N2 + N3 + N4 + N6): a hub listed in [NATIVE_HUB_IDS] opens [HubItemListScreen]
- * (rows read from Supabase) and then [PdfReaderScreen] (books), [NotesReaderScreen] (short notes) or
- * [FlashcardsScreen] (flashcard decks), all inside this screen, so `MainActivity` is not involved.
- * System Back goes viewer -> list -> the six cards.
+ * Native hubs (2026-10-11, plan N2 + N3 + N4 + N5 + N6): a hub listed in [NATIVE_HUB_IDS] opens [HubItemListScreen]
+ * (rows read from Supabase) and then [PdfReaderScreen] (books), [NotesReaderScreen] (short notes),
+ * [FlashcardsScreen] (flashcard decks) or [QuizExamScreen] (question banks and exams), all inside this screen,
+ * so `MainActivity` is not involved. System Back goes viewer -> list -> the six cards (the quiz screen
+ * handles Back itself first, to close its own dialogs).
  * The other hubs still open the website page through `onOpenHub`.
  */
 @Composable
@@ -188,7 +218,8 @@ fun StudyWorkspaceScreen(
         }
     }
 
-    BackHandler(enabled = view != null) {
+    // The quiz screen has its own BackHandler (it closes its dialogs first and then calls onBack below).
+    BackHandler(enabled = view != null && view !is WorkspaceView.Quiz) {
         view = when (view) {
             is WorkspaceView.Pdf -> WorkspaceView.HubList("books")
             is WorkspaceView.Note -> WorkspaceView.HubList("short-notes")
@@ -211,6 +242,8 @@ fun StudyWorkspaceScreen(
                         "pdf" -> view = WorkspaceView.Pdf(item)
                         "markdown" -> view = WorkspaceView.Note(item)
                         "flashcard_deck" -> view = WorkspaceView.Cards(item)
+                        "quiz" -> view = WorkspaceView.Quiz(item, false, shown.hubId)
+                        "exam" -> view = WorkspaceView.Quiz(item, true, shown.hubId)
                     }
                 },
                 modifier = modifier
@@ -235,6 +268,15 @@ fun StudyWorkspaceScreen(
                 title = shown.item.title,
                 resourceId = shown.item.id,
                 onBack = { view = WorkspaceView.HubList("flashcards") },
+                modifier = modifier
+            )
+
+            is WorkspaceView.Quiz -> QuizExamScreen(
+                title = shown.item.title,
+                resourceId = shown.item.id,
+                isExam = shown.isExam,
+                trackerScopeId = trackerScopeIdFor(basePath, shown.hubId),
+                onBack = { view = WorkspaceView.HubList(shown.hubId) },
                 modifier = modifier
             )
         }
