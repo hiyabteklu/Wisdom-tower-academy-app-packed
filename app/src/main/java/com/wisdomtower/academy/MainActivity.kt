@@ -1694,6 +1694,7 @@ fun MainScreen(
         } else {
             val matchedPkg = catalogPackages.find {
                 it.path.equals(pathPart, ignoreCase = true) ||
+                (pathPart.trimEnd('/').equals("/academy/special-packages/electrical-computer-engineering", ignoreCase = true) && it.id == "ece-y3-sem-1") ||
                 it.id.equals(pathPart.removePrefix("/academy/"), ignoreCase = true) ||
                 it.id.equals(pathPart.removePrefix("/packages/"), ignoreCase = true)
             }
