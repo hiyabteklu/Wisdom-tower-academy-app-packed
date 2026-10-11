@@ -42,6 +42,45 @@ import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 
+private const val SITE_ORIGIN = "https://www.wisdom-tower-academy.live"
+
+/**
+ * Website route shapes (website-reference/src/app/academy):
+ *  - hubs live at /academy/{coc|uat|gat|exit-exam}/{hub}
+ *  - hubs live at /academy/freshman/{subject}/{hub}, /academy/remedial/{subject}/{hub},
+ *    /academy/grades/{grade}/{subject}/{hub}, /academy/special-packages/{slug}/{semester}/{course}/{hub}
+ *  - there is NO hub directly under /academy/freshman, /academy/remedial, /academy/grades/{grade}
+ *    or /academy/special-packages/{slug}/{semester}: "{base}/books" there would be read as a subject
+ *    or course called "books" and give "404 Page Not Found".
+ */
+private val NEEDS_SUBJECT_LEVEL = Regex(
+    "^/academy/(freshman|remedial|grades/[^/]+|special-packages/[^/]+/[^/]+)$"
+)
+
+/**
+ * Builds the address of a learning hub so it can never point at a page that does not exist:
+ *  1. a base that already ends with a hub id (for example "/academy/freshman/books") loses that hub id
+ *     first, so the hub is never doubled ("/books/books");
+ *  2. a base that is only a package level without subjects opens the real package page instead of
+ *     a hub that does not exist there.
+ */
+internal fun safeHubUrl(basePath: String, hubId: String): String {
+    var base = basePath.trim()
+    if (base.startsWith("http")) {
+        base = base.removePrefix(SITE_ORIGIN)
+    }
+    base = base.substringBefore('?').substringBefore('#').trimEnd('/')
+    if (base.isEmpty()) base = "/academy"
+
+    val last = base.substringAfterLast('/')
+    if (NATIVE_LEARNING_HUBS.any { it.id == last }) {
+        base = base.substringBeforeLast('/')
+    }
+
+    val path = if (NEEDS_SUBJECT_LEVEL.matches(base)) base else "$base/$hubId"
+    return SITE_ORIGIN + path
+}
+
 /**
  * Native Study Workspace Screen: header + the 6 Learning Hub cards.
  *
@@ -52,7 +91,7 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
  * Owner card rule (2026-10-11): every card is the shared [OpenCard] (picture, title, "Open") in a
  * two-column grid. The old hub card had a dark gradient over the picture, a category tag and a
  * description; all three are gone. Hub names are the website's (`data/academy.ts` `resourceHubs`).
- * STATUS: not compiled.
+ * Links: see [safeHubUrl]. STATUS: not compiled.
  */
 @Composable
 fun StudyWorkspaceScreen(
@@ -137,9 +176,7 @@ fun StudyWorkspaceScreen(
             // The 6 hub cards (Books, Short Notes, Flashcards, Question Banks, Exams, Life Savers)
             openGrid("hubs", NATIVE_LEARNING_HUBS) { hub ->
                 OpenCard(hub.name, hub.assetImage) {
-                    val fullPath = "$basePath/${hub.id}"
-                    val url = if (fullPath.startsWith("http")) fullPath else "https://www.wisdom-tower-academy.live$fullPath"
-                    onOpenHub(hub.id, url)
+                    onOpenHub(hub.id, safeHubUrl(basePath, hub.id))
                 }
             }
 
