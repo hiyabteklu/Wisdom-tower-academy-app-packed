@@ -15,6 +15,7 @@
 6. **Rule (f) – Isolate Release Configuration:** Never touch release signing, ProGuard/R8 release configs, Gradle wrapper 9.3.1, JDK 21, or workflow files to patch or work around UI compilation errors.
 7. **Rule (g) – Keep the CI Pipeline Green:** Maintain a green state for the "Build Production AAB & APK" GitHub Actions workflow at all times.
 8. **Rule (h) – Zero Secrets in BuildConfig / Non-Empty .env.example:** Never add a secret to .env.example or BuildConfig; empty .env.example values break the Java build. Only public, non-empty values may exist in .env.example. All secrets stay strictly on the website server or as GitHub Actions signing secrets read via `System.getenv`.
+9. **Rule (i) – Gradle Kotlin scripts (`*.gradle.kts`):** never write a fully qualified `java.xxx` name (e.g. `java.io.File`, `java.net.URI`) inside a build script: `java` there is the project's `java` extension. Use `import java.io.File` at the top of the file and write `File(...)`.
 
 ---
 
@@ -95,3 +96,10 @@
 * **Cause:** `Modifier.clickable { ... }` was used in the Retry button of `PdfReaderScreen.kt` without `import androidx.compose.foundation.clickable`. `clickable` is an extension function on `Modifier`, so it is NOT found without its own import, even when other `androidx.compose.foundation.*` imports are present. Kotlin printed only this one error, so the rest of the file (and the other two files of that commit, `HubItemListScreen.kt`, `BookFileStore.kt`) compiled.
 * **Fix:** Added `import androidx.compose.foundation.clickable` (commit `f95656c6`). Rule (e) grep: all 15 files in `app/src` that use `.clickable` now import it.
 * **DO NOT:** **Every Modifier extension (`clickable`, `background`, `border`, `padding`, `size`, `fillMaxWidth`, `aspectRatio`, `clip` ...) needs its own import. After writing a composable file, check each `Modifier.xxx` you used against the import list before committing.**
+
+### 2026-10-11 – CI failed after `1245519` (N6 part 3, `app/build.gradle.kts` script compilation, BEFORE any Kotlin app code compiled)
+
+#### Problem: `Unresolved reference 'io'` / `'net'` in `build.gradle.kts` lines 172-179 (task `fetchKatex`)
+* **Cause:** the new task wrote `java.io.File(outDir, name)` and `java.net.URI(...)`. Inside a Gradle Kotlin build script the bare name `java` is the project's `java` extension (accessor), not the root package, so `java.io` / `java.net` do not resolve. The other 4 errors (`TRY_CALL`, `Cannot infer type for 'T'/'R'` on `.use { }`) were knock-on errors of the same two lines. The build stopped at "Configure project :app" in 12 s, so NONE of the Kotlin code since `f95656c6` (N6 parts 1 and 2: `NotesReaderScreen`, notes page) was compiled by that run.
+* **Fix:** `import java.io.File` and `import java.net.URI` at the top of the script and `File(...)` / `URI(...)` in the task (commit `8f38297c`). `import java.util.Base64` already worked because imports are resolved before the script body.
+* **DO NOT:** **Rule (i): never write a fully qualified `java.*` name inside a `*.gradle.kts` file; import it. Also: a red build that stops at "Configure project" means the app code was not compiled at all, so the next green/red run is the first test of everything committed since the last good build.**
