@@ -50,6 +50,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wisdomtower.academy.ui.packages.ENTRANCE_BASE_PATH
+import com.wisdomtower.academy.ui.packages.ENTRANCE_IMAGE_ASSET
 import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
@@ -87,7 +89,9 @@ data class ResourceGuide(
     val accentColor: Color
 )
 
-// Ordered programs exactly matching Section 6 of NATIVE_APP_BRIEF.md
+// Cards in the order of the website home / academy page (LandingPathways.tsx, 2026-10-11):
+// ECE, Freshman, Grade 9, 10, 11, 12 (independent cards, no combined "Grade 9-12"), Entrance Questions,
+// COC, UAT, GAT, Exit Exam, Remedial. Grade pictures are the website package images.
 val HOME_PROGRAMS = listOf(
     ProgramItem(
         id = "ece",
@@ -106,12 +110,44 @@ val HOME_PROGRAMS = listOf(
         accentColor = WisdomAccentPurple
     ),
     ProgramItem(
-        id = "grade-9-12",
-        name = "Grade 9–12",
-        path = "/academy/grades",
-        assetImage = "file:///android_asset/images/packages/grade-9-12_9842aa.jpeg",
-        webImageFallback = "https://wisdom-tower-academy.live/images/packages/grade-9-12_9842aa.jpeg",
+        id = "grade-9",
+        name = "Grade 9",
+        path = "/academy/grades/9",
+        assetImage = "file:///android_asset/images/packages/grade-9_67df27.jpeg",
+        webImageFallback = "https://wisdom-tower-academy.live/images/packages/grade-9_67df27.jpeg",
         accentColor = WisdomAccentSky
+    ),
+    ProgramItem(
+        id = "grade-10",
+        name = "Grade 10",
+        path = "/academy/grades/10",
+        assetImage = "file:///android_asset/images/packages/grade-10_156767.jpeg",
+        webImageFallback = "https://wisdom-tower-academy.live/images/packages/grade-10_156767.jpeg",
+        accentColor = WisdomAccentViolet
+    ),
+    ProgramItem(
+        id = "grade-11",
+        name = "Grade 11",
+        path = "/academy/grades/11",
+        assetImage = "file:///android_asset/images/packages/grade-11_6309fc.jpeg",
+        webImageFallback = "https://wisdom-tower-academy.live/images/packages/grade-11_6309fc.jpeg",
+        accentColor = WisdomAccentAmber
+    ),
+    ProgramItem(
+        id = "grade-12",
+        name = "Grade 12",
+        path = "/academy/grades/12",
+        assetImage = "file:///android_asset/images/packages/grade-12_f1ddef.jpeg",
+        webImageFallback = "https://wisdom-tower-academy.live/images/packages/grade-12_f1ddef.jpeg",
+        accentColor = WisdomAccentEmerald
+    ),
+    ProgramItem(
+        id = "entrance-questions",
+        name = "Entrance Questions",
+        path = ENTRANCE_BASE_PATH,
+        assetImage = ENTRANCE_IMAGE_ASSET,
+        webImageFallback = "https://wisdom-tower-academy.live/images/Entrance%20questions.jpeg",
+        accentColor = WisdomCyan
     ),
     ProgramItem(
         id = "coc",
