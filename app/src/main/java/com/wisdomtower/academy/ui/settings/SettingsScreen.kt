@@ -104,6 +104,11 @@ import java.io.File
  * and the storage size and sync message were fixed texts. All three are now real.
  * 2026-10-11 (session F): every label was compared with the website page; study-window hours, the
  * password success text, the "Saved" confirmation and the default name now use the website wording.
+ * 2026-10-12 (session T): the missing website texts were added (study target description, "15 min/day"
+ * buttons, "Reflected in analytics", "Master sound level calibrated for study games", "Live Sample
+ * Preview" box with "Preview" tag and the website's px sizes, "Change Password" heading and the two
+ * password placeholders). Not changed on purpose: "Edit Profile" still opens the native Account tab
+ * (the website's ?tab=profile has no native meaning) and the avatar is still a generic icon.
  */
 @Composable
 fun SettingsScreen(
@@ -303,36 +308,49 @@ fun SettingsScreen(
                     onToggle = { openStudy = !openStudy }
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Text(
-                            text = "DAILY STUDY TARGET (MINUTES PER DAY)",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = WisdomMuted,
-                            letterSpacing = 0.5.sp
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                text = "DAILY STUDY TARGET (MINUTES PER DAY)",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = WisdomMuted,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = "Select your target study commitment. This powers your streak calculation and pacing HUD.",
+                                fontSize = 11.sp,
+                                color = WisdomMuted,
+                                lineHeight = 15.sp
+                            )
+                        }
 
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf(15, 30, 45, 60, 90, 120).forEach { mins ->
-                                val isSelected = dailyGoalMinutes == mins
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.04f))
-                                        .border(BorderStroke(1.dp, if (isSelected) Color.White else WisdomBorderWhite), RoundedCornerShape(10.dp))
-                                        .clickable {
-                                            dailyGoalMinutes = mins
-                                            prefsStorage.edit().putInt("daily_study_goal_minutes", mins).apply()
+                        // Website: 2 buttons per row on a phone, text "{n} min/day"
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf(15, 30, 45, 60, 90, 120).chunked(3).forEach { rowMins ->
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    rowMins.forEach { mins ->
+                                        val isSelected = dailyGoalMinutes == mins
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clip(RoundedCornerShape(10.dp))
+                                                .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.04f))
+                                                .border(BorderStroke(1.dp, if (isSelected) Color.White else WisdomBorderWhite), RoundedCornerShape(10.dp))
+                                                .clickable {
+                                                    dailyGoalMinutes = mins
+                                                    prefsStorage.edit().putInt("daily_study_goal_minutes", mins).apply()
+                                                }
+                                                .padding(vertical = 8.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "$mins min/day",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) Color.Black else Color.White
+                                            )
                                         }
-                                        .padding(vertical = 8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "${mins}m",
-                                        fontSize = 11.5.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) Color.Black else Color.White
-                                    )
+                                    }
                                 }
                             }
                         }
@@ -426,48 +444,62 @@ fun SettingsScreen(
                             }
                         }
 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(WisdomCyan)
-                                .clickable {
-                                    val base = currentProfile
-                                    if (!isLoggedIn || base == null) {
-                                        Toast.makeText(context, "Sign in to save your study goals", Toast.LENGTH_SHORT).show()
-                                    } else if (!savingGoals) {
-                                        savingGoals = true
-                                        scope.launch {
-                                            val result = AuthStateManager.saveProfile(
-                                                base.copy(
-                                                    dailyStudyGoalMinutes = dailyGoalMinutes,
-                                                    targetExam = targetExam,
-                                                    targetScore = targetScore,
-                                                    preferredStudyTime = studyWindow
+                        // Website: Save button on the left, "Reflected in analytics" hint on the right
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(WisdomCyan)
+                                    .clickable {
+                                        val base = currentProfile
+                                        if (!isLoggedIn || base == null) {
+                                            Toast.makeText(context, "Sign in to save your study goals", Toast.LENGTH_SHORT).show()
+                                        } else if (!savingGoals) {
+                                            savingGoals = true
+                                            scope.launch {
+                                                val result = AuthStateManager.saveProfile(
+                                                    base.copy(
+                                                        dailyStudyGoalMinutes = dailyGoalMinutes,
+                                                        targetExam = targetExam,
+                                                        targetScore = targetScore,
+                                                        preferredStudyTime = studyWindow
+                                                    )
                                                 )
-                                            )
-                                            savingGoals = false
-                                            val text = when (result) {
-                                                is AccountCallResult.Success -> "Saved"
-                                                is AccountCallResult.Failure -> result.message
+                                                savingGoals = false
+                                                val text = when (result) {
+                                                    is AccountCallResult.Success -> "Saved"
+                                                    is AccountCallResult.Failure -> result.message
+                                                }
+                                                Toast.makeText(context, text, Toast.LENGTH_LONG).show()
                                             }
-                                            Toast.makeText(context, text, Toast.LENGTH_LONG).show()
                                         }
                                     }
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Save, contentDescription = null, tint = WisdomDarkOnCyan, modifier = Modifier.size(15.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = if (savingGoals) "Saving..." else "Save Study Goals",
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = WisdomDarkOnCyan
+                                    )
                                 }
-                                .padding(vertical = 12.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Save, contentDescription = null, tint = WisdomDarkOnCyan, modifier = Modifier.size(15.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (savingGoals) "Saving..." else "Save Study Goals",
-                                    fontSize = 12.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = WisdomDarkOnCyan
-                                )
                             }
+
+                            Text(
+                                text = "Reflected in analytics",
+                                fontSize = 9.5.sp,
+                                color = WisdomMuted,
+                                fontFamily = FontFamily.Monospace
+                            )
                         }
                     }
                 }
@@ -551,23 +583,33 @@ fun SettingsScreen(
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
+                                verticalAlignment = Alignment.Top,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(
-                                    text = "Game Audio Volume ($volumePercent%)",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Game Audio Volume ($volumePercent%)",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = "Master sound level calibrated for study games",
+                                        fontSize = 11.sp,
+                                        color = WisdomMuted,
+                                        lineHeight = 15.sp
+                                    )
+                                }
                                 Text(
                                     text = "Reset 50%",
                                     fontSize = 11.sp,
                                     color = WisdomCyan,
-                                    modifier = Modifier.clickable {
-                                        soundVolume = 0.5f
-                                        prefsStorage.edit().putFloat("sound_volume", 0.5f).apply()
-                                    }
+                                    modifier = Modifier
+                                        .padding(start = 8.dp)
+                                        .clickable {
+                                            soundVolume = 0.5f
+                                            prefsStorage.edit().putFloat("sound_volume", 0.5f).apply()
+                                        }
                                 )
                             }
 
@@ -659,26 +701,62 @@ fun SettingsScreen(
                             }
                         }
 
-                        // Sample Preview
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color.White.copy(alpha = 0.05f))
-                                .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
-                                .padding(14.dp)
-                        ) {
-                            val sampleSize = when (fontSize) {
-                                "compact" -> 12.sp
-                                "large" -> 15.sp
-                                else -> 13.5.sp
+                        // Live Sample Preview (website texts and px sizes)
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(text = "LIVE SAMPLE PREVIEW", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White.copy(alpha = 0.05f))
+                                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
+                                    .padding(14.dp)
+                            ) {
+                                val sampleSize = when (fontSize) {
+                                    "compact" -> 15.5.sp
+                                    "large" -> 18.sp
+                                    else -> 16.sp
+                                }
+                                val sampleLabel = when (fontSize) {
+                                    "compact" -> "Compact (15.5px)"
+                                    "large" -> "Large (18px)"
+                                    else -> "Standard (16px)"
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = sampleLabel,
+                                        fontSize = 11.sp,
+                                        color = Color.White.copy(alpha = 0.8f),
+                                        fontFamily = FontFamily.Monospace
+                                    )
+                                    Text(
+                                        text = "PREVIEW",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = WisdomMuted,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(WisdomBorderWhite)
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = "Wisdom Tower Academy features a bold, stylized typography system engineered for effortless scanning and long-term concept retention across mobile and desktop displays.",
+                                    fontSize = sampleSize,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    lineHeight = sampleSize * 1.5f
+                                )
                             }
-                            Text(
-                                text = "Wisdom Tower Academy features a bold, stylized typography system engineered for effortless scanning and long-term concept retention across mobile and desktop displays.",
-                                fontSize = sampleSize,
-                                color = Color.White,
-                                lineHeight = 19.sp
-                            )
                         }
                     }
                 }
@@ -857,10 +935,13 @@ fun SettingsScreen(
                             }
                         }
 
+                        Text(text = "Change Password", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+
                         OutlinedTextField(
                             value = newPassword,
                             onValueChange = { newPassword = it },
                             label = { Text("New Password", fontSize = 11.sp) },
+                            placeholder = { Text("At least 6 characters", fontSize = 11.sp, color = WisdomMuted) },
                             visualTransformation = PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
@@ -872,6 +953,7 @@ fun SettingsScreen(
                             value = confirmPassword,
                             onValueChange = { confirmPassword = it },
                             label = { Text("Confirm New Password", fontSize = 11.sp) },
+                            placeholder = { Text("Repeat new password", fontSize = 11.sp, color = WisdomMuted) },
                             visualTransformation = PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
