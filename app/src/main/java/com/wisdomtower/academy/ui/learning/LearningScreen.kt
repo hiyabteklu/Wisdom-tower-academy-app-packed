@@ -48,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,21 +70,25 @@ import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 
 /**
- * Native Learning screen strictly mirroring website reference:
+ * Native Learning screen mirroring website reference:
  * - src/app/learning/page.tsx
  * - src/app/learning/LearningContent.tsx
  *
  * Header:
- * - Scholar Avatar, Full Name, Student Folio (WTA-XXXX), User Email
- * - Quick Metrics Bar: Streak (1d Streak), Goals (% Goals), Tested (X Tested)
+ * - Scholar Avatar, Full Name ("Scholar" when the name is unknown, as on the website), Student Folio (WTA-XXXX), User Email
+ * - The website's three header chips ("{n}d Streak", "{n}% Goals", "{n} Tested") were REMOVED in S4:
+ *   the website computes them from data kept in the WebView's own localStorage, which native code cannot read,
+ *   and the old native chips were fixed invented values. Re-add only through a real bridge to that data.
  * - Guest Scholar Banner if signed out
  *
  * Study Tools Dock (8 tiles):
  * - Timer, Planner, Targets, Notebook, Calculator, AI Tutor, Your status, Courses
  *
  * Curriculum Section:
- * - Header: Curriculum with "All Courses (X)"
- * - 2-Column cards with 16:9 images, titles, level badges, and "Start Learning"
+ * - Header: Curriculum with "All Courses (X)", X = number of courses shown
+ * - Courses chosen by the website's `getDefaultPackagesForAcademicLevel(level)` rule from `src/lib/academic-levels.ts`
+ *   (the website also lets a student change this list; that choice lives in WebView localStorage and is not read here)
+ * - Cards with 16:9 images, titles, and the six hub links named as on the website
  */
 
 data class StudyToolTile(
@@ -104,6 +109,25 @@ val STUDY_TOOLS_TILES = listOf(
     StudyToolTile("courses", "Courses", Icons.AutoMirrored.Filled.MenuBook, "/packages")
 )
 
+/**
+ * Same rule as `getDefaultPackagesForAcademicLevel` in website-reference/src/lib/academic-levels.ts.
+ * The website id "ece" is the single 3rd Year (ECE) card; natively it is the first package whose id starts with "ece".
+ */
+private fun defaultPackageIdsForLevel(level: String?): List<String> {
+    if (level.isNullOrBlank()) return listOf("freshman", "coc")
+    val t = level.trim().lowercase()
+    return when {
+        t == "grade 9" || t == "grade-9" || t == "g9" -> listOf("grade-9")
+        t == "grade 10" || t == "grade-10" || t == "g10" -> listOf("grade-10")
+        t == "grade 11" || t == "grade-11" || t == "g11" -> listOf("grade-11")
+        t == "grade 12" || t == "grade-12" || t == "g12" -> listOf("grade-12")
+        t.contains("remedial") -> listOf("remedial")
+        t.contains("freshman") -> listOf("freshman", "coc")
+        t == "3rd year (ece)" || t == "3rd year ece" || t.contains("ece") || t.contains("electrical") -> listOf("ece")
+        else -> emptyList()
+    }
+}
+
 @Composable
 fun LearningScreen(
     modifier: Modifier = Modifier,
@@ -117,18 +141,22 @@ fun LearningScreen(
     onSelectCourse: (NativePackage) -> Unit = {},
     onNavigateToUrl: (String) -> Unit = {}
 ) {
-    val displayName = userProfile?.fullName ?: userName ?: if (isLoggedIn) "Student Scholar" else "Scholar"
+    val displayName = userProfile?.fullName ?: userName ?: "Scholar"
     val email = userProfile?.email ?: userEmail
     val studentIdData = remember(userProfile, isLoggedIn) {
         StudentIdGenerator.computeStudentId(userProfile?.id, userProfile)
     }
     val studentId = studentIdData.idNumber
 
-    // Filter enrolled / featured courses for Curriculum section (defaults to Freshman, COC, Grade 12, etc.)
-    val enrolledCourses = remember(packageList) {
-        val preferredIds = listOf("freshman", "coc", "grade-12", "uat", "ece-y3-sem-1", "remedial")
-        val found = packageList.filter { it.id in preferredIds }
-        if (found.isNotEmpty()) found else packageList.take(6)
+    // Courses for the Curriculum section: the website's default list for the student's academic level
+    val enrolledCourses = remember(packageList, userProfile?.educationLevel) {
+        defaultPackageIdsForLevel(userProfile?.educationLevel).mapNotNull { id ->
+            if (id == "ece") {
+                packageList.firstOrNull { it.id.startsWith("ece") }
+            } else {
+                packageList.firstOrNull { it.id == id }
+            }
+        }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -139,7 +167,7 @@ fun LearningScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // TOP HEADER: Scholar Name, Folio, Email, Quick Metrics
+            // TOP HEADER: Scholar Name, Folio, Email
             item(key = "learning_header") {
                 WisdomModernCard(
                     modifier = Modifier.fillMaxWidth(),
@@ -201,7 +229,7 @@ fun LearningScreen(
                                         )
                                         if (!email.isNullOrBlank()) {
                                             Text(
-                                                text = "• $email",
+                                                text = "\u2022 $email",
                                                 fontSize = 10.5.sp,
                                                 color = WisdomMuted,
                                                 maxLines = 1,
@@ -210,60 +238,6 @@ fun LearningScreen(
                                         }
                                     }
                                 }
-                            }
-                        }
-
-                        // Compact Quick Metrics Bar
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            // Metric 1: Streak
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(Color.White.copy(alpha = 0.04f))
-                                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(20.dp))
-                                    .padding(vertical = 6.dp, horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(Icons.Default.LocalFireDepartment, contentDescription = null, tint = WisdomAccentAmber, modifier = Modifier.size(13.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = "1d Streak", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            }
-
-                            // Metric 2: Goals
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(Color.White.copy(alpha = 0.04f))
-                                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(20.dp))
-                                    .padding(vertical = 6.dp, horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(13.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = "100% Goals", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            }
-
-                            // Metric 3: Tested
-                            Row(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(20.dp))
-                                    .background(Color.White.copy(alpha = 0.04f))
-                                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(20.dp))
-                                    .padding(vertical = 6.dp, horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = WisdomAccentAmber, modifier = Modifier.size(13.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(text = "0 Tested", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                             }
                         }
                     }
@@ -431,7 +405,7 @@ fun LearningScreen(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "All Courses (${packageList.size})",
+                                text = "All Courses (${enrolledCourses.size})",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = WisdomCyan
@@ -443,6 +417,54 @@ fun LearningScreen(
                                 tint = WisdomCyan,
                                 modifier = Modifier.size(11.dp)
                             )
+                        }
+                    }
+                }
+            }
+
+            // Empty state (same texts as the website when no package is selected)
+            if (enrolledCourses.isEmpty()) {
+                item(key = "curriculum_empty") {
+                    WisdomModernCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        cornerRadius = 16.dp,
+                        borderColor = WisdomBorderWhite
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "No curriculum packages selected",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = "You can browse all courses, choose packages in the course manager, or update your academic level in Settings.",
+                                fontSize = 11.sp,
+                                color = WisdomMuted,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 15.sp
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White.copy(alpha = 0.1f))
+                                    .clickable { onNavigateToUrl("/packages") }
+                                    .padding(horizontal = 12.dp, vertical = 7.dp)
+                            ) {
+                                Text(
+                                    text = "Browse Courses",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
                 }
@@ -605,115 +627,51 @@ private fun CurriculumCourseCard(
                 }
             }
 
+            // The six hub links, named as on the website course view (Books, Notes, Cards, Banks, Exams, Life Savers).
+            // The old fixed "Progress / Active" label, 35% bar and "Continue" button were removed in S4 (not on the website).
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 10.dp)
+                    .padding(horizontal = 10.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // Progress Indicator
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Progress",
-                        fontSize = 10.sp,
-                        color = WisdomMuted
-                    )
-                    Text(
-                        text = "Active",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = WisdomAccentEmerald
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(Color.White.copy(alpha = 0.08f))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.35f)
-                            .height(4.dp)
-                            .background(WisdomCyan)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Fast Hub Links (Books, Notes, Cards, Questions, Exams, Life Savers)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    val quickHubs = listOf(
-                        "books" to "Books",
-                        "short-notes" to "Notes",
-                        "flashcards" to "Cards",
-                        "question-banks" to "Quizzes",
-                        "exams" to "Exams",
-                        "life-savers" to "Guides"
-                    )
-                    quickHubs.take(4).forEach { (hubId, hubLabel) ->
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(Color.White.copy(alpha = 0.04f))
-                                .border(BorderStroke(0.5.dp, Color.White.copy(alpha = 0.1f)), RoundedCornerShape(6.dp))
-                                .clickable { onOpenHubLink("${pkg.path}/$hubId") }
-                                .padding(vertical = 4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = hubLabel,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = WisdomMuted,
-                                maxLines = 1
-                            )
+                val quickHubs = listOf(
+                    "books" to "Books",
+                    "short-notes" to "Notes",
+                    "flashcards" to "Cards",
+                    "question-banks" to "Banks",
+                    "exams" to "Exams",
+                    "life-savers" to "Life Savers"
+                )
+                quickHubs.chunked(3).forEach { rowHubs ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        rowHubs.forEach { (hubId, hubLabel) ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color.White.copy(alpha = 0.04f))
+                                    .border(BorderStroke(0.5.dp, Color.White.copy(alpha = 0.1f)), RoundedCornerShape(6.dp))
+                                    .clickable { onOpenHubLink("${pkg.path}/$hubId") }
+                                    .padding(vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = hubLabel,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = WisdomMuted,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Continue action button
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(WisdomCyan.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.45f)), RoundedCornerShape(8.dp))
-                        .clickable(onClick = onClick)
-                        .padding(vertical = 6.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                            contentDescription = null,
-                            tint = WisdomCyan,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Continue",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = WisdomCyan
-                        )
                     }
                 }
             }
         }
     }
 }
-
