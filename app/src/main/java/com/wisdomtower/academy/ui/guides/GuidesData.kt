@@ -224,52 +224,14 @@ object GuidesRepository {
         return Pair(categories, depts)
     }
 
+    /**
+     * Success stories and scholarships: REAL items from the website's Supabase table, loaded in the
+     * background by [FreeResourcesLive]. The returned lists are Compose state lists (empty until the
+     * first successful load, then filled; the last real answer is also kept offline). The invented
+     * bundled sample content was removed.
+     */
     fun loadFreeResources(context: Context): Pair<List<SuccessStory>, List<ScholarshipOpportunity>> {
-        val stories = mutableListOf<SuccessStory>()
-        val scholarships = mutableListOf<ScholarshipOpportunity>()
-        try {
-            val jsonStr = context.assets.open("data/free_resources_snapshot.json").bufferedReader().use { it.readText() }
-            val root = JSONObject(jsonStr)
-
-            val sArr = root.optJSONArray("stories")
-            if (sArr != null) {
-                for (i in 0 until sArr.length()) {
-                    val s = sArr.getJSONObject(i)
-                    stories.add(
-                        SuccessStory(
-                            id = s.optString("id"),
-                            name = s.optString("studentName"),
-                            achievement = s.optString("result"),
-                            program = s.optString("program"),
-                            year = s.optString("year"),
-                            quote = s.optString("quote"),
-                            body = s.optString("body")
-                        )
-                    )
-                }
-            }
-
-            val schArr = root.optJSONArray("scholarships")
-            if (schArr != null) {
-                for (i in 0 until schArr.length()) {
-                    val sch = schArr.getJSONObject(i)
-                    scholarships.add(
-                        ScholarshipOpportunity(
-                            id = sch.optString("id"),
-                            title = sch.optString("title"),
-                            provider = sch.optString("provider"),
-                            amount = sch.optString("amount"),
-                            level = sch.optString("level"),
-                            country = sch.optString("country"),
-                            eligibility = sch.optString("eligibility"),
-                            deadline = sch.optString("deadline"),
-                            externalUrl = sch.optString("externalUrl"),
-                            body = sch.optString("body")
-                        )
-                    )
-                }
-            }
-        } catch (_: Exception) {}
-        return Pair(stories, scholarships)
+        FreeResourcesLive.refresh(context)
+        return Pair(FreeResourcesLive.stories, FreeResourcesLive.scholarships)
     }
 }
