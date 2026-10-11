@@ -1,3 +1,5 @@
+import java.io.File
+import java.net.URI
 import java.util.Base64
 
 plugins {
@@ -155,6 +157,9 @@ tasks.named("preBuild").configure { dependsOn("copySpecialPackageImages") }
 // build downloads the pinned version from the jsDelivr npm mirror into src/main/assets/notes/katex/ and keeps
 // them (a file that is already there is not downloaded again). If a download fails the build still succeeds
 // with a warning: the notes page then shows formulas as plain text instead of typeset math.
+// NOTE (build fix 2026-10-11): inside a Gradle Kotlin script the bare name `java` means the project's `java`
+// extension, so `java.io.File` / `java.net.URI` did NOT resolve ("Unresolved reference 'io'"). Use the imports
+// at the top of this file (`File`, `URI`) and never write a fully qualified `java.xxx` name in this file.
 tasks.register("fetchKatex") {
   val katexVersion = "0.16.11"
   val outDir = layout.projectDirectory.dir("src/main/assets/notes/katex").asFile
@@ -169,11 +174,11 @@ tasks.register("fetchKatex") {
     val names = listOf("katex.min.js", "katex.min.css") + fontNames.map { "fonts/KaTeX_$it.woff2" }
     var failed = 0
     for (name in names) {
-      val target = java.io.File(outDir, name)
+      val target = File(outDir, name)
       if (target.exists() && target.length() > 0L) continue
       try {
         target.parentFile.mkdirs()
-        val connection = java.net.URI("$base/$name").toURL().openConnection()
+        val connection = URI("$base/$name").toURL().openConnection()
         connection.connectTimeout = 15000
         connection.readTimeout = 30000
         connection.getInputStream().use { input -> target.outputStream().use { out -> input.copyTo(out) } }
