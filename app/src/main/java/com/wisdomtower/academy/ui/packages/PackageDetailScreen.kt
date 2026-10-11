@@ -44,6 +44,23 @@ import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 
+// Electrical & Computer Engineering (website-reference/src/data/special-packages.ts: name "Electrical & Computer
+// Engineering", yearLabel "Year 3", semesters "Semester 1" / "Semester 2" with their own cover pictures).
+private const val ECE_PACKAGE_NAME = "Electrical & Computer Engineering"
+private const val ECE_YEAR_LABEL = "Year 3"
+
+private data class EceSemesterEntry(
+    val id: String,
+    val label: String,
+    val image: String,
+    val courses: List<NativeSpecialCourse>
+)
+
+private val ECE_SEMESTER_ENTRIES = listOf(
+    EceSemesterEntry("sem-1", "Semester 1", "file:///android_asset/images/special-packages/ece-sem-1.jpg", ECE_SEM1_COURSES),
+    EceSemesterEntry("sem-2", "Semester 2", "file:///android_asset/images/special-packages/ece-sem-2.jpg", ECE_SEM2_COURSES)
+)
+
 /**
  * Package page. Rewritten 2026-10-11 (owner rules): every card is the shared [OpenCard]
  * (picture, title, Open button) in a TWO-column grid. No hero picture with gradient or tag, no
@@ -53,8 +70,11 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
  *  - freshman/page.tsx: "Freshman courses" + "including preengineering & others", label "Subjects"
  *  - grades/[grade]/page.tsx: "Secondary Curriculum" + grade label ("Grade 9" ...), label "Subjects"
  *  - remedial/page.tsx: "Remedial", label "Subjects"
- *  - special-packages/[slug]/page.tsx: package name (the website's "Department track · year" line is not copied
- *    because the year text is not in the app data)
+ *  - special-packages/[slug]/page.tsx (ECE, owner request 2026-10-11): first level = the two semester cover cards
+ *    ("Semester 1", "Semester 2"), eyebrow "Department track · Year 3", title "Electrical & Computer Engineering";
+ *    special-packages/[slug]/[semester]/page.tsx: second level = the 7 courses of that semester, eyebrow
+ *    "Electrical & Computer Engineering · Year 3", title "Semester 1" / "Semester 2". Back goes from the courses to the
+ *    two semester cards first, then leaves the package.
  *  - entrance-questions (2026-10-11 website update): root "Past Exams" / "Entrance Questions" with the two stream
  *    cards; stream page "Entrance Questions" / stream label with subject cards; subject page
  *    "Entrance Questions · {stream}" / subject name, label "Exam year", year cards. A year opens the website
@@ -86,19 +106,27 @@ fun PackageDetailScreen(
     val stream = if (isEntrance) ENTRANCE_STREAMS.firstOrNull { it.id == streamId } else null
     val subject = stream?.subjects?.firstOrNull { it.id == subjectId }
 
+    // ECE drill-down state (semester cards -> that semester's courses)
+    var eceSemesterId by rememberSaveable { mutableStateOf<String?>(null) }
+    val eceSemester = if (isEce) ECE_SEMESTER_ENTRIES.firstOrNull { it.id == eceSemesterId } else null
+
     val goBack: () -> Unit = {
         if (subject != null) {
             subjectId = null
         } else if (stream != null) {
             streamId = null
+        } else if (eceSemester != null) {
+            eceSemesterId = null
         } else {
             onBack()
         }
     }
-    BackHandler(enabled = stream != null) { goBack() }
+    BackHandler(enabled = stream != null || eceSemester != null) { goBack() }
 
     val eyebrow: String? = when {
         isGrade -> "Secondary Curriculum"
+        isEce && eceSemester != null -> "$ECE_PACKAGE_NAME · $ECE_YEAR_LABEL"
+        isEce -> "Department track · $ECE_YEAR_LABEL"
         isEntrance && stream != null && subject != null -> "Entrance Questions · ${stream.label}"
         isEntrance && stream != null -> "Entrance Questions"
         isEntrance -> "Past Exams"
@@ -107,6 +135,8 @@ fun PackageDetailScreen(
     val pageTitle: String = when {
         isFreshman -> "Freshman courses"
         isGrade -> "Grade ${pkg.id.removePrefix("grade-")}"
+        isEce && eceSemester != null -> eceSemester.label
+        isEce -> ECE_PACKAGE_NAME
         isEntrance && subject != null -> subject.name
         isEntrance && stream != null -> stream.label
         else -> pkg.name
@@ -196,26 +226,21 @@ fun PackageDetailScreen(
                 }
             }
 
-            // ── ECE: both semesters, each as its own two-column grid ──
+            // ── ECE: first the two semester cover cards, then the 7 courses of the chosen semester ──
             if (isEce) {
-                item(key = "ece_sem1_label") { SubjectsLabel("Semester 1") }
-                openGrid("ece1", ECE_SEM1_COURSES) { course ->
-                    OpenCard("${course.code} · ${course.title}", course.assetImage) {
-                        onOpenSubjectWorkspace(
-                            "${course.code} · ${course.title}",
-                            "ECE Year 3 · Semester 1",
-                            course.path
-                        )
+                if (eceSemester == null) {
+                    openGrid("ece_semesters", ECE_SEMESTER_ENTRIES) { sem ->
+                        OpenCard(sem.label, sem.image) { eceSemesterId = sem.id }
                     }
-                }
-                item(key = "ece_sem2_label") { SubjectsLabel("Semester 2") }
-                openGrid("ece2", ECE_SEM2_COURSES) { course ->
-                    OpenCard("${course.code} · ${course.title}", course.assetImage) {
-                        onOpenSubjectWorkspace(
-                            "${course.code} · ${course.title}",
-                            "ECE Year 3 · Semester 2",
-                            course.path
-                        )
+                } else {
+                    openGrid("ece_courses_${eceSemester.id}", eceSemester.courses) { course ->
+                        OpenCard("${course.code} · ${course.title}", course.assetImage) {
+                            onOpenSubjectWorkspace(
+                                "${course.code} · ${course.title}",
+                                "ECE Year 3 · ${eceSemester.label}",
+                                course.path
+                            )
+                        }
                     }
                 }
             }
