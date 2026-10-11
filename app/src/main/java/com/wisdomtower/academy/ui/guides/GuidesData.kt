@@ -66,7 +66,8 @@ data class UniversityDetail(
     val whatToExpect: List<String>,
     val tips: List<String>,
     val studentFit: String,
-    val featured: Boolean = false
+    val featured: Boolean = false,
+    val knownFor: List<String> = emptyList()
 )
 
 data class DepartmentCategoryDetail(
@@ -89,7 +90,20 @@ data class DepartmentDetail(
     val cons: List<String>
 )
 
+/** Website `universitiesIntro.subtitle` (src/data/universities.ts). */
+const val UNIVERSITIES_SUBTITLE = "What it actually feels like to study at each one"
+
 object GuidesRepository {
+
+    /** Website `universitiesIntro.closing`, read from the packed JSON (empty if missing). */
+    fun loadUniversitiesClosing(context: Context): String {
+        return try {
+            val jsonStr = context.assets.open("data/universities.json").bufferedReader().use { it.readText() }
+            JSONObject(jsonStr).optJSONObject("intro")?.optString("closing").orEmpty()
+        } catch (_: Exception) {
+            ""
+        }
+    }
 
     fun loadUniversities(context: Context): Pair<List<String>, List<UniversityDetail>> {
         val introParagraphs = mutableListOf<String>()
@@ -126,6 +140,11 @@ object GuidesRepository {
                     if (tArr != null) {
                         for (t in 0 until tArr.length()) tips.add(tArr.getString(t))
                     }
+                    val known = mutableListOf<String>()
+                    val kArr = u.optJSONArray("knownFor")
+                    if (kArr != null) {
+                        for (k in 0 until kArr.length()) known.add(kArr.getString(k))
+                    }
 
                     list.add(
                         UniversityDetail(
@@ -145,7 +164,8 @@ object GuidesRepository {
                             whatToExpect = what,
                             tips = tips,
                             studentFit = u.optString("studentFit"),
-                            featured = u.optBoolean("featured", false)
+                            featured = u.optBoolean("featured", false),
+                            knownFor = known
                         )
                     )
                 }

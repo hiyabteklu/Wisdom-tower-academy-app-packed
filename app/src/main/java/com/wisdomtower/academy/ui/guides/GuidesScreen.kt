@@ -1,6 +1,8 @@
 package com.wisdomtower.academy.ui.guides
 
-// S13-GUIDES: patched by scripts/patch_guides_screen.py (see docs/HANDOVER.md)
+// Guides audited against website-reference/ (2026-10-11, session F). Every label and text below is
+// copied from the website pages: components/academy/*, app/academy/{universities,departments,
+// scholarships,success-stories}/page.tsx and data/universities.ts. Do not add wording that is not there.
 
 import android.content.Intent
 import android.net.Uri
@@ -29,38 +31,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Business
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Coffee
-import androidx.compose.material.icons.filled.Computer
-import androidx.compose.material.icons.filled.Diversity3
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.material.icons.filled.Gavel
-import androidx.compose.material.icons.filled.Grass
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.HealthAndSafety
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MenuBook
-import androidx.compose.material.icons.filled.Pets
-import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -75,9 +55,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -86,13 +66,11 @@ import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
 import com.wisdomtower.academy.ui.theme.WisdomAccentOrange
-import com.wisdomtower.academy.ui.theme.WisdomAccentPurple
 import com.wisdomtower.academy.ui.theme.WisdomAccentRose
 import com.wisdomtower.academy.ui.theme.WisdomAccentSky
 import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
-import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 
@@ -106,6 +84,7 @@ fun GuidesScreen(
     var activeSlug by remember { mutableStateOf(initialSlug) }
 
     val (uniIntro, universitiesList) = remember { GuidesRepository.loadUniversities(context) }
+    val uniClosing = remember { GuidesRepository.loadUniversitiesClosing(context) }
     val (deptCategories, departmentsList) = remember { GuidesRepository.loadDepartments(context) }
     val (storiesList, scholarshipsList) = remember { GuidesRepository.loadFreeResources(context) }
 
@@ -117,7 +96,6 @@ fun GuidesScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // TOP BAR
             item(key = "top_nav") {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -145,8 +123,9 @@ fun GuidesScreen(
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
+                    // Website heading of the guides list on /academy.
                     Text(
-                        text = "Academy Guide & Resources",
+                        text = "Other resources",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -154,21 +133,15 @@ fun GuidesScreen(
                 }
             }
 
-            // GUIDE TABS SWITCHER
             item(key = "switcher_row") {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(GUIDE_TABS) { tab ->
                         val isSelected = activeSlug == tab.slug
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
                                 .border(
-                                    BorderStroke(
-                                        1.dp,
-                                        if (isSelected) tab.accentColor else WisdomBorderWhite
-                                    ),
+                                    BorderStroke(1.dp, if (isSelected) tab.accentColor else WisdomBorderWhite),
                                     RoundedCornerShape(20.dp)
                                 )
                                 .background(
@@ -194,42 +167,28 @@ fun GuidesScreen(
                 }
             }
 
-            // DYNAMIC SECTION
             when (activeSlug) {
-                "study-techniques" -> {
-                    item(key = "guide_study_techniques") {
-                        StudyTechniquesFullSection()
-                    }
+                "success-stories" -> item(key = "guide_success_stories") {
+                    SuccessStoriesFullSection(stories = storiesList)
                 }
-                "success-stories" -> {
-                    item(key = "guide_success_stories") {
-                        SuccessStoriesFullSection(stories = storiesList)
-                    }
+                "campus-life" -> item(key = "guide_campus_life") {
+                    CampusLifeFullSection()
                 }
-                "campus-life" -> {
-                    item(key = "guide_campus_life") {
-                        CampusLifeFullSection()
-                    }
+                "universities" -> item(key = "guide_universities") {
+                    UniversitiesFullSection(
+                        introParagraphs = uniIntro,
+                        closing = uniClosing,
+                        universities = universitiesList
+                    )
                 }
-                "universities" -> {
-                    item(key = "guide_universities") {
-                        UniversitiesFullSection(introParagraphs = uniIntro, universities = universitiesList)
-                    }
+                "departments" -> item(key = "guide_departments") {
+                    DepartmentsFullSection(categories = deptCategories, departments = departmentsList)
                 }
-                "departments" -> {
-                    item(key = "guide_departments") {
-                        DepartmentsFullSection(categories = deptCategories, departments = departmentsList)
-                    }
+                "scholarships" -> item(key = "guide_scholarships") {
+                    ScholarshipsFullSection(scholarships = scholarshipsList)
                 }
-                "scholarships" -> {
-                    item(key = "guide_scholarships") {
-                        ScholarshipsFullSection(scholarships = scholarshipsList)
-                    }
-                }
-                else -> {
-                    item(key = "guide_fallback") {
-                        StudyTechniquesFullSection()
-                    }
+                else -> item(key = "guide_study_techniques") {
+                    StudyTechniquesFullSection()
                 }
             }
 
@@ -240,46 +199,173 @@ fun GuidesScreen(
     }
 }
 
-/* =========================================================================================
-   1. STUDY TECHNIQUES (Word for word matching website StudyTechniquesPage & Sections)
-========================================================================================= */
+/* ============================== shared small pieces ============================== */
 
 @Composable
-private fun StudyTechniquesFullSection() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Header
-        WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(WisdomAccentAmber.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Text("OTHER RESOURCES", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
-                }
-
+private fun GuideHeaderCard(tag: String, accent: Color, title: String, body: String?) {
+    WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SmallTag(label = tag.uppercase(), color = accent)
+            Text(text = title, fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color.White)
+            if (!body.isNullOrBlank()) {
                 Text(
-                    text = "Evidence-Based Study Techniques",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
-
-                Text(
-                    text = "Covering pages and highlighting lines can feel like work. Often it is only exposure. What tends to stick is what you can produce from memory without looking: a definition in your own words, a method you can choose under time pressure, a problem you solve from a blank page.\n\nThis guide walks through methods that match how memory actually forms. None of them require an innate gift. They require structured retrieval, honest feedback, and deliberate practice.",
+                    text = body,
                     fontSize = 12.sp,
-                    color = Color.White.copy(alpha = 0.82f),
+                    color = Color.White.copy(alpha = 0.85f),
                     lineHeight = 17.sp
                 )
             }
         }
+    }
+}
 
-        // Why usual routine disappoints
+@Composable
+private fun SmallTag(label: String, color: Color) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(color.copy(alpha = 0.12f))
+            .border(BorderStroke(1.dp, color.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = color)
+    }
+}
+
+@Composable
+private fun FactBadge(label: String) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(Color.White.copy(alpha = 0.04f))
+            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(6.dp))
+            .padding(horizontal = 6.dp, vertical = 3.dp)
+    ) {
+        Text(label, fontSize = 10.5.sp, color = WisdomMuted)
+    }
+}
+
+@Composable
+private fun InfoBox(title: String, accent: Color, content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(accent.copy(alpha = 0.05f))
+            .border(BorderStroke(1.dp, accent.copy(alpha = 0.2f)), RoundedCornerShape(12.dp))
+            .padding(12.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(title.uppercase(), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = accent)
+            content()
+        }
+    }
+}
+
+@Composable
+private fun BulletLine(text: String, bullet: String, color: Color) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
+        Text(bullet, color = color, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+        Text(text, fontSize = 11.5.sp, color = Color.White.copy(alpha = 0.9f), lineHeight = 16.sp)
+    }
+}
+
+@Composable
+private fun MoreLessButton(expanded: Boolean, accent: Color, onToggle: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(accent.copy(alpha = if (expanded) 0.08f else 0.15f))
+            .border(BorderStroke(1.dp, accent.copy(alpha = 0.3f)), RoundedCornerShape(20.dp))
+            .clickable { onToggle() }
+            .padding(vertical = 9.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(if (expanded) "Less" else "More", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent)
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = accent,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun GuideSearchField(value: String, onChange: (String) -> Unit, placeholder: String) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        placeholder = { Text(placeholder, fontSize = 12.sp, color = WisdomMuted) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(16.dp)) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = WisdomCyan,
+            unfocusedBorderColor = WisdomBorderWhite,
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White,
+            focusedContainerColor = Color(0xFF0F172A),
+            unfocusedContainerColor = Color(0xFF0F172A)
+        ),
+        singleLine = true
+    )
+}
+
+@Composable
+private fun FilterChip(label: String, selected: Boolean, accent: Color, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(if (selected) accent.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f))
+            .border(BorderStroke(1.dp, if (selected) accent.copy(alpha = 0.5f) else WisdomBorderWhite), RoundedCornerShape(16.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 11.5.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = if (selected) accent else WisdomMuted
+        )
+    }
+}
+
+@Composable
+private fun EmptyNoteCard(title: String?, text: String) {
+    WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (title != null) {
+                Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+            Text(text, fontSize = 12.sp, color = WisdomMuted, lineHeight = 17.sp)
+        }
+    }
+}
+
+private fun openLink(context: android.content.Context, url: String) {
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    } catch (_: Exception) {
+    }
+}
+
+/* ============================== 1. STUDY TECHNIQUES ============================== */
+/* Source: components/academy/StudyTechniquesPage.tsx and StudyTechniquesSections.tsx (checked word for word). */
+
+@Composable
+private fun StudyTechniquesFullSection() {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        GuideHeaderCard(
+            tag = "Other resources",
+            accent = WisdomAccentAmber,
+            title = "Evidence-Based Study Techniques",
+            body = "Covering pages and highlighting lines can feel like work. Often it is only exposure. What tends to stick is what you can produce from memory without looking: a definition in your own words, a method you can choose under time pressure, a problem you solve from a blank page.\n\nThis guide walks through methods that match how memory actually forms. None of them require an innate gift. They require structured retrieval, honest feedback, and deliberate practice."
+        )
+
         WisdomModernCard(
             modifier = Modifier.fillMaxWidth(),
             cornerRadius = 20.dp,
@@ -299,7 +385,6 @@ private fun StudyTechniquesFullSection() {
             }
         }
 
-        // 01 Active Recall
         StudyTechniqueStepCard(
             stepNumber = "01",
             category = "Core Principle",
@@ -315,7 +400,6 @@ private fun StudyTechniquesFullSection() {
             accentColor = WisdomAccentAmber
         )
 
-        // 02 Spacing
         StudyTechniqueStepCard(
             stepNumber = "02",
             category = "Retention Rhythm",
@@ -331,7 +415,6 @@ private fun StudyTechniquesFullSection() {
             accentColor = WisdomAccentOrange
         )
 
-        // 03 Practice Testing
         StudyTechniqueStepCard(
             stepNumber = "03",
             category = "Low-Stakes Testing",
@@ -347,7 +430,6 @@ private fun StudyTechniquesFullSection() {
             accentColor = WisdomAccentRose
         )
 
-        // 04 Mixing Related Topics
         StudyTechniqueStepCard(
             stepNumber = "04",
             category = "Discrimination Skill",
@@ -363,7 +445,6 @@ private fun StudyTechniquesFullSection() {
             accentColor = WisdomAccentViolet
         )
 
-        // Everyday Habits
         WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("Everyday Habits That Support the Core Four", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -394,7 +475,6 @@ private fun StudyTechniquesFullSection() {
             }
         }
 
-        // What to Drop Immediately
         WisdomModernCard(
             modifier = Modifier.fillMaxWidth(),
             cornerRadius = 20.dp,
@@ -414,9 +494,8 @@ private fun StudyTechniquesFullSection() {
                     "Cramming exclusively the night before and calling it an exam strategy",
                     "Avoiding timed mock questions because they feel uncomfortable"
                 )
-
                 traps.forEach { trap ->
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("×", fontSize = 14.sp, fontWeight = FontWeight.Black, color = WisdomAccentRose)
                         Text(trap, fontSize = 11.5.sp, color = WisdomMuted)
                     }
@@ -439,27 +518,10 @@ private fun StudyTechniqueStepCard(
 ) {
     WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(accentColor.copy(alpha = 0.15f))
-                        .border(BorderStroke(1.dp, accentColor.copy(alpha = 0.4f)), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(stepNumber, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = accentColor, fontFamily = FontFamily.Monospace)
-                }
-                Column {
-                    Text(category.uppercase(), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = accentColor)
-                    Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            }
-
+            StepHeader(stepNumber, category, title, accentColor)
             Text(text = highlight, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             Text(text = body, fontSize = 11.5.sp, color = WisdomMuted, lineHeight = 16.sp)
 
-            // Try this routine
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -470,91 +532,75 @@ private fun StudyTechniqueStepCard(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("TRY THIS ROUTINE", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = accentColor)
-                    routineItems.forEach { item ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
-                            Text("•", color = accentColor, fontWeight = FontWeight.Bold)
-                            Text(item, fontSize = 11.sp, color = Color.White.copy(alpha = 0.9f))
-                        }
-                    }
+                    routineItems.forEach { item -> BulletLine(item, "•", accentColor) }
                 }
             }
 
-            // Common trap
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(WisdomAccentRose.copy(alpha = 0.05f))
-                    .border(BorderStroke(1.dp, WisdomAccentRose.copy(alpha = 0.2f)), RoundedCornerShape(12.dp))
-                    .padding(12.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("COMMON TRAP", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentRose)
-                    Text(commonTrap, fontSize = 11.sp, color = WisdomMuted, lineHeight = 15.sp)
-                }
+            InfoBox(title = "Common Trap", accent = WisdomAccentRose) {
+                Text(commonTrap, fontSize = 11.sp, color = WisdomMuted, lineHeight = 15.sp)
             }
         }
     }
 }
 
-/* =========================================================================================
-   2. SUCCESS STORIES (Word for word matching website SuccessStoriesPage)
-========================================================================================= */
+@Composable
+private fun StepHeader(step: String, category: String, title: String, accentColor: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(
+            modifier = Modifier
+                .size(26.dp)
+                .clip(CircleShape)
+                .background(accentColor.copy(alpha = 0.15f))
+                .border(BorderStroke(1.dp, accentColor.copy(alpha = 0.4f)), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(step, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = accentColor, fontFamily = FontFamily.Monospace)
+        }
+        Column {
+            Text(category.uppercase(), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = accentColor)
+            Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+    }
+}
+
+/* ============================== 2. SUCCESS STORIES ============================== */
+/* Source: app/academy/success-stories/page.tsx. Items come from the website's Supabase table. */
 
 @Composable
 private fun SuccessStoriesFullSection(stories: List<SuccessStory>) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(WisdomAccentAmber.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Text("FREE RESOURCE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
-                }
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        GuideHeaderCard(
+            tag = "Free resource",
+            accent = WisdomAccentAmber,
+            title = "Success Stories",
+            body = FreeResourcesLive.storiesSubtitle.ifBlank { null }
+        )
 
-                Text(
-                    text = "Success Stories",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
-
-                if (FreeResourcesLive.storiesSubtitle.isNotBlank()) {
-                    Text(
-                        text = FreeResourcesLive.storiesSubtitle,
-                        fontSize = 12.sp,
-                        color = WisdomMuted,
-                        lineHeight = 16.sp
-                    )
-                }
-            }
+        if (stories.isNotEmpty()) {
+            Text(
+                text = "${stories.size} ${if (stories.size == 1) "story" else "stories"}",
+                fontSize = 11.sp,
+                color = WisdomMuted
+            )
         }
 
         if (stories.isEmpty()) {
             if (!FreeResourcesLive.loaded) {
                 FreeResourcesStateCard(null, "Loading…")
             } else if (FreeResourcesLive.storiesFailed) {
-                FreeResourcesStateCard(null, "Could not load stories. Unable to load items right now.")
+                FreeResourcesStateCard(null, "Could not load stories.")
             } else {
-                FreeResourcesStateCard("No stories yet", "Published stories will appear here.")
+                FreeResourcesStateCard("No stories yet", "Published stories will appear here as large photo cards.")
             }
         }
-        stories.forEach { story ->
-            SuccessStoryCardItem(story = story)
-        }
+        stories.forEach { story -> SuccessStoryCardItem(story = story) }
     }
 }
 
 @Composable
 private fun SuccessStoryCardItem(story: SuccessStory) {
     var expanded by remember { mutableStateOf(false) }
+    val longBody = story.body.trim().length > 220
 
     WisdomModernCard(
         modifier = Modifier.fillMaxWidth(),
@@ -595,158 +641,186 @@ private fun SuccessStoryCardItem(story: SuccessStory) {
                     Text(
                         text = "“${story.quote}”",
                         fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontStyle = FontStyle.Italic,
                         color = Color(0xFFFDE68A),
                         lineHeight = 16.sp
                     )
                 }
             }
 
-            Text(
-                text = story.body,
-                fontSize = 11.5.sp,
-                color = WisdomMuted,
-                lineHeight = 16.sp,
-                maxLines = if (expanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { expanded = !expanded }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            if (story.body.isNotBlank()) {
                 Text(
-                    text = if (expanded) "Show less" else "Read full details",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WisdomAccentAmber
+                    text = story.body.trim(),
+                    fontSize = 11.5.sp,
+                    color = WisdomMuted,
+                    lineHeight = 16.sp,
+                    maxLines = if (expanded || !longBody) Int.MAX_VALUE else 3,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = WisdomAccentAmber,
-                    modifier = Modifier.size(14.dp)
-                )
+            }
+
+            if (longBody) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { expanded = !expanded }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (expanded) "Show less" else "Read full story",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = WisdomAccentAmber
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = WisdomAccentAmber,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
         }
     }
 }
 
-/* =========================================================================================
-   3. CAMPUS LIFE FIELD GUIDE (Word for word matching website CampusLifePage & Sections)
-========================================================================================= */
+/* ============================== 3. CAMPUS LIFE ============================== */
+/* Source: components/academy/CampusLifePage.tsx and CampusLifeSections.tsx. */
+
+private data class CampusCard(val title: String, val body: String)
 
 @Composable
 private fun CampusLifeFullSection() {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(WisdomAccentSky.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.dp, WisdomAccentSky.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Text("OTHER RESOURCES", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentSky)
-                }
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        GuideHeaderCard(
+            tag = "Other resources",
+            accent = WisdomAccentSky,
+            title = "Campus Life Field Guide",
+            body = "Most of what decides your grades does not happen only at a desk with a highlighter. It happens in the hours between classes: who you sit with, how late you stay online, whether you recover after a hard week, and whether a weak lecture still leaves you with something you can revise.\n\nThis page is a practical guide to that side of university: friendships, pressure, classrooms, and the buildings and people around you. Nothing here is a personality test. It is ordinary advice that works when you apply it imperfectly but consistently."
+        )
 
-                Text(
-                    text = "Campus Life Field Guide",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
-
-                Text(
-                    text = "Most of what decides your grades does not happen only at a desk with a highlighter. It happens in the hours between classes: who you sit with, how late you stay online, whether you recover after a hard week, and whether a weak lecture still leaves you with something you can revise.\n\nThis page is a practical guide to that side of university: friendships, pressure, classrooms, and the buildings and people around you. Nothing here is a personality test. It is ordinary advice that works when you apply it imperfectly but consistently.",
-                    fontSize = 12.sp,
-                    color = Color.White.copy(alpha = 0.85f),
-                    lineHeight = 17.sp
-                )
-            }
-        }
-
-        // 01 Friends & Social Life
         CampusSectionCard(
             step = "01",
             category = "Social Dynamics",
             title = "Friends & Social Life",
             subtitle = "Keeping friends without losing the semester",
-            mainText = "University is where many people meet the friends they keep for years. That matters. What also matters is that endless availability—answering every message the moment it arrives, accepting every invitation because saying no feels rude—leaves almost no quiet stretch for real study.\n\nYou do not need to become cold. You need a simple pattern: some hours are for work, and during those hours you are allowed to be slow to reply. When you are free, be actually free. People respect clarity more than vague half-attention all day long.",
+            paragraphs = listOf(
+                "University is where many people meet the friends they keep for years. That matters. What also matters is that endless availability-answering every message the moment it arrives, accepting every invitation because saying no feels rude-leaves almost no quiet stretch for real study.",
+                "You do not need to become cold. You need a simple pattern: some hours are for work, and during those hours you are allowed to be slow to reply. When you are free, be actually free. People respect clarity more than vague half-attention all day long."
+            ),
             bullets = listOf(
                 "Block a few study hours where your phone is not the priority.",
                 "Put social plans after those blocks when you can, not in the middle of them.",
                 "A short, honest 'I am finishing this, talk later' is enough; you do not owe a speech."
             ),
-            extraSubheadings = listOf(
-                Pair("What “everyone is doing” really means", "Peer pressure on campus rarely looks like orders. More often it is the quiet assumption that skipping class is normal, or that starting assignments the night before is standard. Decide your minimum standards in advance and study near peers who work diligently."),
-                Pair("Loneliness is not discipline", "Cutting everyone off is not a healthy strategy. Most students thrive with one or two steady, reliable relationships rather than large superficial circles. Schedule meaningful connections like a weekly study walk or a short call home.")
+            cards = listOf(
+                CampusCard(
+                    "What “everyone is doing” really means",
+                    "Peer pressure on campus rarely looks like orders. More often it is the quiet assumption that skipping class is normal, or that starting assignments the night before is standard. Decide your minimum standards in advance and study near peers who work diligently."
+                ),
+                CampusCard(
+                    "Loneliness is not discipline",
+                    "Cutting everyone off is not a healthy strategy. Most students thrive with one or two steady, reliable relationships rather than large superficial circles. Schedule meaningful connections like a weekly study walk or a short call home."
+                )
             ),
             accentColor = WisdomAccentRose
         )
 
-        // 02 Energy & Pressure Management
         CampusSectionCard(
             step = "02",
             category = "Mental Stamina",
             title = "Energy & Pressure Management",
-            subtitle = "Sustaining momentum through midterm pressure",
-            mainText = "Some weeks you feel sharp; other weeks opening the textbook feels heavy. On low-energy days, shrink the scope: do a 15-minute recall review or one section of problems. Continuity beats boom-and-bust cramming.",
+            subtitle = null,
+            paragraphs = emptyList(),
             bullets = emptyList(),
-            extraSubheadings = listOf(
-                Pair("When motivation comes and goes", "Do not wait for inspirational moods. Anchor to simple physical triggers: the same desk, a consistent starting hour, and an easy first step. Reliable small steps get you across four or five undergraduate years."),
-                Pair("Noticing burnout early", "Burnout builds quietly: you sleep but wake up exhausted, tasks feel numb, or irritability spikes. Cut study volume, simplify your commitments, and talk to someone early instead of pushing until complete collapse."),
-                Pair("Rest that actually restores", "Infinite phone scrolling leaves you depleted. Authentic restoration means uninterrupted sleep, sunlight, walking outdoors, screen-free meals, and genuine human conversations.")
+            cards = listOf(
+                CampusCard(
+                    "When motivation comes and goes",
+                    "Some weeks you feel sharp; other weeks opening the textbook feels heavy. On low-energy days, shrink the scope: do a 15-minute recall review or one section of problems. Continuity beats boom-and-bust cramming."
+                ),
+                CampusCard(
+                    "Noticing burnout early",
+                    "Burnout builds quietly: you sleep but wake up exhausted, tasks feel numb, or irritability spikes. Cut study volume, simplify your commitments, and talk to someone early instead of pushing until complete collapse."
+                ),
+                CampusCard(
+                    "Showing up routinely",
+                    "Do not wait for inspirational moods. Anchor to simple physical triggers: the same desk, a consistent starting hour, and an easy first step. Reliable small steps get you across four or five undergraduate years."
+                ),
+                CampusCard(
+                    "Rest that actually restores",
+                    "Infinite phone scrolling leaves you depleted. Authentic restoration means uninterrupted sleep, sunlight, walking outdoors, screen-free meals, and genuine human conversations."
+                )
             ),
             accentColor = WisdomAccentViolet
         )
 
-        // 03 Lectures & Classroom Time
         CampusSectionCard(
             step = "03",
             category = "Classroom Strategy",
             title = "Lectures & Classroom Time",
-            subtitle = "Where you sit and how you listen",
-            mainText = "Sitting in front where you clearly view the board reduces the cognitive strain of staying locked into complex derivations. The back rows invite distractions and lost hours.",
+            subtitle = null,
+            paragraphs = emptyList(),
             bullets = emptyList(),
-            extraSubheadings = listOf(
-                Pair("Attendance without perfectionism", "You will occasionally miss class. What matters is never leaving a missed core concept unrepaired. Treat the day you missed as the deadline to copy notes and derive the examples."),
-                Pair("Phone silence and attention resets", "Attention drifts for everyone. Silence notifications and mark the moment your focus strayed. Focus is a muscle you re-engage throughout the hour, not an all-or-nothing test."),
-                Pair("When instruction feels dense", "Not every professor explains concepts accessibly. Treat the lecture as an outline of what the university values, then verify concepts in textbooks or with classmates immediately after."),
-                Pair("The 15-Minute Same-Day Payoff", "Immediately after a demanding lecture, write three core takeaways on a blank page from memory before checking your notes. This simple habit preserves weeks of preparation effort.")
+            cards = listOf(
+                CampusCard(
+                    "Where you sit and how you listen",
+                    "Sitting in front where you clearly view the board reduces the cognitive strain of staying locked into complex derivations. The back rows invite distractions and lost hours."
+                ),
+                CampusCard(
+                    "Attendance without perfectionism",
+                    "You will occasionally miss class. What matters is never leaving a missed core concept unrepaired. Treat the day you missed as the deadline to copy notes and derive the examples."
+                ),
+                CampusCard(
+                    "Phone silence and attention resets",
+                    "Attention drifts for everyone. Silence notifications and mark the moment your focus strayed. Focus is a muscle you re-engage throughout the hour, not an all-or-nothing test."
+                ),
+                CampusCard(
+                    "When the instruction feels dense",
+                    "Not every professor explains concepts accessibly. Treat the lecture as an outline of what the university values, then verify concepts in textbooks or with classmates immediately after."
+                ),
+                CampusCard(
+                    "The 15-Minute Same-Day Payoff",
+                    "Immediately after a demanding lecture, write three core takeaways on a blank page from memory before checking your notes. This simple habit preserves weeks of preparation effort."
+                )
             ),
             accentColor = WisdomAccentSky
         )
 
-        // 04 Places, Study Groups & Faculty
         CampusSectionCard(
             step = "04",
             category = "Campus Facilities",
             title = "Places, Study Groups & Faculty",
-            subtitle = "Navigating campus environments purposefully",
-            mainText = "The university library is for deep concentration; dorms and cafeterias are for unwinding. Separating physical spaces prevents mental clutter.",
+            subtitle = null,
+            paragraphs = emptyList(),
             bullets = emptyList(),
-            extraSubheadings = listOf(
-                Pair("Group work discipline", "Agree on milestones, dates, and ownership early. Never leave collective assignments for a frantic overnight rush the evening before submission."),
-                Pair("Approaching instructors", "Bring precise problem statements to office hours early in the term. Instructors respect proactive curiosity much more than vague last-minute exam panicking.")
+            cards = listOf(
+                CampusCard(
+                    "Use buildings on purpose",
+                    "The university library is for deep concentration; dorms and cafeterias are for unwinding. Separating physical spaces prevents mental clutter."
+                ),
+                CampusCard(
+                    "Group work discipline",
+                    "Agree on milestones, dates, and ownership early. Never leave collective assignments for a frantic overnight rush the evening before submission."
+                ),
+                CampusCard(
+                    "Approaching instructors",
+                    "Bring precise problem statements to office hours early in the term. Instructors respect proactive curiosity much more than vague last-minute exam panicking."
+                )
             ),
             accentColor = WisdomAccentEmerald
         )
 
-        // Simple Weekly Reflection Check
         WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("A Simple Weekly Reflection Check", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text("Use this diagnostic when the term begins feeling noisy, unfocused, or overwhelming:", fontSize = 11.5.sp, color = WisdomMuted)
-
+                Text(
+                    "You do not need to tick every box every week. Use this diagnostic when the term begins feeling noisy, unfocused, or overwhelming:",
+                    fontSize = 11.5.sp,
+                    color = WisdomMuted,
+                    lineHeight = 16.sp
+                )
                 val checks = listOf(
                     "At least one stretch of real focus away from group chats and open invitations",
                     "One genuine conversation or check-in, not only reacting to notifications",
@@ -755,7 +829,6 @@ private fun CampusLifeFullSection() {
                     "An honest look at sleep, mood, and avoidance, reducing load when running empty",
                     "For any group task, roles and dates written down before deadlines approach"
                 )
-
                 checks.forEach { c ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
                         Icon(Icons.Default.CheckCircle, contentDescription = null, tint = WisdomAccentSky, modifier = Modifier.size(14.dp))
@@ -772,44 +845,25 @@ private fun CampusSectionCard(
     step: String,
     category: String,
     title: String,
-    subtitle: String,
-    mainText: String,
+    subtitle: String?,
+    paragraphs: List<String>,
     bullets: List<String>,
-    extraSubheadings: List<Pair<String, String>>,
+    cards: List<CampusCard>,
     accentColor: Color
 ) {
     WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(accentColor.copy(alpha = 0.15f))
-                        .border(BorderStroke(1.dp, accentColor.copy(alpha = 0.4f)), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(step, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = accentColor, fontFamily = FontFamily.Monospace)
-                }
-                Column {
-                    Text(category.uppercase(), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = accentColor)
-                    Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
+            StepHeader(step, category, title, accentColor)
+
+            if (subtitle != null) {
+                Text(subtitle, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
-
-            Text(subtitle, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-            Text(mainText, fontSize = 11.5.sp, color = WisdomMuted, lineHeight = 16.sp)
-
-            if (bullets.isNotEmpty()) {
-                bullets.forEach { b ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
-                        Text("•", color = accentColor, fontWeight = FontWeight.Bold)
-                        Text(b, fontSize = 11.sp, color = Color.White.copy(alpha = 0.9f))
-                    }
-                }
+            paragraphs.forEach { p ->
+                Text(p, fontSize = 11.5.sp, color = WisdomMuted, lineHeight = 16.sp)
             }
+            bullets.forEach { b -> BulletLine(b, "•", accentColor) }
 
-            extraSubheadings.forEach { (subH, subBody) ->
+            cards.forEach { c ->
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -819,8 +873,8 @@ private fun CampusSectionCard(
                         .padding(10.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Text(subH, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text(subBody, fontSize = 11.sp, color = WisdomMuted, lineHeight = 15.sp)
+                        Text(c.title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(c.body, fontSize = 11.sp, color = WisdomMuted, lineHeight = 15.sp)
                     }
                 }
             }
@@ -828,68 +882,48 @@ private fun CampusSectionCard(
     }
 }
 
-/* =========================================================================================
-   4. UNIVERSITIES DIRECTORY (All 45 authentic Ethiopian Universities from universities.json)
-========================================================================================= */
+/* ============================== 4. UNIVERSITIES ============================== */
+/* Source: app/academy/universities/page.tsx and data/universities.ts. */
 
 @Composable
 private fun UniversitiesFullSection(
     introParagraphs: List<String>,
+    closing: String,
     universities: List<UniversityDetail>
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedRegion by remember { mutableStateOf("All") }
+    var selectedRegion by remember { mutableStateOf(ALL_REGIONS) }
+    var featuredOnly by remember { mutableStateOf(false) }
     var showNbCard by remember { mutableStateOf(false) }
 
     val regions = listOf(
-        "All", "Addis Ababa", "Amhara", "Oromia", "Tigray", "SNNPR",
+        ALL_REGIONS, "Addis Ababa", "Amhara", "Oromia", "Tigray", "SNNPR",
         "Somali", "Afar", "Benishangul Gumuz", "Gambela", "Dire Dawa"
     )
 
-    val filteredList = remember(searchQuery, selectedRegion, universities) {
+    val filteredList = remember(searchQuery, selectedRegion, featuredOnly, universities) {
+        val q = searchQuery.trim().lowercase()
         universities.filter { u ->
-            val matchRegion = selectedRegion == "All" || u.region.equals(selectedRegion, ignoreCase = true)
-            val matchSearch = searchQuery.isBlank() ||
-                u.name.contains(searchQuery, ignoreCase = true) ||
-                u.abbr.contains(searchQuery, ignoreCase = true) ||
-                u.location.contains(searchQuery, ignoreCase = true)
-            matchRegion && matchSearch
+            if (featuredOnly && !u.featured) return@filter false
+            if (selectedRegion != ALL_REGIONS && u.region != selectedRegion) return@filter false
+            if (q.isEmpty()) return@filter true
+            u.name.lowercase().contains(q) ||
+                u.abbr.lowercase().contains(q) ||
+                u.location.lowercase().contains(q) ||
+                u.region.lowercase().contains(q) ||
+                u.strengths.any { it.lowercase().contains(q) } ||
+                u.knownFor.any { it.lowercase().contains(q) }
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        // Header
-        WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(WisdomAccentViolet.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.dp, WisdomAccentViolet.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Text("${universities.size} INSTITUTIONS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentViolet)
-                }
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        GuideHeaderCard(
+            tag = "Other resources",
+            accent = WisdomAccentViolet,
+            title = "Ethiopian Universities Directory",
+            body = "$UNIVERSITIES_SUBTITLE. Authentic guides, student fit, climate, and campus realities before you pick."
+        )
 
-                Text(
-                    text = "Ethiopian Universities Directory",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
-
-                Text(
-                    text = "What it actually feels like to study at each university: candid student realities, dorm conditions, registrar pace, and program strengths.",
-                    fontSize = 12.sp,
-                    color = WisdomMuted
-                )
-            }
-        }
-
-        // NB Intro Card (Expandable)
         WisdomModernCard(
             modifier = Modifier.fillMaxWidth(),
             cornerRadius = 18.dp,
@@ -906,7 +940,7 @@ private fun UniversitiesFullSection(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box(
                             modifier = Modifier
-                                .size(24.dp)
+                                .size(26.dp)
                                 .clip(CircleShape)
                                 .background(WisdomAccentSky.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
@@ -916,7 +950,7 @@ private fun UniversitiesFullSection(
                         Text("Read this before you choose", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                     Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
+                        imageVector = if (showNbCard) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
                         tint = WisdomAccentSky,
                         modifier = Modifier.size(18.dp)
@@ -924,235 +958,180 @@ private fun UniversitiesFullSection(
                 }
 
                 AnimatedVisibility(visible = showNbCard) {
-                    Column(
-                        modifier = Modifier.padding(top = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         introParagraphs.forEach { p ->
                             Text(p, fontSize = 11.5.sp, color = Color.White.copy(alpha = 0.85f), lineHeight = 16.sp)
+                        }
+                        if (closing.isNotBlank()) {
+                            Text(
+                                closing,
+                                fontSize = 11.5.sp,
+                                fontStyle = FontStyle.Italic,
+                                color = Color.White.copy(alpha = 0.8f),
+                                lineHeight = 16.sp
+                            )
                         }
                     }
                 }
             }
         }
 
-        // Search Box
-        OutlinedTextField(
+        FactBadge(label = "${universities.size} Institutions")
+
+        GuideSearchField(
             value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text("Search ${universities.size} universities by name or city…", fontSize = 12.sp, color = WisdomMuted) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(16.dp)) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = WisdomCyan,
-                unfocusedBorderColor = WisdomBorderWhite,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedContainerColor = Color(0xFF0F172A),
-                unfocusedContainerColor = Color(0xFF0F172A)
-            ),
-            singleLine = true
+            onChange = { searchQuery = it },
+            placeholder = "Search by university name, abbr (AAU, ASTU...), or city..."
         )
 
-        // Region Filter Chips
         LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            item(key = "featured_chip") {
+                FilterChip(label = "Featured", selected = featuredOnly, accent = WisdomAccentAmber) {
+                    featuredOnly = !featuredOnly
+                }
+            }
             items(regions) { reg ->
-                val isSel = selectedRegion == reg
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(if (isSel) WisdomAccentViolet else Color.White.copy(alpha = 0.05f))
-                        .border(BorderStroke(1.dp, if (isSel) WisdomAccentViolet else WisdomBorderWhite), RoundedCornerShape(16.dp))
-                        .clickable { selectedRegion = reg }
-                        .padding(horizontal = 10.dp, vertical = 5.dp)
-                ) {
-                    Text(
-                        text = reg,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSel) Color.White else WisdomMuted
-                    )
+                FilterChip(label = reg, selected = selectedRegion == reg, accent = WisdomAccentViolet) {
+                    selectedRegion = reg
                 }
             }
         }
 
-        Text(
-            text = "Showing ${filteredList.size} of ${universities.size} universities",
-            fontSize = 11.sp,
-            color = WisdomMuted
-        )
-
-        // List of Universities
-        filteredList.forEach { uni ->
-            UniversityDetailCard(uni = uni)
+        if (filteredList.isEmpty()) {
+            EmptyNoteCard("No universities found", "Try adjusting your search terms or clearing the region filter.")
         }
+        filteredList.forEach { uni -> UniversityDetailCard(uni = uni) }
     }
 }
+
+private const val ALL_REGIONS = "All Regions"
 
 @Composable
 private fun UniversityDetailCard(uni: UniversityDetail) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val previewTags = (if (uni.knownFor.isNotEmpty()) uni.knownFor else uni.strengths).take(3)
 
-    WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+    WisdomModernCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 22.dp,
+        borderColor = if (expanded) WisdomAccentSky.copy(alpha = 0.4f) else WisdomBorderWhite
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(uni.abbr, fontSize = 12.sp, fontWeight = FontWeight.Black, color = WisdomAccentViolet, fontFamily = FontFamily.Monospace)
-                        if (uni.featured) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(WisdomAccentAmber.copy(alpha = 0.2f))
-                                    .padding(horizontal = 4.dp, vertical = 1.dp)
-                            ) {
-                                Text("FEATURED", fontSize = 8.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
-                            }
-                        }
-                    }
-                    Text(uni.name, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = WisdomAccentSky, modifier = Modifier.size(12.dp))
-                        Text(uni.location, fontSize = 11.sp, color = WisdomMuted)
-                    }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                SmallTag(label = uni.abbr, color = WisdomAccentSky)
+                FactBadge(label = uni.region)
+                if (uni.featured) {
+                    Icon(Icons.Default.Star, contentDescription = null, tint = WisdomAccentAmber, modifier = Modifier.size(12.dp))
+                    Text("FEATURED", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
                 }
             }
 
-            // Key facts row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                if (uni.founded.isNotBlank()) {
-                    FactBadge(label = "Est. ${uni.founded}")
-                }
-                if (uni.elevationM != null) {
-                    FactBadge(label = "${uni.elevationM}m elev.")
-                }
+            Text(uni.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Icon(Icons.Default.LocationOn, contentDescription = null, tint = WisdomAccentSky, modifier = Modifier.size(12.dp))
+                Text(uni.location, fontSize = 11.sp, color = WisdomMuted)
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (uni.distanceFromAddisKm != null) {
-                    FactBadge(label = "${uni.distanceFromAddisKm} km from Addis")
+                    FactBadge(label = if (uni.distanceFromAddisKm == 0) "In Capital" else "~${uni.distanceFromAddisKm} km")
                 }
+                if (uni.elevationM != null) FactBadge(label = "~${uni.elevationM}m")
+                if (uni.founded.isNotBlank()) FactBadge(label = "Est. ${uni.founded}")
             }
 
-            if (uni.campuses.isNotBlank()) {
-                Text(
-                    text = uni.campuses,
-                    fontSize = 11.sp,
-                    color = Color.White.copy(alpha = 0.8f),
-                    lineHeight = 15.sp,
-                    maxLines = if (expanded) Int.MAX_VALUE else 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+            if (!expanded) {
+                if (previewTags.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        previewTags.forEach { FactBadge(label = it) }
+                    }
+                }
+                if (uni.studentFit.isNotBlank()) {
+                    Text(
+                        text = uni.studentFit,
+                        fontSize = 11.5.sp,
+                        color = WisdomMuted,
+                        lineHeight = 16.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             AnimatedVisibility(visible = expanded) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    if (uni.campuses.isNotBlank()) {
+                        InfoBox("Campus Geography & Setup", WisdomAccentSky) {
+                            Text(uni.campuses, fontSize = 11.5.sp, color = Color.White.copy(alpha = 0.9f), lineHeight = 16.sp)
+                        }
+                    }
+                    if (uni.climate.isNotBlank()) {
+                        InfoBox("Weather & Climate", WisdomAccentAmber) {
+                            Text(uni.climate, fontSize = 11.5.sp, color = Color.White.copy(alpha = 0.9f), lineHeight = 16.sp)
+                        }
+                    }
+                    if (uni.distanceNote.isNotBlank()) {
+                        Text(
+                            text = "Travel Context: ${uni.distanceNote}",
+                            fontSize = 11.5.sp,
+                            color = WisdomMuted,
+                            lineHeight = 16.sp
+                        )
+                    }
+                    if (uni.knownFor.isNotEmpty()) {
+                        InfoBox("Prominent Disciplines", WisdomAccentViolet) {
+                            uni.knownFor.forEach { BulletLine(it, "•", WisdomAccentViolet) }
+                        }
+                    }
                     if (uni.strengths.isNotEmpty()) {
-                        Text("KEY STRENGTHS", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentViolet)
-                        uni.strengths.forEach { s ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Top) {
-                                Text("•", color = WisdomAccentViolet, fontWeight = FontWeight.Bold)
-                                Text(s, fontSize = 11.sp, color = WisdomMuted)
-                            }
+                        InfoBox("Academic Strengths", WisdomAccentSky) {
+                            uni.strengths.forEach { BulletLine(it, "✓", WisdomAccentSky) }
                         }
                     }
-
-                    if (uni.whatToExpect.isNotEmpty()) {
-                        Text("WHAT TO EXPECT ON CAMPUS", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
-                        uni.whatToExpect.forEach { w ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.Top) {
-                                Text("•", color = WisdomAccentAmber, fontWeight = FontWeight.Bold)
-                                Text(w, fontSize = 11.sp, color = WisdomMuted)
-                            }
-                        }
-                    }
-
                     if (uni.studentFit.isNotBlank()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color.White.copy(alpha = 0.04f))
-                                .padding(8.dp)
-                        ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text("STUDENT FIT", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = WisdomCyan)
-                                Text(uni.studentFit, fontSize = 10.5.sp, color = Color.White.copy(alpha = 0.85f))
-                            }
+                        InfoBox("Student Fit", WisdomAccentEmerald) {
+                            Text(uni.studentFit, fontSize = 11.5.sp, color = Color.White.copy(alpha = 0.9f), lineHeight = 16.sp)
                         }
                     }
-
-                    if (uni.website.isNotBlank()) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(WisdomCyan.copy(alpha = 0.1f))
-                                .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
-                                .clickable {
-                                    try {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uni.website))
-                                        context.startActivity(intent)
-                                    } catch (_: Exception) {}
-                                }
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Official Portal", fontSize = 10.5.sp, fontWeight = FontWeight.Bold, color = WisdomCyan)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(11.dp))
-                            }
+                    if (uni.whatToExpect.isNotEmpty()) {
+                        InfoBox("Campus Life Reality", WisdomCyan) {
+                            uni.whatToExpect.forEach { Text(it, fontSize = 11.5.sp, color = WisdomMuted, lineHeight = 16.sp) }
+                        }
+                    }
+                    if (uni.tips.isNotEmpty()) {
+                        InfoBox("Insider Tips for Students", WisdomAccentAmber) {
+                            uni.tips.forEach { BulletLine(it, "•", WisdomAccentAmber) }
                         }
                     }
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { expanded = !expanded }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (expanded) "Show less" else "Read full campus guide",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WisdomAccentViolet
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = WisdomAccentViolet,
-                    modifier = Modifier.size(14.dp)
-                )
+            MoreLessButton(expanded = expanded, accent = WisdomAccentSky) { expanded = !expanded }
+
+            if (uni.website.isNotBlank() && uni.website != "#") {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color.White.copy(alpha = 0.04f))
+                        .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(16.dp))
+                        .clickable { openLink(context, uni.website) }
+                        .padding(horizontal = 12.dp, vertical = 7.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Website", fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = WisdomAccentSky)
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, tint = WisdomAccentSky, modifier = Modifier.size(12.dp))
+                    }
+                }
             }
         }
     }
 }
 
-@Composable
-private fun FactBadge(label: String) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
-            .background(Color.White.copy(alpha = 0.04f))
-            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(6.dp))
-            .padding(horizontal = 6.dp, vertical = 3.dp)
-    ) {
-        Text(label, fontSize = 9.5.sp, color = WisdomMuted)
-    }
-}
+/* ============================== 5. DEPARTMENTS ============================== */
+/* Source: app/academy/departments/page.tsx. */
 
-/* =========================================================================================
-   5. DEPARTMENT FIELD GUIDES (All 26 authentic departments from departments.json)
-========================================================================================= */
+private const val ALL_FIELDS = "All Fields"
 
 @Composable
 private fun DepartmentsFullSection(
@@ -1160,246 +1139,140 @@ private fun DepartmentsFullSection(
     departments: List<DepartmentDetail>
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCat by remember { mutableStateOf("All") }
+    var selectedCat by remember { mutableStateOf(ALL_FIELDS) }
 
-    val filterOptions = listOf("All") + categories.map { it.label }
+    val filterOptions = listOf(ALL_FIELDS) + categories.map { it.label }
 
     val filteredList = remember(searchQuery, selectedCat, departments, categories) {
+        val q = searchQuery.trim().lowercase()
         departments.filter { d ->
             val catLabel = categories.find { it.id == d.categoryId }?.label ?: ""
-            val matchCat = selectedCat == "All" || catLabel.equals(selectedCat, ignoreCase = true)
-            val matchSearch = searchQuery.isBlank() ||
-                d.name.contains(searchQuery, ignoreCase = true) ||
-                d.shortName.contains(searchQuery, ignoreCase = true) ||
-                d.about.contains(searchQuery, ignoreCase = true)
-            matchCat && matchSearch
+            if (selectedCat != ALL_FIELDS && catLabel != selectedCat) return@filter false
+            if (q.isEmpty()) return@filter true
+            "${d.name} ${d.shortName} ${d.about} ${d.careers.joinToString(" ")}".lowercase().contains(q)
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(WisdomAccentOrange.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.dp, WisdomAccentOrange.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Text("${departments.size} UNDERGRADUATE FIELDS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentOrange)
-                }
-
-                Text(
-                    text = "Department Field Guides",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
-
-                Text(
-                    text = "Written for students choosing a path, not institutional brochure tone: course depth, career pathways, market realities, pros and cons.",
-                    fontSize = 12.sp,
-                    color = WisdomMuted
-                )
-            }
-        }
-
-        // Search Box
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text("Search ${departments.size} departments by title, career…", fontSize = 12.sp, color = WisdomMuted) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(16.dp)) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = WisdomCyan,
-                unfocusedBorderColor = WisdomBorderWhite,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedContainerColor = Color(0xFF0F172A),
-                unfocusedContainerColor = Color(0xFF0F172A)
-            ),
-            singleLine = true
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        GuideHeaderCard(
+            tag = "Other resources",
+            accent = WisdomAccentOrange,
+            title = "Department Field Guides",
+            body = "What competitive undergraduate fields actually demand: real coursework, career roles, market demand in Ethiopia, and the trade-offs nobody puts on the official brochure."
         )
 
-        // Categories Row
+        FactBadge(label = "${departments.size} Academic Fields & Engineering Streams")
+
+        GuideSearchField(
+            value = searchQuery,
+            onChange = { searchQuery = it },
+            placeholder = "Search departments, careers, skills..."
+        )
+
         LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             items(filterOptions) { cat ->
-                val isSel = selectedCat == cat
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(if (isSel) WisdomAccentOrange else Color.White.copy(alpha = 0.05f))
-                        .border(BorderStroke(1.dp, if (isSel) WisdomAccentOrange else WisdomBorderWhite), RoundedCornerShape(16.dp))
-                        .clickable { selectedCat = cat }
-                        .padding(horizontal = 10.dp, vertical = 5.dp)
-                ) {
-                    Text(
-                        text = cat,
-                        fontSize = 11.sp,
-                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSel) Color.White else WisdomMuted
-                    )
+                FilterChip(label = cat, selected = selectedCat == cat, accent = WisdomAccentOrange) {
+                    selectedCat = cat
                 }
             }
         }
 
-        Text(
-            text = "Showing ${filteredList.size} of ${departments.size} departments",
-            fontSize = 11.sp,
-            color = WisdomMuted
-        )
-
+        if (filteredList.isEmpty()) {
+            EmptyNoteCard("No fields match your search", "Try another keyword or select All categories.")
+        }
         filteredList.forEach { dept ->
-            DepartmentDetailCard(dept = dept)
+            val catLabel = categories.find { it.id == dept.categoryId }?.label ?: "Academic Field"
+            DepartmentDetailCard(dept = dept, categoryLabel = catLabel)
         }
     }
 }
 
 @Composable
-private fun DepartmentDetailCard(dept: DepartmentDetail) {
+private fun DepartmentDetailCard(dept: DepartmentDetail, categoryLabel: String) {
     var expanded by remember { mutableStateOf(false) }
 
-    WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+    WisdomModernCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 22.dp,
+        borderColor = if (expanded) WisdomCyan.copy(alpha = 0.4f) else WisdomBorderWhite
+    ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(dept.durationYears.uppercase(), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentOrange)
-                    Text(dept.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                SmallTag(label = categoryLabel.uppercase(), color = WisdomAccentOrange)
+                if (dept.durationYears.isNotBlank()) FactBadge(label = dept.durationYears)
             }
 
-            Text(
-                text = dept.about,
-                fontSize = 11.5.sp,
-                color = WisdomMuted,
-                lineHeight = 16.sp,
-                maxLines = if (expanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis
-            )
+            Text(dept.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+
+            if (!expanded) {
+                Text(
+                    text = dept.about,
+                    fontSize = 11.5.sp,
+                    color = WisdomMuted,
+                    lineHeight = 16.sp,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (dept.careers.isNotEmpty()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        dept.careers.take(3).forEach { FactBadge(label = it) }
+                    }
+                }
+            }
 
             AnimatedVisibility(visible = expanded) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    InfoBox("What This Field Demands", WisdomAccentSky) {
+                        Text(dept.about, fontSize = 11.5.sp, color = Color.White.copy(alpha = 0.9f), lineHeight = 16.sp)
+                    }
                     if (dept.courses.isNotEmpty()) {
-                        Text("CORE COURSES", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomCyan)
-                        Text(dept.courses.joinToString(" • "), fontSize = 11.sp, color = Color.White.copy(alpha = 0.85f))
+                        InfoBox("Core Coursework & Modules", WisdomAccentAmber) {
+                            dept.courses.forEach { BulletLine(it, "•", WisdomAccentAmber) }
+                        }
                     }
-
                     if (dept.careers.isNotEmpty()) {
-                        Text("CAREER PATHS", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentEmerald)
-                        Text(dept.careers.joinToString(" • "), fontSize = 11.sp, color = WisdomMuted)
+                        InfoBox("Career Paths & Roles", WisdomAccentEmerald) {
+                            dept.careers.forEach { BulletLine(it, "✓", WisdomAccentEmerald) }
+                        }
                     }
-
                     if (dept.market.isNotBlank()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color.White.copy(alpha = 0.03f))
-                                .padding(8.dp)
-                        ) {
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text("JOB MARKET REALITY", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
-                                Text(dept.market, fontSize = 10.5.sp, color = WisdomMuted, lineHeight = 15.sp)
-                            }
+                        InfoBox("Ethiopian Market Reality & Outlook", WisdomAccentViolet) {
+                            Text(dept.market, fontSize = 11.5.sp, color = Color.White.copy(alpha = 0.9f), lineHeight = 16.sp)
                         }
                     }
-
                     if (dept.pros.isNotEmpty()) {
-                        Text("ADVANTAGES", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentEmerald)
-                        dept.pros.forEach { p ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text("✓", color = WisdomAccentEmerald, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                Text(p, fontSize = 11.sp, color = WisdomMuted)
-                            }
+                        InfoBox("Key Upsides", WisdomAccentEmerald) {
+                            dept.pros.forEach { BulletLine(it, "+", WisdomAccentEmerald) }
                         }
                     }
-
                     if (dept.cons.isNotEmpty()) {
-                        Text("CONSIDERATIONS", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentRose)
-                        dept.cons.forEach { c ->
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Text("!", color = WisdomAccentRose, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                Text(c, fontSize = 11.sp, color = WisdomMuted)
-                            }
+                        InfoBox("Trade-offs", WisdomAccentRose) {
+                            dept.cons.forEach { BulletLine(it, "−", WisdomAccentRose) }
                         }
                     }
                 }
             }
 
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { expanded = !expanded }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (expanded) "Show less" else "Read full field guide",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WisdomAccentOrange
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = WisdomAccentOrange,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
+            MoreLessButton(expanded = expanded, accent = WisdomCyan) { expanded = !expanded }
         }
     }
 }
 
-/* =========================================================================================
-   6. SCHOLARSHIPS (Word for word matching website ScholarshipsPage)
-========================================================================================= */
+/* ============================== 6. SCHOLARSHIPS ============================== */
+/* Source: app/academy/scholarships/page.tsx. Items come from the website's Supabase table. */
 
 @Composable
 private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) {
     var showTips by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
-            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(WisdomAccentRose.copy(alpha = 0.12f))
-                        .border(BorderStroke(1.dp, WisdomAccentRose.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
-                ) {
-                    Text("FREE RESOURCE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentRose)
-                }
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        GuideHeaderCard(
+            tag = "Free resource",
+            accent = WisdomAccentRose,
+            title = "Scholarship Info",
+            body = FreeResourcesLive.scholarshipsSubtitle.ifBlank { "Funding options and how to prepare strong applications." }
+        )
 
-                Text(
-                    text = "Scholarship Opportunities",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
-
-                Text(
-                    text = FreeResourcesLive.scholarshipsSubtitle.ifBlank { "Funding options and how to prepare strong applications." },
-                    fontSize = 12.sp,
-                    color = WisdomMuted
-                )
-            }
-        }
-
-        // Tips Accordion
         WisdomModernCard(
             modifier = Modifier.fillMaxWidth(),
             cornerRadius = 18.dp,
@@ -1416,17 +1289,17 @@ private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) 
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Box(
                             modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(WisdomAccentRose.copy(alpha = 0.2f)),
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(WisdomAccentRose.copy(alpha = 0.2f))
+                                .padding(horizontal = 6.dp, vertical = 4.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("Tips", fontSize = 9.sp, fontWeight = FontWeight.Black, color = WisdomAccentRose)
+                            Text("Tips", fontSize = 9.5.sp, fontWeight = FontWeight.Black, color = WisdomAccentRose)
                         }
                         Text("How to use this page & apply well", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                     Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
+                        imageVector = if (showTips) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
                         tint = WisdomAccentRose,
                         modifier = Modifier.size(18.dp)
@@ -1434,10 +1307,7 @@ private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) 
                 }
 
                 AnimatedVisibility(visible = showTips) {
-                    Column(
-                        modifier = Modifier.padding(top = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
                             text = FreeResourcesLive.scholarshipsIntro.ifBlank { SCHOLARSHIP_DEFAULT_INTRO },
                             fontSize = 11.5.sp,
@@ -1449,11 +1319,19 @@ private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) 
             }
         }
 
+        if (scholarships.isNotEmpty()) {
+            Text(
+                text = "${scholarships.size} ${if (scholarships.size == 1) "opportunity" else "opportunities"}",
+                fontSize = 11.sp,
+                color = WisdomMuted
+            )
+        }
+
         if (scholarships.isEmpty()) {
             if (!FreeResourcesLive.loaded) {
                 FreeResourcesStateCard(null, "Loading scholarships…")
             } else if (FreeResourcesLive.scholarshipsFailed) {
-                FreeResourcesStateCard(null, "Could not load scholarships: Unable to load items right now.")
+                FreeResourcesStateCard(null, "Unable to load scholarship opportunities right now.")
             } else {
                 FreeResourcesStateCard(
                     null,
@@ -1461,8 +1339,13 @@ private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) 
                 )
             }
         }
-        scholarships.forEach { sch ->
-            ScholarshipCardItem(sch = sch)
+        scholarships.forEach { sch -> ScholarshipCardItem(sch = sch) }
+
+        if (scholarships.isNotEmpty()) {
+            EmptyNoteCard(
+                null,
+                "Always verify deadlines and requirements on the official page. Requirements change. Treat this as a curated guide."
+            )
         }
     }
 }
@@ -1471,60 +1354,40 @@ private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) 
 private fun ScholarshipCardItem(sch: ScholarshipOpportunity) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val longBody = sch.body.trim().length > 240
 
     WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    if (sch.provider.isNotBlank()) {
-                        Text(sch.provider.uppercase(), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentRose)
-                    }
-                    Text(sch.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    if (sch.amount.isNotBlank()) {
-                        Text(sch.amount, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = WisdomAccentEmerald)
-                    }
-                }
-            }
-
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 if (sch.deadline.isNotBlank()) FactBadge(label = "Deadline: ${sch.deadline}")
                 if (sch.level.isNotBlank()) FactBadge(label = sch.level)
                 if (sch.country.isNotBlank()) FactBadge(label = sch.country)
             }
 
+            Text(sch.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            val providerLine = listOf(sch.provider, sch.amount).filter { it.isNotBlank() }.joinToString(" · ")
+            if (providerLine.isNotEmpty()) {
+                Text(providerLine, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = WisdomAccentRose)
+            }
+
             if (sch.eligibility.isNotBlank()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White.copy(alpha = 0.03f))
-                        .padding(8.dp)
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("ELIGIBILITY", fontSize = 8.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentRose)
-                        Text(sch.eligibility, fontSize = 10.5.sp, color = WisdomMuted, lineHeight = 14.sp)
-                    }
+                InfoBox("Eligibility", WisdomAccentRose) {
+                    Text(sch.eligibility, fontSize = 11.sp, color = WisdomMuted, lineHeight = 15.sp)
                 }
             }
 
-            Text(
-                text = sch.body,
-                fontSize = 11.5.sp,
-                color = WisdomMuted,
-                lineHeight = 16.sp,
-                maxLines = if (expanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (sch.body.isNotBlank()) {
+                Text(
+                    text = sch.body.trim(),
+                    fontSize = 11.5.sp,
+                    color = WisdomMuted,
+                    lineHeight = 16.sp,
+                    maxLines = if (expanded || !longBody) Int.MAX_VALUE else 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            if (longBody) {
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
@@ -1540,31 +1403,25 @@ private fun ScholarshipCardItem(sch: ScholarshipOpportunity) {
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
+                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                         contentDescription = null,
                         tint = WisdomAccentRose,
                         modifier = Modifier.size(14.dp)
                     )
                 }
+            }
 
-                if (sch.externalUrl.isNotBlank()) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(WisdomAccentRose)
-                            .clickable {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(sch.externalUrl))
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {}
-                            }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Apply Official", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
-                        }
+            if (sch.externalUrl.isNotBlank()) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(WisdomAccentRose)
+                        .clickable { openLink(context, sch.externalUrl) }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Apply / Official Page", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null, tint = Color.White, modifier = Modifier.size(12.dp))
                     }
                 }
             }
