@@ -58,6 +58,8 @@ import com.wisdomtower.academy.data.model.StudentIdGenerator
 import com.wisdomtower.academy.data.model.UserProfile
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.packages.NativePackage
+import com.wisdomtower.academy.ui.packages.OpenCard
+import com.wisdomtower.academy.ui.packages.openGrid
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
@@ -88,7 +90,7 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
  * - Header: Curriculum with "All Courses (X)", X = number of courses shown
  * - Courses chosen by the website's `getDefaultPackagesForAcademicLevel(level)` rule from `src/lib/academic-levels.ts`
  *   (the website also lets a student change this list; that choice lives in WebView localStorage and is not read here)
- * - Cards with 16:9 images, titles, and the six hub links named as on the website
+ * - Cards = shared OpenCard (picture, title, Open) in two columns; a tap opens the package page (subject list)
  */
 
 data class StudyToolTile(
@@ -229,7 +231,7 @@ fun LearningScreen(
                                         )
                                         if (!email.isNullOrBlank()) {
                                             Text(
-                                                text = "\u2022 $email",
+                                                text = "• $email",
                                                 fontSize = 10.5.sp,
                                                 color = WisdomMuted,
                                                 maxLines = 1,
@@ -470,41 +472,11 @@ fun LearningScreen(
                 }
             }
 
-            // 2-Column Curriculum Cards Grid
-            items(
-                count = (enrolledCourses.size + 1) / 2,
-                key = { rowIndex -> "curriculum_row_$rowIndex" }
-            ) { rowIndex ->
-                val first = enrolledCourses[rowIndex * 2]
-                val second = enrolledCourses.getOrNull(rowIndex * 2 + 1)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        CurriculumCourseCard(
-                            pkg = first,
-                            onClick = {
-                                onOpenHub(first.path)
-                            },
-                            onOpenHubLink = onOpenHub
-                        )
-                    }
-                    if (second != null) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            CurriculumCourseCard(
-                                pkg = second,
-                                onClick = {
-                                    onOpenHub(second.path)
-                                },
-                                onOpenHubLink = onOpenHub
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
+            // Curriculum cards: the shared OpenCard (picture, title, Open) in two columns.
+            // Tapping a card opens the package page with its subject list (never straight to the six hubs,
+            // which do not exist at package level for Freshman, Grades, Remedial and ECE and gave a 404).
+            openGrid("curriculum", enrolledCourses) { pkg ->
+                OpenCard(pkg.name, pkg.assetImage) { onSelectCourse(pkg) }
             }
 
             item(key = "learning_bottom_spacer") {
@@ -561,117 +533,6 @@ private fun ToolTileButton(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-        }
-    }
-}
-
-@Composable
-private fun CurriculumCourseCard(
-    pkg: NativePackage,
-    onClick: () -> Unit,
-    onOpenHubLink: (String) -> Unit
-) {
-    val context = LocalContext.current
-
-    WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 16.dp,
-        onClick = onClick
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f)
-                    .background(WisdomDark)
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(pkg.assetImage)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = pkg.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // Level tag overlay
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .fillMaxWidth()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color(0xEE060B15))
-                            )
-                        )
-                        .padding(horizontal = 10.dp, vertical = 8.dp)
-                ) {
-                    Column {
-                        Text(
-                            text = pkg.name,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = pkg.enrolledLabel.uppercase(),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = WisdomCyan,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-                }
-            }
-
-            // The six hub links, named as on the website course view (Books, Notes, Cards, Banks, Exams, Life Savers).
-            // The old fixed "Progress / Active" label, 35% bar and "Continue" button were removed in S4 (not on the website).
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                val quickHubs = listOf(
-                    "books" to "Books",
-                    "short-notes" to "Notes",
-                    "flashcards" to "Cards",
-                    "question-banks" to "Banks",
-                    "exams" to "Exams",
-                    "life-savers" to "Life Savers"
-                )
-                quickHubs.chunked(3).forEach { rowHubs ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        rowHubs.forEach { (hubId, hubLabel) ->
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color.White.copy(alpha = 0.04f))
-                                    .border(BorderStroke(0.5.dp, Color.White.copy(alpha = 0.1f)), RoundedCornerShape(6.dp))
-                                    .clickable { onOpenHubLink("${pkg.path}/$hubId") }
-                                    .padding(vertical = 6.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = hubLabel,
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = WisdomMuted,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
