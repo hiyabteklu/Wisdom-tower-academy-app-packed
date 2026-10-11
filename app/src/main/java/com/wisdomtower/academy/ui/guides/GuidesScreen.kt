@@ -1,5 +1,7 @@
 package com.wisdomtower.academy.ui.guides
 
+// S13-GUIDES: patched by scripts/patch_guides_screen.py (see docs/HANDOVER.md)
+
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
@@ -524,15 +526,26 @@ private fun SuccessStoriesFullSection(stories: List<SuccessStory>) {
                     color = Color.White
                 )
 
-                Text(
-                    text = "Students share how deliberate practice, active recall, and closed-book testing changed their scores and entrance results across Ethiopia.",
-                    fontSize = 12.sp,
-                    color = WisdomMuted,
-                    lineHeight = 16.sp
-                )
+                if (FreeResourcesLive.storiesSubtitle.isNotBlank()) {
+                    Text(
+                        text = FreeResourcesLive.storiesSubtitle,
+                        fontSize = 12.sp,
+                        color = WisdomMuted,
+                        lineHeight = 16.sp
+                    )
+                }
             }
         }
 
+        if (stories.isEmpty()) {
+            if (!FreeResourcesLive.loaded) {
+                FreeResourcesStateCard(null, "Loading…")
+            } else if (FreeResourcesLive.storiesFailed) {
+                FreeResourcesStateCard(null, "Could not load stories. Unable to load items right now.")
+            } else {
+                FreeResourcesStateCard("No stories yet", "Published stories will appear here.")
+            }
+        }
         stories.forEach { story ->
             SuccessStoryCardItem(story = story)
         }
@@ -557,7 +570,10 @@ private fun SuccessStoryCardItem(story: SuccessStory) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("ACHIEVEMENT", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
                     Text(story.achievement, fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color.White)
-                    Text("${story.name} • ${story.program} • ${story.year}", fontSize = 11.sp, color = WisdomMuted)
+                    val byline = listOf(story.name, story.program, story.year).filter { it.isNotBlank() }.joinToString(" · ")
+                    if (byline.isNotEmpty()) {
+                        Text(byline, fontSize = 11.sp, color = WisdomMuted)
+                    }
                 }
                 Icon(
                     imageVector = Icons.Default.EmojiEvents,
@@ -855,7 +871,7 @@ private fun UniversitiesFullSection(
                         .border(BorderStroke(1.dp, WisdomAccentViolet.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
                         .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
-                    Text("45 INSTITUTIONS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentViolet)
+                    Text("${universities.size} INSTITUTIONS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentViolet)
                 }
 
                 Text(
@@ -924,7 +940,7 @@ private fun UniversitiesFullSection(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Search 45 universities by name or city…", fontSize = 12.sp, color = WisdomMuted) },
+            placeholder = { Text("Search ${universities.size} universities by name or city…", fontSize = 12.sp, color = WisdomMuted) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(16.dp)) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -1173,7 +1189,7 @@ private fun DepartmentsFullSection(
                         .border(BorderStroke(1.dp, WisdomAccentOrange.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
                         .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
-                    Text("26 UNDERGRADUATE FIELDS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentOrange)
+                    Text("${departments.size} UNDERGRADUATE FIELDS", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentOrange)
                 }
 
                 Text(
@@ -1195,7 +1211,7 @@ private fun DepartmentsFullSection(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Search 26 departments by title, career…", fontSize = 12.sp, color = WisdomMuted) },
+            placeholder = { Text("Search ${departments.size} departments by title, career…", fontSize = 12.sp, color = WisdomMuted) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(16.dp)) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
@@ -1376,7 +1392,7 @@ private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) 
                 )
 
                 Text(
-                    text = "Funding options and how to prepare strong applications: local awards, national schemes, and international programs accepting Ethiopian applicants.",
+                    text = FreeResourcesLive.scholarshipsSubtitle.ifBlank { "Funding options and how to prepare strong applications." },
                     fontSize = 12.sp,
                     color = WisdomMuted
                 )
@@ -1423,7 +1439,7 @@ private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) 
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = "• Read eligibility notes carefully: many awards are limited by grade, field, gender, or need.\n• Start early. Strong applications need transcripts, recommendations, and a clear personal statement.\n• Keep a simple tracker of deadlines, required documents, and status.\n• Prefer official sites and verified partners.\n• Always verify deadlines and requirements on the official page.",
+                            text = FreeResourcesLive.scholarshipsIntro.ifBlank { SCHOLARSHIP_DEFAULT_INTRO },
                             fontSize = 11.5.sp,
                             color = Color.White.copy(alpha = 0.85f),
                             lineHeight = 16.sp
@@ -1433,6 +1449,18 @@ private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) 
             }
         }
 
+        if (scholarships.isEmpty()) {
+            if (!FreeResourcesLive.loaded) {
+                FreeResourcesStateCard(null, "Loading scholarships…")
+            } else if (FreeResourcesLive.scholarshipsFailed) {
+                FreeResourcesStateCard(null, "Could not load scholarships: Unable to load items right now.")
+            } else {
+                FreeResourcesStateCard(
+                    null,
+                    "Individual scholarship cards will appear here as we publish them. Use the guide above while preparing applications."
+                )
+            }
+        }
         scholarships.forEach { sch ->
             ScholarshipCardItem(sch = sch)
         }
@@ -1452,16 +1480,20 @@ private fun ScholarshipCardItem(sch: ScholarshipOpportunity) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(sch.provider.uppercase(), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentRose)
+                    if (sch.provider.isNotBlank()) {
+                        Text(sch.provider.uppercase(), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentRose)
+                    }
                     Text(sch.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text(sch.amount, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = WisdomAccentEmerald)
+                    if (sch.amount.isNotBlank()) {
+                        Text(sch.amount, fontSize = 11.5.sp, fontWeight = FontWeight.SemiBold, color = WisdomAccentEmerald)
+                    }
                 }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                FactBadge(label = "Deadline: ${sch.deadline}")
-                FactBadge(label = sch.level)
-                FactBadge(label = sch.country)
+                if (sch.deadline.isNotBlank()) FactBadge(label = "Deadline: ${sch.deadline}")
+                if (sch.level.isNotBlank()) FactBadge(label = sch.level)
+                if (sch.country.isNotBlank()) FactBadge(label = sch.country)
             }
 
             if (sch.eligibility.isNotBlank()) {
