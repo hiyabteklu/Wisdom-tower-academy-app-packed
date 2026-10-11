@@ -55,6 +55,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -67,7 +68,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wisdomtower.academy.data.auth.AccountCallResult
 import com.wisdomtower.academy.data.auth.AuthStateManager
+import com.wisdomtower.academy.data.auth.SupabaseAccountClient
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
@@ -79,21 +82,26 @@ import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
+import kotlinx.coroutines.launch
+import java.io.File
 
 /**
- * Native Settings screen strictly mirroring website reference:
+ * Native Settings screen mirroring website reference:
  * - src/app/settings/page.tsx
  *
  * Header card:
  * - Student avatar, full name, VERIFIED badge, academic level, "Edit Profile" and "Account" navigation buttons
  *
  * 6 Stacked Accordion Sections:
- * 1. Study Goals & Target Milestones
+ * 1. Study Goals & Target Milestones  (Save writes to Supabase `profiles`, real result shown)
  * 2. Notifications & Study Alerts
  * 3. Game Sound
  * 4. Reading & Display
- * 5. Offline Data & Cloud Sync
- * 6. Security
+ * 5. Offline Data & Cloud Sync        (size is the real app storage; Sync pushes the profile for real)
+ * 6. Security                          (Update Password calls Supabase, like the website's updateUser)
+ *
+ * 2026-10-11: the password form used to show "updated successfully" without calling the server,
+ * and the storage size and sync message were fixed texts. All three are now real.
  */
 @Composable
 fun SettingsScreen(
@@ -101,6 +109,7 @@ fun SettingsScreen(
     onNavigateToUrl: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val prefsStorage = remember { context.getSharedPreferences("wt_settings_prefs", Context.MODE_PRIVATE) }
 
     val currentProfile by AuthStateManager.currentProfile.collectAsState()
@@ -123,7 +132,10 @@ fun SettingsScreen(
     var dailyGoalMinutes by remember { mutableIntStateOf(currentProfile?.dailyStudyGoalMinutes ?: prefsStorage.getInt("daily_study_goal_minutes", 45)) }
     var targetExam by remember { mutableStateOf(currentProfile?.targetExam ?: prefsStorage.getString("target_exam", "") ?: "") }
     var targetScore by remember { mutableStateOf(currentProfile?.targetScore ?: prefsStorage.getString("target_score", "") ?: "") }
-    var studyWindow by remember { mutableStateOf(prefsStorage.getString("preferred_study_time", "evening") ?: "evening") }
+    var studyWindow by remember {
+        mutableStateOf(currentProfile?.preferredStudyTime ?: prefsStorage.getString("preferred_study_time", "evening") ?: "evening")
+    }
+    var savingGoals by remember { mutableStateOf(false) }
 
     // Section 2: Notifications
     var notifDailyStudy by remember { mutableStateOf(prefsStorage.getBoolean("notif_daily_study", true)) }
@@ -139,12 +151,16 @@ fun SettingsScreen(
 
     // Section 5: Offline Data
     var syncMessage by remember { mutableStateOf<String?>(null) }
+    var syncIsError by remember { mutableStateOf(false) }
     var isSyncing by remember { mutableStateOf(false) }
+    val storageLabel = remember(syncMessage, openStorage) { formatBytes(appStorageBytes(context)) }
 
     // Section 6: Security
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordSuccess by remember { mutableStateOf(false) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+    var passwordBusy by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
@@ -413,15 +429,28 @@ fun SettingsScreen(
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(WisdomCyan)
                                 .clickable {
-                                    val updated = currentProfile?.copy(
-                                        dailyStudyGoalMinutes = dailyGoalMinutes,
-                                        targetExam = targetExam,
-                                        targetScore = targetScore
-                                    )
-                                    if (updated != null) {
-                                        AuthStateManager.updateProfile(updated)
+                                    val base = currentProfile
+                                    if (!isLoggedIn || base == null) {
+                                        Toast.makeText(context, "Sign in to save your study goals", Toast.LENGTH_SHORT).show()
+                                    } else if (!savingGoals) {
+                                        savingGoals = true
+                                        scope.launch {
+                                            val result = AuthStateManager.saveProfile(
+                                                base.copy(
+                                                    dailyStudyGoalMinutes = dailyGoalMinutes,
+                                                    targetExam = targetExam,
+                                                    targetScore = targetScore,
+                                                    preferredStudyTime = studyWindow
+                                                )
+                                            )
+                                            savingGoals = false
+                                            val text = when (result) {
+                                                is AccountCallResult.Success -> "Study goals saved"
+                                                is AccountCallResult.Failure -> result.message
+                                            }
+                                            Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+                                        }
                                     }
-                                    Toast.makeText(context, "Study goals updated", Toast.LENGTH_SHORT).show()
                                 }
                                 .padding(vertical = 12.dp),
                             contentAlignment = Alignment.Center
@@ -429,7 +458,12 @@ fun SettingsScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.Save, contentDescription = null, tint = WisdomDarkOnCyan, modifier = Modifier.size(15.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text(text = "Save Study Goals", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = WisdomDarkOnCyan)
+                                Text(
+                                    text = if (savingGoals) "Saving..." else "Save Study Goals",
+                                    fontSize = 12.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = WisdomDarkOnCyan
+                                )
                             }
                         }
                     }
@@ -652,24 +686,30 @@ fun SettingsScreen(
                 SettingsAccordionCard(
                     icon = Icons.Default.Storage,
                     title = "Offline Data & Cloud Sync",
-                    subtitle = "Cached offline data (24.8 MB) and cloud synchronization",
+                    subtitle = "Cached offline data ($storageLabel) and cloud synchronization",
                     isExpanded = openStorage,
                     onToggle = { openStorage = !openStorage }
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (syncMessage != null) {
+                            val tone = if (syncIsError) WisdomAccentRose else WisdomAccentEmerald
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(WisdomAccentEmerald.copy(alpha = 0.15f))
-                                    .border(BorderStroke(1.dp, WisdomAccentEmerald.copy(alpha = 0.4f)), RoundedCornerShape(10.dp))
+                                    .background(tone.copy(alpha = 0.15f))
+                                    .border(BorderStroke(1.dp, tone.copy(alpha = 0.4f)), RoundedCornerShape(10.dp))
                                     .padding(10.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Check, contentDescription = null, tint = WisdomAccentEmerald, modifier = Modifier.size(14.dp))
+                                    Icon(
+                                        if (syncIsError) Icons.Default.Warning else Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = tone,
+                                        modifier = Modifier.size(14.dp)
+                                    )
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text(text = syncMessage.orEmpty(), fontSize = 11.5.sp, color = WisdomAccentEmerald, fontWeight = FontWeight.SemiBold)
+                                    Text(text = syncMessage.orEmpty(), fontSize = 11.5.sp, color = tone, fontWeight = FontWeight.SemiBold)
                                 }
                             }
                         }
@@ -694,7 +734,7 @@ fun SettingsScreen(
                                 )
                             }
                             Text(
-                                text = "24.8 MB",
+                                text = storageLabel,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
@@ -709,9 +749,28 @@ fun SettingsScreen(
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(WisdomCyan)
                                 .clickable {
-                                    isSyncing = true
-                                    syncMessage = "Synced: All offline study notes, practice attempts, and cached data are synchronized with the cloud."
-                                    isSyncing = false
+                                    val base = currentProfile
+                                    if (isSyncing) return@clickable
+                                    if (!isLoggedIn || base == null) {
+                                        syncIsError = true
+                                        syncMessage = "Sign in to sync your profile with the cloud."
+                                    } else {
+                                        isSyncing = true
+                                        syncMessage = null
+                                        scope.launch {
+                                            when (val result = AuthStateManager.saveProfile(base)) {
+                                                is AccountCallResult.Success -> {
+                                                    syncIsError = false
+                                                    syncMessage = "Synced: your profile is saved in the cloud."
+                                                }
+                                                is AccountCallResult.Failure -> {
+                                                    syncIsError = true
+                                                    syncMessage = result.message
+                                                }
+                                            }
+                                            isSyncing = false
+                                        }
+                                    }
                                 }
                                 .padding(vertical = 12.dp),
                             contentAlignment = Alignment.Center
@@ -773,7 +832,25 @@ fun SettingsScreen(
                                     .border(BorderStroke(1.dp, WisdomAccentEmerald.copy(alpha = 0.4f)), RoundedCornerShape(10.dp))
                                     .padding(10.dp)
                             ) {
-                                Text(text = "Password updated successfully.", fontSize = 11.5.sp, color = WisdomAccentEmerald, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = "Your password has been changed. Your next login will be with this new password.",
+                                    fontSize = 11.5.sp,
+                                    color = WisdomAccentEmerald,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        if (passwordError != null) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(WisdomAccentRose.copy(alpha = 0.15f))
+                                    .border(BorderStroke(1.dp, WisdomAccentRose.copy(alpha = 0.4f)), RoundedCornerShape(10.dp))
+                                    .padding(10.dp)
+                            ) {
+                                Text(text = passwordError.orEmpty(), fontSize = 11.5.sp, color = WisdomAccentRose, fontWeight = FontWeight.SemiBold)
                             }
                         }
 
@@ -805,21 +882,57 @@ fun SettingsScreen(
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(WisdomCyan)
                                 .clickable {
-                                    if (newPassword.length < 6) {
-                                        Toast.makeText(context, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show()
-                                    } else if (newPassword != confirmPassword) {
-                                        Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                                    if (passwordBusy) return@clickable
+                                    passwordSuccess = false
+                                    passwordError = null
+                                    val wanted = newPassword
+                                    if (!isLoggedIn) {
+                                        passwordError = "Sign in to change your password."
+                                    } else if (wanted.length < 6) {
+                                        passwordError = "Password must be at least 6 characters."
+                                    } else if (wanted != confirmPassword) {
+                                        passwordError = "Passwords do not match. Please re-enter."
                                     } else {
-                                        passwordSuccess = true
-                                        newPassword = ""
-                                        confirmPassword = ""
-                                        Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
+                                        passwordBusy = true
+                                        scope.launch {
+                                            // Real server call, same as the website's supabase.auth.updateUser({ password }).
+                                            AuthStateManager.refreshIfNeeded()
+                                            val firstToken = AuthStateManager.currentUser.value?.accessToken
+                                            var result: AccountCallResult = if (firstToken.isNullOrBlank()) {
+                                                AccountCallResult.Failure("Your session expired. Please sign in again.", true)
+                                            } else {
+                                                SupabaseAccountClient.updatePassword(firstToken, wanted)
+                                            }
+                                            val first = result
+                                            if (first is AccountCallResult.Failure && first.sessionExpired &&
+                                                AuthStateManager.refreshIfNeeded(force = true)
+                                            ) {
+                                                val retryToken = AuthStateManager.currentUser.value?.accessToken
+                                                if (!retryToken.isNullOrBlank()) {
+                                                    result = SupabaseAccountClient.updatePassword(retryToken, wanted)
+                                                }
+                                            }
+                                            when (val done = result) {
+                                                is AccountCallResult.Success -> {
+                                                    passwordSuccess = true
+                                                    newPassword = ""
+                                                    confirmPassword = ""
+                                                }
+                                                is AccountCallResult.Failure -> passwordError = done.message
+                                            }
+                                            passwordBusy = false
+                                        }
                                     }
                                 }
                                 .padding(vertical = 12.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = "Update Password", fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = WisdomDarkOnCyan)
+                            Text(
+                                text = if (passwordBusy) "Updating Password..." else "Update Password",
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = WisdomDarkOnCyan
+                            )
                         }
                     }
                 }
@@ -830,6 +943,26 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+/** Real size of this app's stored data on the phone (cache, files and the WebView store). */
+private fun appStorageBytes(context: Context): Long {
+    fun size(f: File?): Long {
+        if (f == null || !f.exists()) return 0L
+        if (f.isFile) return f.length()
+        return f.listFiles()?.sumOf { size(it) } ?: 0L
+    }
+    return try {
+        size(context.cacheDir) + size(context.filesDir) + size(File(context.applicationInfo.dataDir, "app_webview"))
+    } catch (_: Exception) {
+        0L
+    }
+}
+
+private fun formatBytes(bytes: Long): String = when {
+    bytes >= 1024L * 1024L -> String.format(java.util.Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0))
+    bytes > 0L -> "${maxOf(1L, bytes / 1024L)} KB"
+    else -> "0 KB"
 }
 
 @Composable
