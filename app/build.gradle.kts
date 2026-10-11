@@ -93,9 +93,10 @@ tasks.register<Copy>("copyBrandAssets") {
 }
 tasks.named("preBuild").configure { dependsOn("copyBrandAssets") }
 
-// Packs the images the website added (Grade 9-12 subject photos, Entrance Questions pictures) from the
+// Packs the images the website added (Grade 9-12 subject photos, Entrance Questions pictures, Remedial covers) from the
 // synced website-reference snapshot, so they stay packed in the app and follow every "Sync website reference".
-// Result: src/main/assets/images/web/grade-{9..12}/*, images/web/entrance/{natural,social,entrance-questions}.jpeg
+// Result: src/main/assets/images/web/grade-{9..12}/*, images/web/entrance/{natural,social,entrance-questions}.jpeg,
+// images/web/remedial/{english,maths,physics,chemistry,biology,history,geography}.jpg
 // (the folder names with spaces on the website are renamed here so the asset paths have no spaces).
 // If the source folder is missing the task copies nothing and the build still succeeds.
 tasks.register<Copy>("copyWebsiteImages") {
@@ -115,6 +116,24 @@ tasks.register<Copy>("copyWebsiteImages") {
     include("Entrance questions.jpeg")
     rename("Entrance questions.jpeg", "entrance-questions.jpeg")
     into("entrance")
+  }
+  // Remedial covers: the files in website-reference/public/images/Remedial/ are named remedial-{subject}.jpg
+  // ("Remedial-physics.jpg" has a capital R, "remedial-math.jpg" is the Maths cover). They are renamed to the
+  // website subject ids (english, maths, physics, ...) so the app can look them up by id.
+  mapOf(
+    "remedial-english.jpg" to "english.jpg",
+    "remedial-math.jpg" to "maths.jpg",
+    "Remedial-physics.jpg" to "physics.jpg",
+    "remedial-chemistry.jpg" to "chemistry.jpg",
+    "remedial-biology.jpg" to "biology.jpg",
+    "remedial-history.jpg" to "history.jpg",
+    "remedial-geography.jpg" to "geography.jpg"
+  ).forEach { (source, target) ->
+    from(webImages.resolve("Remedial")) {
+      include(source)
+      rename(source, target)
+      into("remedial")
+    }
   }
 }
 tasks.named("preBuild").configure { dependsOn("copyWebsiteImages") }
