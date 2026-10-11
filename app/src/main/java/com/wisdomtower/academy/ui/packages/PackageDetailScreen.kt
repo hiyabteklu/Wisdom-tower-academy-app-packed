@@ -91,6 +91,9 @@ import com.wisdomtower.academy.ui.theme.WisdomPrimaryButton
  * 4. Grade 9–12 curriculum subjects with hints and icons
  * 5. Remedial 7 foundation prerequisite subjects
  * 6. Direct hierarchical navigation into native StudyWorkspaceScreen (6 Hubs)
+ *
+ * Course counts shown on filter chips / semester buttons are computed from the real lists
+ * (S4 item c): never type a count by hand.
  */
 @Composable
 fun PackageDetailScreen(
@@ -254,7 +257,7 @@ fun PackageDetailScreen(
                 }
             }
 
-            // ── FRESHMAN SECTION: Stream & Semester Filter Tabs + 20 Courses ──
+            // ── FRESHMAN SECTION: Stream & Semester Filter Tabs + Courses ──
             if (isFreshman) {
                 item(key = "freshman_filters") {
                     Column(modifier = Modifier.fillMaxWidth()) {
@@ -266,7 +269,14 @@ fun PackageDetailScreen(
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
 
-                        val filterTabs = listOf("All (21)", "Natural", "Social", "Sem 1", "Sem 2")
+                        // Count comes from the real list, not a typed number (S4 item c)
+                        val filterTabs = listOf(
+                            "All (${FRESHMAN_SUBJECTS.size})",
+                            "Natural",
+                            "Social",
+                            "Sem 1",
+                            "Sem 2"
+                        )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(filterTabs.indices.toList()) { index ->
                                 val isSelected = freshmanFilterIndex == index
@@ -348,7 +358,7 @@ fun PackageDetailScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Semester 1 (7 Courses)",
+                                    text = "Semester 1 (${ECE_SEM1_COURSES.size} Courses)",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (eceSemesterIndex == 1) Color.White else WisdomMuted
@@ -365,7 +375,7 @@ fun PackageDetailScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Semester 2 (7 Courses)",
+                                    text = "Semester 2 (${ECE_SEM2_COURSES.size} Courses)",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (eceSemesterIndex == 2) Color.White else WisdomMuted
@@ -426,11 +436,11 @@ fun PackageDetailScreen(
                 }
             }
 
-            // ── REMEDIAL: 7 Core Foundation Subjects ──
+            // ── REMEDIAL: Core Foundation Subjects ──
             if (isRemedial) {
                 item(key = "remedial_heading") {
                     Text(
-                        text = "7 Prerequisite Subjects",
+                        text = "${REMEDIAL_SUBJECTS.size} Prerequisite Subjects",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
