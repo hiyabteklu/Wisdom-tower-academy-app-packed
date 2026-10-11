@@ -16,7 +16,9 @@ import com.wisdomtower.academy.ui.theme.WisdomCyan
  * - src/data/packages.ts        (package cards; descriptions here are shortened, see STATUS.md S4 item d)
  * - src/data/freshman.ts        (subject names and descriptions, exact)
  * - src/data/special-packages.ts (ECE courses, exact)
- * - src/data/grade-subjects.ts  (grade subjects, exact)
+ * - src/data/grade-subjects.ts  (grade subjects, exact; 2026-10-11 website update: no "Exam tips" in Grade 12,
+ *                                subject photos from public/images/Grade N, packed by `copyWebsiteImages`)
+ * - src/data/entrance-questions.ts (see EntranceData.kt; the package entry below is the "Entrance Questions" card)
  * - src/data/remedial.ts        (remedial subjects: ids, names, descriptions exact; cover images are
  *                                placeholders from the freshman set because the website's
  *                                /images/remedial/{id}.jpg files are not packed in the app assets)
@@ -30,7 +32,7 @@ data class NativePackage(
     val path: String,
     val assetImage: String,
     val enrolledLabel: String,
-    val group: String, // "grades" | "branch" | "special"
+    val group: String, // "grades" | "branch" | "special" | "entrance" (not listed in the Packages tab, like the website catalog)
     val accentColor: Color,
     val includes: List<String>
 )
@@ -104,6 +106,26 @@ val CATALOG_PACKAGES = listOf(
         group = "grades",
         accentColor = WisdomAccentSky,
         includes = listOf("Complete Grade 12 syllabus & national matriculation prep") + CORE_INCLUDES
+    ),
+
+    // Entrance Questions: independent top-level card on the website Home / Academy page.
+    // Not part of the website package catalog (never sellable), so group "entrance" keeps it out of the
+    // Packages tab. Texts copied from LandingPathways.tsx (description, includes, category as label).
+    NativePackage(
+        id = ENTRANCE_PACKAGE_ID,
+        name = "Entrance Questions",
+        shortName = "Entrance",
+        description = "Past entrance exams for Natural and Social Science students, organised by subject and year (2014-2019).",
+        path = ENTRANCE_BASE_PATH,
+        assetImage = ENTRANCE_IMAGE_ASSET,
+        enrolledLabel = "University Entrance",
+        group = "entrance",
+        accentColor = WisdomCyan,
+        includes = listOf(
+            "Natural Science and Social Science entrance exams",
+            "English, Mathematics, SAT and stream subjects",
+            "Exams for 2014 to 2019"
+        )
     ),
 
     // Other branches
@@ -343,50 +365,56 @@ data class NativeGradeSubject(
     val name: String,
     val hint: String,
     val grade: String,
-    val path: String
+    val path: String,
+    val image: String? = null
 )
 
+// Picture of a grade subject. File names copied from GRADE_IMAGE_FILES in the website's grade-subjects.ts
+// (extensions differ per file on purpose). Packed by the Gradle task `copyWebsiteImages`.
+private fun gradeImg(grade: String, file: String): String =
+    "file:///android_asset/images/web/grade-$grade/$file"
+
 val GRADE_9_SUBJECTS = listOf(
-    NativeGradeSubject("chemistry", "Chemistry", "Matter, atoms, reactions", "9", "/academy/grades/9/chemistry"),
-    NativeGradeSubject("mathematics", "Math", "Algebra, geometry, number work", "9", "/academy/grades/9/mathematics"),
-    NativeGradeSubject("physics", "Physics", "Motion, forces, energy", "9", "/academy/grades/9/physics"),
-    NativeGradeSubject("biology", "Biology", "Cells, organisms, life processes", "9", "/academy/grades/9/biology"),
-    NativeGradeSubject("geography", "Geography", "Earth systems and places", "9", "/academy/grades/9/geography"),
-    NativeGradeSubject("history", "History", "Past societies and change", "9", "/academy/grades/9/history"),
-    NativeGradeSubject("economics", "Economics", "Resources, markets, choices", "9", "/academy/grades/9/economics")
+    NativeGradeSubject("chemistry", "Chemistry", "Matter, atoms, reactions", "9", "/academy/grades/9/chemistry", gradeImg("9", "g9-chemistry.jpg")),
+    NativeGradeSubject("mathematics", "Math", "Algebra, geometry, number work", "9", "/academy/grades/9/mathematics", gradeImg("9", "g9-math.jpg")),
+    NativeGradeSubject("physics", "Physics", "Motion, forces, energy", "9", "/academy/grades/9/physics", gradeImg("9", "g9-physics.jpg")),
+    NativeGradeSubject("biology", "Biology", "Cells, organisms, life processes", "9", "/academy/grades/9/biology", gradeImg("9", "g9-biology.jpg")),
+    NativeGradeSubject("geography", "Geography", "Earth systems and places", "9", "/academy/grades/9/geography", gradeImg("9", "g9-geography.jpg")),
+    NativeGradeSubject("history", "History", "Past societies and change", "9", "/academy/grades/9/history", gradeImg("9", "g9-history.jpg")),
+    NativeGradeSubject("economics", "Economics", "Resources, markets, choices", "9", "/academy/grades/9/economics", gradeImg("9", "g9-economics.jpg"))
 )
 
 val GRADE_10_SUBJECTS = listOf(
-    NativeGradeSubject("mathematics", "Math", "Functions, geometry, statistics", "10", "/academy/grades/10/mathematics"),
-    NativeGradeSubject("biology", "Biology", "Systems, ecology, health", "10", "/academy/grades/10/biology"),
-    NativeGradeSubject("chemistry", "Chemistry", "Bonding, stoichiometry", "10", "/academy/grades/10/chemistry"),
-    NativeGradeSubject("physics", "Physics", "Waves, electricity foundations", "10", "/academy/grades/10/physics"),
-    NativeGradeSubject("geography", "Geography", "Human and physical geography", "10", "/academy/grades/10/geography"),
-    NativeGradeSubject("history", "History", "Regional and world contexts", "10", "/academy/grades/10/history"),
-    NativeGradeSubject("economics", "Economics", "Production and national economy", "10", "/academy/grades/10/economics")
+    NativeGradeSubject("mathematics", "Math", "Functions, geometry, statistics", "10", "/academy/grades/10/mathematics", gradeImg("10", "g10-math.jpg")),
+    NativeGradeSubject("biology", "Biology", "Systems, ecology, health", "10", "/academy/grades/10/biology", gradeImg("10", "g10-biology.jpg")),
+    NativeGradeSubject("chemistry", "Chemistry", "Bonding, stoichiometry", "10", "/academy/grades/10/chemistry", gradeImg("10", "g10-chemistry.jpg")),
+    NativeGradeSubject("physics", "Physics", "Waves, electricity foundations", "10", "/academy/grades/10/physics", gradeImg("10", "g10-physics.jpg")),
+    NativeGradeSubject("geography", "Geography", "Human and physical geography", "10", "/academy/grades/10/geography", gradeImg("10", "g10-geography.jpg")),
+    NativeGradeSubject("history", "History", "Regional and world contexts", "10", "/academy/grades/10/history", gradeImg("10", "g10-history.jpg")),
+    NativeGradeSubject("economics", "Economics", "Production and national economy", "10", "/academy/grades/10/economics", gradeImg("10", "g10-economics.jpg"))
 )
 
 val GRADE_11_SUBJECTS = listOf(
-    NativeGradeSubject("mathematics", "Math", "Advanced algebra and exam path", "11", "/academy/grades/11/mathematics"),
-    NativeGradeSubject("biology", "Biology", "Genetics, physiology, ecology", "11", "/academy/grades/11/biology"),
-    NativeGradeSubject("physics", "Physics", "Mechanics, energy, fields", "11", "/academy/grades/11/physics"),
-    NativeGradeSubject("chemistry", "Chemistry", "Structure, reactions, equilibrium", "11", "/academy/grades/11/chemistry"),
-    NativeGradeSubject("economics", "Economics", "Markets, macro, development", "11", "/academy/grades/11/economics"),
-    NativeGradeSubject("geography", "Geography", "Population, development, Ethiopia", "11", "/academy/grades/11/geography"),
-    NativeGradeSubject("history", "History", "Ethiopia and global history", "11", "/academy/grades/11/history")
+    NativeGradeSubject("mathematics", "Math", "Advanced algebra and exam path", "11", "/academy/grades/11/mathematics", gradeImg("11", "g11-math.jpeg")),
+    NativeGradeSubject("biology", "Biology", "Genetics, physiology, ecology", "11", "/academy/grades/11/biology", gradeImg("11", "g11-biology.jpeg")),
+    NativeGradeSubject("physics", "Physics", "Mechanics, energy, fields", "11", "/academy/grades/11/physics", gradeImg("11", "g11-physics.jpeg")),
+    NativeGradeSubject("chemistry", "Chemistry", "Structure, reactions, equilibrium", "11", "/academy/grades/11/chemistry", gradeImg("11", "g11-chemistry.jpg")),
+    NativeGradeSubject("economics", "Economics", "Markets, macro, development", "11", "/academy/grades/11/economics", gradeImg("11", "g11-economics.jpeg")),
+    NativeGradeSubject("geography", "Geography", "Population, development, Ethiopia", "11", "/academy/grades/11/geography", gradeImg("11", "g11-geography.jpeg")),
+    NativeGradeSubject("history", "History", "Ethiopia and global history", "11", "/academy/grades/11/history", gradeImg("11", "g11-history.jpeg"))
 )
 
+// Grade 12: "Exam tips" was removed from the website (commit ce89c43), so it is removed here too.
 val GRADE_12_SUBJECTS = listOf(
-    NativeGradeSubject("english", "English", "Leaving-exam English", "12", "/academy/grades/12/english"),
-    NativeGradeSubject("chemistry", "Chemistry", "Organic and physical chemistry", "12", "/academy/grades/12/chemistry"),
-    NativeGradeSubject("biology", "Biology", "Exam depth across life sciences", "12", "/academy/grades/12/biology"),
-    NativeGradeSubject("mathematics", "Math", "Exam-ready pure and applied math", "12", "/academy/grades/12/mathematics"),
-    NativeGradeSubject("physics", "Physics", "Electromagnetism, modern physics", "12", "/academy/grades/12/physics"),
-    NativeGradeSubject("geography", "Geography", "Exam depth in geo systems", "12", "/academy/grades/12/geography"),
-    NativeGradeSubject("economics", "Economics", "Exam depth in economic theory", "12", "/academy/grades/12/economics"),
-    NativeGradeSubject("history", "History", "Exam depth in historical analysis", "12", "/academy/grades/12/history"),
-    NativeGradeSubject("sat", "SAT", "SAT-style practice and strategies", "12", "/academy/grades/12/sat"),
-    NativeGradeSubject("exam-tips", "Exam tips", "Study tactics and exam-day guidance", "12", "/academy/grades/12/exam-tips")
+    NativeGradeSubject("english", "English", "Leaving-exam English", "12", "/academy/grades/12/english", gradeImg("12", "g12-english.jpeg")),
+    NativeGradeSubject("chemistry", "Chemistry", "Organic and physical chemistry", "12", "/academy/grades/12/chemistry", gradeImg("12", "g12-chemistry.jpeg")),
+    NativeGradeSubject("biology", "Biology", "Exam depth across life sciences", "12", "/academy/grades/12/biology", gradeImg("12", "g12-biology.jpeg")),
+    NativeGradeSubject("mathematics", "Math", "Exam-ready pure and applied math", "12", "/academy/grades/12/mathematics", gradeImg("12", "g12-math.jpeg")),
+    NativeGradeSubject("physics", "Physics", "Electromagnetism, modern physics", "12", "/academy/grades/12/physics", gradeImg("12", "g12-physics.jpeg")),
+    NativeGradeSubject("geography", "Geography", "Exam depth in geo systems", "12", "/academy/grades/12/geography", gradeImg("12", "g12-geography.jpeg")),
+    NativeGradeSubject("economics", "Economics", "Exam depth in economic theory", "12", "/academy/grades/12/economics", gradeImg("12", "g12-economics.jpeg")),
+    NativeGradeSubject("history", "History", "Exam depth in historical analysis", "12", "/academy/grades/12/history", gradeImg("12", "g12-history.jpeg")),
+    NativeGradeSubject("sat", "SAT", "SAT-style practice and strategies", "12", "/academy/grades/12/sat", gradeImg("12", "sat.jpeg"))
 )
 
 // Ids, names, descriptions and paths copied exactly from website-reference/src/data/remedial.ts
