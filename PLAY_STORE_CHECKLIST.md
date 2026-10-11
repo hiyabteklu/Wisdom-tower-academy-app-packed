@@ -2,6 +2,8 @@
 
 Wisdom Tower Academy (`com.wisdomtower.academy`)
 
+> 2026-10-11: section 3C (Data Safety) was rewritten because the earlier text was a guess, and section 5 (blockers) was added. Read section 5 first.
+
 ---
 
 ## 1. Keystore & GitHub Secrets Setup
@@ -88,22 +90,26 @@ Output location:
 2. Recruit at least **12 testers** who opt into your closed test on Android for at least **14 continuous days**.
 3. Once 14 consecutive days have completed with active tester engagement and opt-ins, apply for production access in Play Console.
 
-### C. Privacy Policy & Data Safety
-1. **Privacy Policy Link:**
-   - Link: `https://www.wisdom-tower-academy.live/privacy` (or your official hosted privacy policy URL).
-   - In Play Console: **Policy and programs → App content → Privacy policy**.
-2. **Data Safety Form:**
-   - Location data: None collected.
-   - User account data: Handled via the secure web portal (login credentials encrypted over HTTPS).
-   - Local device storage: App stores local PDF study materials and offline web cache in private app sandbox (`getFilesDir()`). No external storage access requested.
-   - Ads: App does not contain third-party advertising SDKs.
-   - Financial info: Course package transactions are processed externally through authorized Ethiopian payment gateways on the web portal; no card numbers or banking secrets are collected or stored in the Android app.
+### C. Privacy Policy & Data Safety (rewritten 2026-10-11)
+1. **Privacy Policy Link:** `https://www.wisdom-tower-academy.live/privacy`. Before submitting, make sure that page lists everything below and mentions account deletion.
+2. **Data Safety form.** What the app really handles (verified by reading the app code and manifest on 2026-10-11, except where marked "confirm"):
+   - **Permissions in the manifest:** internet, network state, notifications. NO location, NO storage, NO camera, NO microphone. So: location data = none.
+   - **Personal info:** full name, e-mail address, phone number (sign-in and profile).
+   - **Profile details:** academic level, stream, school or university, region, short bio, target exam and score, daily study goal, avatar choice. Saved in the Supabase `profiles` table.
+   - **App activity (confirm):** study progress and results saved by the website pages shown inside the app (Supabase `learning_progress`, `academic_results`).
+   - **Device or other IDs:** Firebase push-notification token (the app contains Firebase Cloud Messaging).
+   - **Text sent to AI (confirm):** questions typed into the AI tutor and "Explain with AI" go to the website server and from there to Gemini and Groq (third parties). Declare this as data shared with third-party services.
+   - **Security:** all traffic is HTTPS (cleartext is switched off in the manifest). Sign-in tokens are stored encrypted on the phone (Android Keystore). Say "data is encrypted in transit".
+   - **Deletion:** Google requires an in-app way to delete the account and a public web link. NOT built yet, see section 5.
+   - **Ads:** none known. Confirm there is no ad SDK in `app/build.gradle.kts` before answering "no ads".
+   - **Payments:** the app is in free mode (`IS_FREE_MODE = true` on the website) and collects no payment data. If paid packages come back, redo this form.
+   - **Local storage:** PDFs and cached pages stay in the app's private storage.
 
 ### D. Content Rating & Target Audience
 1. **Content Rating Questionnaire:**
    - Educational app: Complete the IARC rating questionnaire (typically PEGI 3 / Everyone).
 2. **Target Audience:**
-   - Educational material designed for high school (Grade 11–12) and university freshman students. Select **13 and older** (avoids strict Designed for Families COPPA restrictions).
+   - Educational material designed for high school (Grade 9–12) and university students. Select **13 and older** (avoids strict Designed for Families COPPA restrictions).
 
 ### E. Store Listing Assets
 Prepare and upload under **Store presence → Main store listing**:
@@ -113,7 +119,7 @@ Prepare and upload under **Store presence → Main store listing**:
   - Phone: At least 2 screenshots (16:9 or 18:9, e.g. 1080 × 2400 px) showing Home, Learning hub, Grade 12 / Freshman course books, and Settings.
   - Tablet (optional but recommended): 7-inch and 10-inch screenshots.
 - **Short description:** Up to 80 characters (e.g. *Premier online learning academy for high school & university freshman scholars.*).
-- **Full description:** Detailed description highlighting courses, books, flashcards, exams, offline reading vault, and study tools.
+- **Full description:** Detailed description highlighting courses, books, flashcards, exams, offline reading vault, and study tools. Write only features that exist in the app (no invented claims).
 
 ---
 
@@ -123,3 +129,14 @@ Prepare and upload under **Store presence → Main store listing**:
 3. Upload `Wisdom-tower-academy.aab`.
 4. Review release notes (`v1.0.0 (3)`).
 5. Click **Save** and **Start rollout to Production** (or submit for review).
+
+---
+
+## 5. Blockers found 2026-10-11 (do these before step 4)
+
+1. **Account deletion is missing (Google rejects apps without it).** Neither the website nor the app has it. Needs a website route and page first: spec in `WEBSITE_CHANGES.md` section 4. Then an in-app "Delete my account" button.
+2. **Owner decision on the website login fix** (`WEBSITE_CHANGES.md` section 1) and the Supabase "Confirm email" setting. Until then website users can still get a fake local-only login.
+3. **Privacy page must match the data above** (section 3C).
+4. **12 testers for 14 days** (section 3B). Start this as early as possible, it is the longest wait.
+5. **Store pictures and texts** (section 3E) are not made yet.
+6. **Release signing secrets** (section 1) must exist in GitHub before a signed `.aab` can be built. Not verified whether they are set.
