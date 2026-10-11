@@ -88,3 +88,10 @@
 * **Cause:** `DrawerScreens.kt` used `AnimatedVisibility(visible = open)` to expand/collapse FAQ answers without importing `androidx.compose.animation.AnimatedVisibility`.
 * **Fix:** Added `import androidx.compose.animation.AnimatedVisibility` to `DrawerScreens.kt`.
 * **DO NOT:** **Always import `androidx.compose.animation.AnimatedVisibility` explicitly when animating visibility in Compose composables.**
+
+### 2026-10-11 – CI failed after `b6e4e33` (`:app:compileReleaseKotlin`)
+
+#### Problem: Unresolved reference 'clickable' in `PdfReaderScreen.kt` (line 143)
+* **Cause:** `Modifier.clickable { ... }` was used in the Retry button of `PdfReaderScreen.kt` without `import androidx.compose.foundation.clickable`. `clickable` is an extension function on `Modifier`, so it is NOT found without its own import, even when other `androidx.compose.foundation.*` imports are present. Kotlin printed only this one error, so the rest of the file (and the other two files of that commit, `HubItemListScreen.kt`, `BookFileStore.kt`) compiled.
+* **Fix:** Added `import androidx.compose.foundation.clickable` (commit `f95656c6`). Rule (e) grep: all 15 files in `app/src` that use `.clickable` now import it.
+* **DO NOT:** **Every Modifier extension (`clickable`, `background`, `border`, `padding`, `size`, `fillMaxWidth`, `aspectRatio`, `clip` ...) needs its own import. After writing a composable file, check each `Modifier.xxx` you used against the import list before committing.**
