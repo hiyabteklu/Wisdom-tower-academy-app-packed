@@ -27,9 +27,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +41,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wisdomtower.academy.data.auth.AuthStateManager
+import com.wisdomtower.academy.data.content.ContentAccess
+import com.wisdomtower.academy.data.content.CourseAccess
+import com.wisdomtower.academy.data.content.HubGate
 import com.wisdomtower.academy.data.content.LearningContentRepository
 import com.wisdomtower.academy.data.content.LearningResource
 import com.wisdomtower.academy.ui.packages.NATIVE_LEARNING_HUBS
@@ -48,6 +54,7 @@ import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomMuted
+import kotlinx.coroutines.launch
 
 private const val SITE_ORIGIN = "https://www.wisdom-tower-academy.live"
 
@@ -69,6 +76,9 @@ private sealed interface WorkspaceView {
     /** [hubId] is the hub the item was opened from (`question-banks` or `exams`), used for the tracker scope id. */
     data class Quiz(val item: LearningResource, val isExam: Boolean, val hubId: String) : WorkspaceView
 }
+
+/** A "closed hub" message waiting on screen (plan step N9): which gate stopped the student and which hub card was tapped. */
+private data class GateMessage(val gate: HubGate, val hubName: String)
 
 /**
  * Website route shapes (website-reference/src/app/academy):
@@ -198,6 +208,12 @@ internal fun safeHubUrl(basePath: String, hubId: String): String {
  * so `MainActivity` is not involved. System Back goes viewer -> list -> the six cards (the quiz screen
  * handles Back itself first, to close its own dialogs).
  * The other hubs still open the website page through `onOpenHub`.
+ *
+ * Access check (2026-10-11, plan N9): tapping a hub card first asks [ContentAccess] (admin locks in
+ * `content_locks` + ownership; free mode = every signed-in student owns everything). A closed course shows the
+ * website's "Coming soon" message; a signed-in student without the package sees "Package required" (no price,
+ * no purchase button: purchases happen on the website). The state is read when the screen opens and again after
+ * every card tap (cached 30 s), so a change made on the website is picked up on the next visit.
  */
 @Composable
 fun StudyWorkspaceScreen(
@@ -211,6 +227,17 @@ fun StudyWorkspaceScreen(
     val entranceUrl = remember(basePath) { entranceYearUrl(basePath) }
     val contentScope = remember(basePath) { contentScopePath(basePath) }
     var view by remember(basePath) { mutableStateOf<WorkspaceView?>(null) }
+
+    val loggedIn by AuthStateManager.isLoggedIn.collectAsState()
+    val uiScope = rememberCoroutineScope()
+    var access by remember(basePath, loggedIn) {
+        mutableStateOf<CourseAccess>(ContentAccess.staticAccess(basePath, loggedIn))
+    }
+    var gateMessage by remember(basePath) { mutableStateOf<GateMessage?>(null) }
+
+    LaunchedEffect(basePath, loggedIn) {
+        access = ContentAccess.resolve(basePath, loggedIn)
+    }
 
     if (entranceUrl != null) {
         LaunchedEffect(entranceUrl) {
@@ -364,16 +391,53 @@ fun StudyWorkspaceScreen(
             // for an Entrance Questions year only the Exams card (the year page itself)
             openGrid("hubs", hubs) { hub ->
                 OpenCard(hub.name, hub.assetImage) {
-                    if (entranceUrl == null && contentScope != null && hub.id in NATIVE_HUB_IDS) {
-                        view = WorkspaceView.HubList(hub.id)
-                    } else {
-                        onOpenHub(hub.id, entranceUrl ?: safeHubUrl(basePath, hub.id))
+                    // N9: closed course -> message instead of opening (Entrance Questions are never gated here)
+                    val gate = if (entranceUrl == null) access.gate else HubGate.Open
+                    when (gate) {
+                        HubGate.ComingSoon, HubGate.PackageRequired -> {
+                            gateMessage = GateMessage(gate, hub.name)
+                        }
+
+                        HubGate.Open -> {
+                            if (entranceUrl == null && contentScope != null && hub.id in NATIVE_HUB_IDS) {
+                                view = WorkspaceView.HubList(hub.id)
+                            } else {
+                                onOpenHub(hub.id, entranceUrl ?: safeHubUrl(basePath, hub.id))
+                            }
+                        }
+                    }
+                    if (entranceUrl == null) {
+                        // Re-check in the background so the next tap uses a fresh answer (cached 30 s).
+                        uiScope.launch { access = ContentAccess.resolve(basePath, loggedIn) }
                     }
                 }
             }
 
             item(key = "bottom_space") {
                 Spacer(modifier = Modifier.height(32.dp))
+            }
+        }
+
+        val message = gateMessage
+        if (message != null) {
+            if (message.gate == HubGate.ComingSoon) {
+                HubGateDialog(
+                    badge = ContentAccess.COMING_SOON_TITLE,
+                    title = ContentAccess.COMING_SOON_TITLE,
+                    hubName = message.hubName,
+                    message = ContentAccess.COMING_SOON_BODY,
+                    buttonText = ContentAccess.COMING_SOON_BUTTON,
+                    onClose = { gateMessage = null }
+                )
+            } else {
+                HubGateDialog(
+                    badge = null,
+                    title = ContentAccess.PURCHASE_TITLE,
+                    hubName = message.hubName,
+                    message = ContentAccess.PURCHASE_BODY,
+                    buttonText = ContentAccess.PURCHASE_BUTTON,
+                    onClose = { gateMessage = null }
+                )
             }
         }
     }
