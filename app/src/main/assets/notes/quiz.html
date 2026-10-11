@@ -63,6 +63,13 @@
   .solbox .lbl { margin: 0 0 4px; font: 900 .68rem/1 -apple-system, Roboto, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #6ee7b7; font-style: normal; }
   .solbox .study-p { margin: .4em 0; }
 
+  /* Explain with AI (plan step N10) */
+  .aibtn { display: block; margin-top: 8px; border: 1px solid rgba(167,139,250,.45); background: rgba(139,92,246,.15); color: #f5f3ff; font-size: .75rem; font-weight: 800; padding: 6px 10px; border-radius: 8px; }
+  .aibtn:disabled { opacity: .6; }
+  .aibox { margin-top: 10px; border: 1px solid rgba(167,139,250,.3); background: rgba(139,92,246,.1); border-radius: 12px; padding: 10px 12px; color: rgba(255,255,255,.95); font: italic 500 .9rem/1.5 Georgia, "Times New Roman", serif; }
+  .aibox .lbl { margin: 0 0 4px; font: 900 .68rem/1 -apple-system, Roboto, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #c4b5fd; font-style: normal; }
+  .aibox .study-p { margin: .4em 0; }
+
   /* bottom navigation */
   .nav { position: sticky; bottom: 0; background: #0a101d; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 8px; }
   .btn { font: 700 .85rem/1 -apple-system, Roboto, sans-serif; padding: 11px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: transparent; color: #e2e8f0; }
@@ -135,10 +142,14 @@
  *  - question banks: counters, "Right Away" / "After Finish" answer checking, official solution (locks the question),
  *    cross-out of choices, flag, question number pills, swipe, "Finish Practice";
  *  - exams: countdown from meta.durationMin, no feedback until "Submit Exam", automatic submit at 0:00;
- *  - score card with the website's tiers, review (All / Missed / Flagged) with solutions, Retake.
- * NOT ported (yet): the draggable scientific calculator, confetti/haptics, "Explain with AI" (plan step N10).
+ *  - score card with the website's tiers, review (All / Missed / Flagged) with solutions, Retake;
+ *  - "Explain with AI" (plan step N10): under each question of a question bank and under each question of the
+ *    review (also for exams). The page cannot reach the network, so it asks the app through
+ *    WTBridge.onExplain({ id, payload }) and the app answers with window.wtExplainResult(id, text); the payload is
+ *    the one the website sends to /api/ai/explain (the app adds resourceId).
+ * NOT ported (yet): the draggable scientific calculator, confetti/haptics.
  * The app calls window.setQuiz(metaJsonText, optionsJsonText); options = { isExam, title, feedbackMode }.
- * Back to the app through window.WTBridge: onProgress(json), onSubmit(json), onMode(json).
+ * Back to the app through window.WTBridge: onProgress(json), onSubmit(json), onMode(json), onExplain(json).
  * window.wtBack() closes an open dialog and returns true, or returns false when the app should leave.
  */
 (function () {
@@ -149,6 +160,7 @@
   var reviewFilter = "all", reviewSol = {}, shake = null;
   var startedAt = Date.now(), elapsedFinal = null, deadline = 0, timerId = null;
   var startX = null, startY = null;
+  var ai = "", aiLoading = false, reviewAi = {}, reviewAiLoading = {}, pendingAi = {}, aiSeq = 0;
 
   function hasOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -161,6 +173,13 @@
   }
   function elapsed() { return elapsedFinal != null ? elapsedFinal : Math.max(0, Math.round((Date.now() - startedAt) / 1000)); }
   function isImmediate() { return !isExam && feedbackMode === "immediate"; }
+
+  /* the AI writes math as \( ... \) and \[ ... \]; the shared renderer reads $ ... $ and $$ ... $$ */
+  function aiText(s) {
+    return String(s == null ? "" : s)
+      .replace(/\\\[([\s\S]+?)\\\]/g, function (m, a) { return "$$" + a + "$$"; })
+      .replace(/\\\(([\s\S]+?)\\\)/g, function (m, a) { return "$" + a + "$"; });
+  }
 
   function counts() {
     var attempted = 0, score = 0, wrong = 0, fl = 0, i, k, a;
@@ -202,6 +221,32 @@
     timerId = setInterval(tick, 1000);
   }
 
+  /* ---------- Explain with AI ---------- */
+  function aiPayload(qi) {
+    var q = Q[qi], sel = answers[qi], ch = q.choices || [];
+    var student = sel != null ? (ch[sel] || String(sel)) : "(not answered)";
+    var correct = q.correct != null ? (ch[q.correct] || String(q.correct)) : "";
+    return { mode: "question", text: q.prompt, question: q.prompt, choices: ch,
+             studentAnswer: student, correctAnswer: correct, solution: q.solution || "" };
+  }
+  function explain(qi, kind) {
+    if (kind === "q" ? aiLoading : reviewAiLoading[qi]) return;
+    var id = "e" + (++aiSeq);
+    pendingAi[id] = { qi: qi, kind: kind };
+    if (kind === "q") { aiLoading = true; ai = ""; } else { reviewAiLoading[qi] = true; }
+    draw();
+    if (!(window.WTBridge && window.WTBridge.onExplain)) { window.wtExplainResult(id, "AI unavailable"); return; }
+    send("onExplain", { id: id, payload: aiPayload(qi) });
+  }
+  window.wtExplainResult = function (id, text) {
+    var p = pendingAi[id];
+    if (!p) return;
+    delete pendingAi[id];
+    if (p.kind === "q") { aiLoading = false; if (p.qi === idx) ai = text; }
+    else { reviewAiLoading[p.qi] = false; reviewAi[p.qi] = text; }
+    draw();
+  };
+
   /* ---------- actions ---------- */
   function doSubmit() {
     if (submitted) return;
@@ -215,6 +260,7 @@
   function retake() {
     submitted = false; saved = false; answers = {}; flagged = {}; eliminated = {}; idx = 0; showSol = false;
     lockedBySol = {}; reviewSol = {}; resultOpen = false; confirmOpen = false; reviewFilter = "all";
+    ai = ""; aiLoading = false; reviewAi = {}; reviewAiLoading = {}; pendingAi = {};
     startedAt = Date.now(); elapsedFinal = null;
     startTimer(); draw(); window.scrollTo(0, 0);
     if (!isExam) reportProgress();
@@ -222,6 +268,7 @@
   function goTo(i) {
     if (i < 0 || i >= Q.length) return;
     idx = i; showSol = !!lockedBySol[i];
+    ai = ""; aiLoading = false;
     if (submitted) {
       if (reviewFilter === "missed") {
         var missed = answers[i] == null || answers[i] !== Q[i].correct;
@@ -319,6 +366,8 @@
     if (!isExam) {
       h += '<button class="sol" data-act="sol">' + (showSol ? "Hide solution" : "Official solution") + "</button>";
       if (showSol && q.solution) h += '<div class="solbox"><p class="lbl">Official solution</p>' + R(q.solution) + "</div>";
+      h += '<button class="aibtn" data-act="ai"' + (aiLoading ? " disabled" : "") + ">" + (aiLoading ? "Generating\u2026" : "Explain with AI") + "</button>";
+      if (ai) h += '<div class="aibox"><p class="lbl">AI explanation</p>' + R(aiText(ai)) + "</div>";
     }
     return h + "</div>";
   }
@@ -411,6 +460,8 @@
         h += '<button class="sol" data-act="rsol" data-i="' + qi + '">' + (reviewSol[qi] ? "Hide solution" : "Official solution") + "</button>";
         if (reviewSol[qi]) h += '<div class="solbox">' + R(q.solution) + "</div>";
       }
+      h += '<button class="aibtn" data-act="rai" data-i="' + qi + '"' + (reviewAiLoading[qi] ? " disabled" : "") + ">" + (reviewAiLoading[qi] ? "Generating\u2026" : "Explain with AI") + "</button>";
+      if (reviewAi[qi]) h += '<div class="aibox">' + R(aiText(reviewAi[qi])) + "</div>";
       h += "</div>";
     }
     return h;
@@ -438,6 +489,8 @@
     else if (act === "elim") toggleElim(Number(el.getAttribute("data-ci")));
     else if (act === "flag") { flagged[idx] = !flagged[idx]; draw(); }
     else if (act === "sol") toggleSol();
+    else if (act === "ai") explain(idx, "q");
+    else if (act === "rai") explain(Number(el.getAttribute("data-i")), "r");
     else if (act === "prev") goTo(idx - 1);
     else if (act === "next") goTo(idx + 1);
     else if (act === "pill") goTo(Number(el.getAttribute("data-i")));
@@ -489,6 +542,7 @@
       durationMin = isFinite(d) && d > 0 ? d : 0;
       idx = 0; answers = {}; flagged = {}; eliminated = {}; lockedBySol = {}; showSol = false; submitted = false; saved = false;
       confirmOpen = false; resultOpen = false; reviewFilter = "all"; reviewSol = {}; shake = null; startedAt = Date.now(); elapsedFinal = null;
+      ai = ""; aiLoading = false; reviewAi = {}; reviewAiLoading = {}; pendingAi = {};
       startTimer(); draw();
       if (!isExam && Q.length) reportProgress();
     } catch (e) {
