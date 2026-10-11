@@ -2,7 +2,10 @@ package com.wisdomtower.academy.ui.guides
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import com.wisdomtower.academy.BuildConfig
 import kotlinx.coroutines.CancellationException
@@ -20,24 +23,29 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+/** Website text `DEFAULT_INTRO` (website-reference/src/app/academy/scholarships/page.tsx), shown when the admin has not written an intro. */
+const val SCHOLARSHIP_DEFAULT_INTRO =
+    "Scholarships can change what is possible for secondary and university learners: lower fees, cover materials, or open doors to programs abroad.\n\nThis page collects opportunities relevant for Ethiopian students and the wider region: local awards, national schemes, and international programs that accept applicants from Africa. Each card is practical: who it is for, what it covers, deadlines when we have them, and a direct link to apply or learn more.\n\nHow to use this page\n• Read eligibility notes carefully: many awards are limited by grade, field, gender, or need.\n• Start early. Strong applications need transcripts, recommendations, and a clear personal statement.\n• Keep a simple tracker of deadlines, required documents, and status.\n• Prefer official sites and verified partners.\n\nWe add and update listings over time. If you know of a solid scholarship that is missing, use Contact us and send the official link."
+
 /**
- * REAL Success Stories and Scholarships, read from the SAME Supabase table as the website
- * (`public.free_resource_items`, only `published = true`, same filters and order as
- * `listFreeResourceItems` in website-reference/src/lib/free-resources.ts). Public URL + anon key
- * from BuildConfig only, no secrets. The anon role may read published rows (see
- * website-reference/docs/free-resources-setup.sql, policy `free_resource_items_select_published`).
+ * REAL Success Stories and Scholarships, read from the SAME Supabase tables as the website
+ * (`public.free_resource_items` and `public.free_resource_pages`, only `published = true`, same
+ * filters and order as `listFreeResourceItems` in website-reference/src/lib/free-resources.ts).
+ * Public URL + anon key from BuildConfig only, no secrets. The anon role may read published rows
+ * (see website-reference/docs/free-resources-setup.sql).
  *
- * There is NO bundled sample content any more: the earlier bundled stories and scholarships were
- * invented and were removed (owner confirmed 2026-10-11). Until the first successful load the
- * lists are empty. The last successful server answer is kept in a small file on the phone so the
- * lists also work offline; that file only ever holds rows that came from the server.
+ * There is NO bundled sample content: the earlier bundled stories and scholarships were invented
+ * and were removed (owner confirmed 2026-10-11). Until the first successful load the lists are
+ * empty. The last successful server answer for the items is kept in a small file on the phone so
+ * the lists also work offline; that file only ever holds rows that came from the server.
  *
- * The lists are Compose state lists: a screen that reads them recomposes when they change.
+ * The lists and the flags are Compose state: a screen that reads them recomposes when they change.
  *
  * Field mapping copied from the website pages (success-stories/page.tsx, scholarships/page.tsx):
  *  - story: meta.studentName, meta.program, meta.result (or title), meta.year, meta.quote, body_md
  *  - scholarship: title, meta.provider|organization, meta.amount|award, meta.eligibility,
  *    meta.level|degree, meta.country|location, deadline, external_url, body_md
+ *  - page shells: subtitle (both pages) and body_md (scholarships intro)
  *
  * STATUS: NOT compiled, NOT tested on a phone.
  */
@@ -45,8 +53,27 @@ object FreeResourcesLive {
     val stories = mutableStateListOf<SuccessStory>()
     val scholarships = mutableStateListOf<ScholarshipOpportunity>()
 
+    /** True once the first load attempt (server or not) has finished. */
+    var loaded by mutableStateOf(false)
+        private set
+
+    /** True when the last server call for that tab failed (nothing is known about the server). */
+    var storiesFailed by mutableStateOf(false)
+        private set
+    var scholarshipsFailed by mutableStateOf(false)
+        private set
+
+    /** Page shell texts written by the owner in the admin panel ("" = none). */
+    var storiesSubtitle by mutableStateOf("")
+        private set
+    var scholarshipsSubtitle by mutableStateOf("")
+        private set
+    var scholarshipsIntro by mutableStateOf("")
+        private set
+
     private const val TAG = "FreeResources"
     private const val CACHE_FILE = "free_resources_cache.json"
+    private const val ORDER = "&order=sort_order.asc,created_at.desc"
 
     private val http = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -78,10 +105,27 @@ object FreeResourcesLive {
             }
         }
 
-        val storyRows = fetch("success-stories", "success_story")
-        val scholarshipRows = fetch("scholarships", "scholarship")
+        val storyRows = get(
+            "free_resource_items?select=*&page_slug=eq.success-stories&kind=eq.success_story&published=eq.true$ORDER"
+        )
+        val scholarshipRows = get(
+            "free_resource_items?select=*&page_slug=eq.scholarships&kind=eq.scholarship&published=eq.true$ORDER"
+        )
         if (storyRows != null) publishStories(parseStories(storyRows))
         if (scholarshipRows != null) publishScholarships(parseScholarships(scholarshipRows))
+        storiesFailed = storyRows == null
+        scholarshipsFailed = scholarshipRows == null
+
+        val storyPage = get("free_resource_pages?select=*&slug=eq.success-stories&published=eq.true")
+        if (storyPage != null) {
+            storiesSubtitle = storyPage.optJSONObject(0).pick("subtitle")
+        }
+        val scholarshipPage = get("free_resource_pages?select=*&slug=eq.scholarships&published=eq.true")
+        if (scholarshipPage != null) {
+            val row = scholarshipPage.optJSONObject(0)
+            scholarshipsSubtitle = row.pick("subtitle")
+            scholarshipsIntro = row.pick("body_md")
+        }
 
         if (storyRows != null || scholarshipRows != null) {
             try {
@@ -95,6 +139,7 @@ object FreeResourcesLive {
                 // offline copy is optional
             }
         }
+        loaded = true
     }
 
     private fun readCache(file: File): JSONObject? = try {
@@ -103,17 +148,14 @@ object FreeResourcesLive {
         null
     }
 
-    /** Returns the rows, or null when the call failed (so a failure never wipes what is shown). */
-    private fun fetch(pageSlug: String, kind: String): JSONArray? {
+    /** GET on the Supabase REST API. Returns the rows, or null when the call failed. */
+    private fun get(path: String): JSONArray? {
         val base = BuildConfig.NEXT_PUBLIC_SUPABASE_URL.trim().trimEnd('/')
         val key = BuildConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY.trim()
         if (base.isEmpty() || key.isEmpty()) return null
         return try {
-            val url = "$base/rest/v1/free_resource_items?select=*" +
-                "&page_slug=eq.$pageSlug&kind=eq.$kind&published=eq.true" +
-                "&order=sort_order.asc,created_at.desc"
             val request = Request.Builder()
-                .url(url)
+                .url("$base/rest/v1/$path")
                 .addHeader("apikey", key)
                 .addHeader("Authorization", "Bearer $key")
                 .addHeader("Accept", "application/json")
@@ -121,7 +163,7 @@ object FreeResourcesLive {
                 .build()
             http.newCall(request).execute().use { resp ->
                 if (!resp.isSuccessful) {
-                    Log.w(TAG, "fetch $pageSlug failed: HTTP ${resp.code}")
+                    Log.w(TAG, "GET failed: HTTP ${resp.code}")
                     null
                 } else {
                     JSONArray(resp.body?.string().orEmpty())
