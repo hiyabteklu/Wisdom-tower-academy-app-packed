@@ -84,7 +84,7 @@ import com.wisdomtower.academy.ui.theme.WisdomPrimaryButton
  *
  * Implements:
  * 1. Stream & Semester grouping for Freshman (Natural vs Social, Sem 1 vs Sem 2)
- * 2. Collapsible GPA Calculator
+ * 2. GPA Calculator for Freshman (`GpaCalculatorCard.kt`, a port of the website calculator)
  *    (the Branch Leaderboard was removed in S4: it showed invented universities and points.
  *     The website reads real ranks from Supabase `get_leaderboard`; re-add only with that real data.)
  * 3. ECE Semester 1 & Semester 2 engineering courses with official codes & thumbnails
@@ -110,7 +110,6 @@ fun PackageDetailScreen(
 
     // Freshman filter state: 0 = All, 1 = Natural, 2 = Social, 3 = Sem 1, 4 = Sem 2
     var freshmanFilterIndex by remember { mutableIntStateOf(0) }
-    var gpaCalculatorOpen by remember { mutableStateOf(false) }
 
     // ECE semester selector: 1 = Sem 1, 2 = Sem 2
     var eceSemesterIndex by remember {
@@ -248,13 +247,10 @@ fun PackageDetailScreen(
                 }
             }
 
-            // Collapsible GPA Calculator (Freshman)
+            // GPA Calculator (Freshman), ported from the website calculator
             if (isFreshman) {
-                item(key = "collapsible_gpa") {
-                    CollapsibleGpaCard(
-                        isOpen = gpaCalculatorOpen,
-                        onToggle = { gpaCalculatorOpen = !gpaCalculatorOpen }
-                    )
+                item(key = "gpa_calculator") {
+                    GpaCalculatorCard()
                 }
             }
 
@@ -495,75 +491,6 @@ fun PackageDetailScreen(
 
             item(key = "bottom_space") {
                 Spacer(modifier = Modifier.height(30.dp))
-            }
-        }
-    }
-}
-
-@Composable
-fun CollapsibleGpaCard(isOpen: Boolean, onToggle: () -> Unit) {
-    WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 14.dp
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onToggle),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Calculate,
-                        contentDescription = null,
-                        tint = WisdomCyan,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "University GPA Calculator",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-
-                Icon(
-                    imageVector = if (isOpen) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = WisdomMuted,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            AnimatedVisibility(visible = isOpen) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Text(
-                        text = "Target Ethiopian Higher Education scale (A=4.0, B=3.0, C=2.0, D=1.0, F=0.0).",
-                        fontSize = 11.sp,
-                        color = WisdomMuted
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = "Target Term GPA: 3.80+", fontSize = 12.sp, color = WisdomAccentEmerald, fontWeight = FontWeight.Bold)
-                        Text(text = "Credits: 19 ECTS", fontSize = 12.sp, color = WisdomMuted)
-                    }
-                }
             }
         }
     }
