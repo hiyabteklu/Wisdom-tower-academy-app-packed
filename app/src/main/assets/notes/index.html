@@ -11,23 +11,75 @@
   body { color: #cbd5e1; font: 16px/1.7 -apple-system, Roboto, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; }
   #root { padding: 16px 16px 64px; max-width: 760px; margin: 0 auto; overflow-wrap: anywhere; }
   .msg { text-align: center; color: #94a3b8; padding: 40px 0; }
+
+  /* Summary (AI), plan step N10: same look as the website's NotesViewer */
+  #sumwrap { margin-top: 24px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); }
+  .sumbtn { border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.06); color: #e2e8f0; font: 600 .75rem/1 -apple-system, Roboto, sans-serif; padding: 9px 16px; border-radius: 999px; }
+  .sumbtn:disabled { opacity: .5; }
+  .sumbox { margin-top: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03); border-radius: 16px; padding: 14px 16px; color: rgba(255,255,255,.9); font-size: .9rem; line-height: 1.6; }
+  .sumbox .lbl { margin: 0 0 8px; font: 600 .62rem/1 -apple-system, Roboto, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; }
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root"><div id="note"></div><div id="sumwrap"></div></div>
 <script src="katex/katex.min.js"></script>
 <script src="richtext.js"></script>
 <script>
-/* Short-notes page (plan step N6). The renderer lives in richtext.js (shared with flashcards). Called from the app: window.setNote(text). */
-window.setNote = function (text) {
-  var root = document.getElementById("root");
-  try {
-    root.innerHTML = window.WTRich.render(text);
-  } catch (e) {
-    root.innerHTML = '<p class="msg">Could not display this note.</p>';
+/* Short-notes page (plan step N6). The renderer lives in richtext.js (shared with flashcards).
+ * Called from the app: window.setNote(text).
+ * "Summary" (plan step N10): the page cannot reach the network, so it asks the app through
+ * WTBridge.onSummarize({ id, text }) and the app answers with window.wtSummaryResult(id, text). */
+var noteText = "", summary = "", loading = false, pendingId = "", seq = 0;
+
+/* the AI writes math as \( ... \) and \[ ... \]; the shared renderer reads $ ... $ and $$ ... $$ */
+function aiText(s) {
+  return String(s == null ? "" : s)
+    .replace(/\\\[([\s\S]+?)\\\]/g, function (m, a) { return "$$" + a + "$$"; })
+    .replace(/\\\(([\s\S]+?)\\\)/g, function (m, a) { return "$" + a + "$"; });
+}
+
+function drawSummary() {
+  var w = document.getElementById("sumwrap");
+  if (!noteText) { w.innerHTML = ""; return; }
+  var h = '<button class="sumbtn" id="sumbtn"' + (loading ? " disabled" : "") + ">" + (loading ? "Summarizing\u2026" : "Summary") + "</button>";
+  if (summary) {
+    var body;
+    try { body = window.WTRich.render(aiText(summary)); } catch (e) { body = ""; }
+    h += '<div class="sumbox"><p class="lbl">Summary</p>' + body + "</div>";
   }
+  w.innerHTML = h;
+}
+
+window.setNote = function (text) {
+  var note = document.getElementById("note");
+  noteText = String(text == null ? "" : text);
+  summary = ""; loading = false; pendingId = "";
+  try {
+    note.innerHTML = window.WTRich.render(text);
+  } catch (e) {
+    note.innerHTML = '<p class="msg">Could not display this note.</p>';
+  }
+  drawSummary();
   window.scrollTo(0, 0);
 };
+
+window.wtSummaryResult = function (id, text) {
+  if (id !== pendingId) return;
+  pendingId = ""; loading = false; summary = text;
+  drawSummary();
+};
+
+document.getElementById("sumwrap").addEventListener("click", function (e) {
+  var t = e.target;
+  if (!t || t.id !== "sumbtn" || loading) return;
+  loading = true; summary = ""; pendingId = "s" + (++seq);
+  drawSummary();
+  if (!(window.WTBridge && window.WTBridge.onSummarize)) {
+    window.wtSummaryResult(pendingId, "Could not reach AI. Try again later.");
+    return;
+  }
+  window.WTBridge.onSummarize(JSON.stringify({ id: pendingId, text: noteText.slice(0, 8000) }));
+});
 </script>
 </body>
 </html>
