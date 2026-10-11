@@ -12,10 +12,14 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 
 /**
- * Seed data strictly mirroring website reference:
- * - src/data/packages.ts
- * - src/data/freshman.ts
- * - src/data/special-packages.ts
+ * Seed data copied from the website reference:
+ * - src/data/packages.ts        (package cards; descriptions here are shortened, see STATUS.md S4 item d)
+ * - src/data/freshman.ts        (subject names and descriptions, exact)
+ * - src/data/special-packages.ts (ECE courses, exact)
+ * - src/data/grade-subjects.ts  (grade subjects, exact)
+ * - src/data/remedial.ts        (remedial subjects: ids, names, descriptions exact; cover images are
+ *                                placeholders from the freshman set because the website's
+ *                                /images/remedial/{id}.jpg files are not packed in the app assets)
  */
 
 data class NativePackage(
@@ -39,13 +43,16 @@ data class NativeSubject(
     val path: String
 )
 
+// Exact copy of CORE_PACKAGE_INCLUDES in website-reference/src/data/packages.ts
 val CORE_INCLUDES = listOf(
     "Official Textbooks & Comprehensive Reference Books",
     "Chapter-by-Chapter Short Notes & Key Summaries",
     "Extensive Chapter Question Banks",
-    "Mock & Model Practice Exams with Solutions",
+    "Mock & Model Practice Exams",
     "All worked with official step-by-step solutions + Explain with AI",
-    "Flashcards for Rapid Active Recall"
+    "All official universities midterms & finals worked with detailed solutions",
+    "Flashcards for rapid active recall",
+    "And more!"
 )
 
 val CATALOG_PACKAGES = listOf(
@@ -203,28 +210,29 @@ val CATALOG_PACKAGES = listOf(
     )
 )
 
+// Names, descriptions and order copied exactly from website-reference/src/data/freshman.ts
 val FRESHMAN_SUBJECTS = listOf(
-    NativeSubject("math-natural", "Math Natural", "Calculus, analytic geometry, vectors, matrices, and algebraic systems for STEM disciplines.", "file:///android_asset/images/freshman/math-natural.jpg", "/academy/freshman/math-natural"),
-    NativeSubject("math-social", "Math Social", "Algebraic foundations, linear programming, financial mathematics, and inferential statistics.", "file:///android_asset/images/freshman/math-social.jpg", "/academy/freshman/math-social"),
-    NativeSubject("physics", "Physics", "Classical mechanics, vectors, work-energy theorem, fluid dynamics, and thermodynamics.", "file:///android_asset/images/freshman/physics.jpg", "/academy/freshman/physics"),
-    NativeSubject("chemistry", "Chemistry", "Atomic structure, chemical bonding, thermodynamics, kinetics, and chemical equilibrium.", "file:///android_asset/images/freshman/chemistry.jpg", "/academy/freshman/chemistry"),
-    NativeSubject("biology", "Biology", "Cellular biology, genetics, molecular mechanisms, evolutionary principles, and ecology.", "file:///android_asset/images/freshman/biology.jpg", "/academy/freshman/biology"),
-    NativeSubject("english-1", "English 1", "Academic reading strategies, complex grammatical structures, and expository writing mechanics.", "file:///android_asset/images/freshman/english-1.jpg", "/academy/freshman/english-1"),
-    NativeSubject("english-2", "English 2", "Advanced academic synthesis, argumentative discourse, thesis structure, and research writing.", "file:///android_asset/images/freshman/english-2.jpg", "/academy/freshman/english-2"),
-    NativeSubject("psychology", "Psychology", "Biological bases of behavior, cognitive psychology, learning theories, and motivation.", "file:///android_asset/images/freshman/psychology.jpg", "/academy/freshman/psychology"),
-    NativeSubject("logic", "Logic", "Formal propositions, truth tables, categorical logic, and fallacies in argumentation.", "file:///android_asset/images/freshman/logic.jpg", "/academy/freshman/logic"),
-    NativeSubject("geography", "Geography", "Physical landscape processes, climate dynamics, population distribution, and resource management.", "file:///android_asset/images/freshman/geography.jpg", "/academy/freshman/geography"),
-    NativeSubject("history", "History", "Historiographical analysis, ancient civilizations, regional state formation, and trade networks.", "file:///android_asset/images/freshman/history.jpg", "/academy/freshman/history"),
-    NativeSubject("civics", "Civics & Ethics", "Democratic governance principles, constitutional frameworks, human rights, and rule of law.", "file:///android_asset/images/freshman/civics.jpg", "/academy/freshman/civics"),
-    NativeSubject("economics", "Economics", "Microeconomic supply-demand models, consumer utility, macroeconomic indicators, and monetary policy.", "file:///android_asset/images/freshman/economics.jpg", "/academy/freshman/economics"),
-    NativeSubject("emerging-technology", "Emerging Technology", "Artificial intelligence, big data analytics, blockchain, cloud computing, and IoT architecture.", "file:///android_asset/images/freshman/emerging-technology.jpg", "/academy/freshman/emerging-technology"),
-    NativeSubject("cpp-programming", "C++ Programming", "Procedural syntax, control structures, pointers, memory allocation, and OOP paradigms.", "file:///android_asset/images/freshman/cpp-programming.jpg", "/academy/freshman/cpp-programming"),
-    NativeSubject("applied-math-1", "Applied Math 1", "Differential calculus, series expansions, Fourier transformations, and engineering applications.", "file:///android_asset/images/freshman/applied-math-1.jpg", "/academy/freshman/applied-math-1"),
-    NativeSubject("anthropology", "Anthropology", "Human cultural evolution, kinship structures, ethnographical methodologies, and linguistic anthropology.", "file:///android_asset/images/freshman/anthropology.jpg", "/academy/freshman/anthropology"),
-    NativeSubject("inclusiveness", "Inclusiveness", "Universal design for learning, accommodations, social equity frameworks, and barrier removal.", "file:///android_asset/images/freshman/inclusiveness.jpg", "/academy/freshman/inclusiveness"),
-    NativeSubject("global-trends", "Global Trends", "Contemporary geopolitical relations, international governance bodies, and transnational security.", "file:///android_asset/images/freshman/global-trends.jpg", "/academy/freshman/global-trends"),
-    NativeSubject("entrepreneurship", "Entrepreneurship", "Venture creation methodologies, business model canvas, market validation, and financial projections.", "file:///android_asset/images/freshman/entrepreneurship.jpg", "/academy/freshman/entrepreneurship"),
-    NativeSubject("physical-fitness", "Physical Fitness", "Cardiovascular conditioning, musculoskeletal development, nutrition, and lifelong wellness principles.", "file:///android_asset/images/freshman/physical-fitness.jpg", "/academy/freshman/physical-fitness")
+    NativeSubject("math-natural", "Math Natural", "Calculus (differentiation and integration), analytic geometry, vectors, matrices, and algebraic systems for STEM disciplines.", "file:///android_asset/images/freshman/math-natural.jpg", "/academy/freshman/math-natural"),
+    NativeSubject("math-social", "Math Social", "Algebraic foundations, linear programming, financial mathematics, descriptive and inferential statistics for social sciences.", "file:///android_asset/images/freshman/math-social.jpg", "/academy/freshman/math-social"),
+    NativeSubject("physical-fitness", "Physical Fitness", "Health-related fitness, cardiovascular endurance, strength development, and lifetime personal wellness principles.", "file:///android_asset/images/freshman/physical-fitness.jpg", "/academy/freshman/physical-fitness"),
+    NativeSubject("english-1", "English 1", "Academic reading strategies, complex grammatical structures, formal paragraph mechanics, and expository writing.", "file:///android_asset/images/freshman/english-1.jpg", "/academy/freshman/english-1"),
+    NativeSubject("physics", "Physics", "Classical mechanics, vectors, motion in one and two dimensions, work-energy theorem, fluid dynamics, and thermodynamics.", "file:///android_asset/images/freshman/physics.jpg", "/academy/freshman/physics"),
+    NativeSubject("psychology", "Psychology", "Biological bases of behavior, cognitive psychology, learning theories, motivation, personality development, and mental health.", "file:///android_asset/images/freshman/psychology.jpg", "/academy/freshman/psychology"),
+    NativeSubject("logic", "Logic", "Formal propositions, truth tables, categorical logic, syllogistic deductions, and fallacies in argumentation.", "file:///android_asset/images/freshman/logic.jpg", "/academy/freshman/logic"),
+    NativeSubject("geography", "Geography", "Physical landscape processes, climate dynamics, population distribution, and resource management across Ethiopia and the Horn.", "file:///android_asset/images/freshman/geography.jpg", "/academy/freshman/geography"),
+    NativeSubject("anthropology", "Anthropology", "Human biological and cultural evolution, ethnographic methods, indigenous traditions, and societal institutions in Ethiopia.", "file:///android_asset/images/freshman/anthropology.jpg", "/academy/freshman/anthropology"),
+    NativeSubject("civics", "Civics", "Constitutional principles, federal governance structure, human rights jurisprudence, rule of law, and civic participation.", "file:///android_asset/images/freshman/civics.jpg", "/academy/freshman/civics"),
+    NativeSubject("economics", "Economics", "Microeconomic behavior (supply, demand, consumer theory, production costs) and macroeconomic aggregates (GDP, fiscal policy, monetary systems).", "file:///android_asset/images/freshman/economics.jpg", "/academy/freshman/economics"),
+    NativeSubject("emerging-technology", "Emerging Technology", "Architectures and applications of AI, data science, IoT networks, cloud computing, cybersecurity, and additive manufacturing.", "file:///android_asset/images/freshman/emerging-technology.jpg", "/academy/freshman/emerging-technology"),
+    NativeSubject("entrepreneurship", "Entrepreneurship", "Venture ideation, business model design, market validation, Ethiopian regulatory frameworks, and financial planning.", "file:///android_asset/images/freshman/entrepreneurship.jpg", "/academy/freshman/entrepreneurship"),
+    NativeSubject("global-trends", "Global Trends", "Post-Cold War international order, regional cooperation in East Africa, global trade policies, multilateral institutions, and environmental diplomacy.", "file:///android_asset/images/freshman/global-trends.jpg", "/academy/freshman/global-trends"),
+    NativeSubject("history", "History", "Historical trajectory of Ethiopia and the Horn of Africa: statecraft, trade networks, modernization initiatives, and historical historiography.", "file:///android_asset/images/freshman/history.jpg", "/academy/freshman/history"),
+    NativeSubject("inclusiveness", "Inclusiveness", "Principles of universal design, disability rights, inclusive education paradigms, vulnerability assessments, and supportive public accommodations.", "file:///android_asset/images/freshman/inclusiveness.jpg", "/academy/freshman/inclusiveness"),
+    NativeSubject("chemistry", "Chemistry", "Atomic orbital theory, molecular geometry, stoichiometry, thermodynamics, chemical kinetics, chemical equilibria, and solution chemistry.", "file:///android_asset/images/freshman/chemistry.jpg", "/academy/freshman/chemistry"),
+    NativeSubject("biology", "Biology", "Cell architecture, bioenergetics, DNA replication, gene expression, plant and animal physiology, and ecological ecosystems.", "file:///android_asset/images/freshman/biology.jpg", "/academy/freshman/biology"),
+    NativeSubject("cpp-programming", "C++ Programming", "Structured problem solving, procedural programming in C++, pointer arithmetic, memory allocation, arrays, and object-oriented abstractions.", "file:///android_asset/images/freshman/cpp-programming.jpg", "/academy/freshman/cpp-programming"),
+    NativeSubject("applied-math-1", "Applied Math 1", "Applied differential equations, matrix methods, numerical approximations, and mathematical modeling for physical sciences.", "file:///android_asset/images/freshman/applied-math-1.jpg", "/academy/freshman/applied-math-1"),
+    NativeSubject("english-2", "English 2", "Advanced research methodology, source synthesis, APA/IEEE citation standards, literature reviews, argumentative essays, and oral academic presentations.", "file:///android_asset/images/freshman/english-2.jpg", "/academy/freshman/english-2")
 )
 
 val FRESHMAN_NATURAL_IDS = setOf(
@@ -381,13 +389,15 @@ val GRADE_12_SUBJECTS = listOf(
     NativeGradeSubject("exam-tips", "Exam tips", "Study tactics and exam-day guidance", "12", "/academy/grades/12/exam-tips")
 )
 
+// Ids, names, descriptions and paths copied exactly from website-reference/src/data/remedial.ts
+// (the website id for Maths is "maths", not "mathematics"). Cover images are placeholders taken
+// from the freshman set: the website's /images/remedial/{id}.jpg files are not in app assets yet.
 val REMEDIAL_SUBJECTS = listOf(
-    NativeSubject("english", "English", "Catch-up core grammar, reading comprehension and writing mechanics.", "file:///android_asset/images/freshman/english-1.jpg", "/academy/remedial/english"),
-    NativeSubject("mathematics", "Mathematics", "Foundational algebra, geometry, functions, and quantitative problems.", "file:///android_asset/images/freshman/math-natural.jpg", "/academy/remedial/mathematics"),
-    NativeSubject("physics", "Physics", "Mechanics, kinematics, work, heat, and basic physical sciences.", "file:///android_asset/images/freshman/physics.jpg", "/academy/remedial/physics"),
-    NativeSubject("chemistry", "Chemistry", "Atomic structure, chemical equations, solutions, and acids/bases.", "file:///android_asset/images/freshman/chemistry.jpg", "/academy/remedial/chemistry"),
-    NativeSubject("biology", "Biology", "Cell biology, genetics, ecosystems, and human physiology.", "file:///android_asset/images/freshman/biology.jpg", "/academy/remedial/biology"),
-    NativeSubject("history", "History", "Ethiopian and regional Horn history, statecraft, and modernization.", "file:///android_asset/images/freshman/history.jpg", "/academy/remedial/history"),
-    NativeSubject("geography", "Geography", "Physical geography, natural resources, cartography, and population.", "file:///android_asset/images/freshman/geography.jpg", "/academy/remedial/geography")
+    NativeSubject("english", "English", "Grammar fundamentals, reading comprehension, vocabulary expansion, sentence mechanics, and introductory essay writing.", "file:///android_asset/images/freshman/english-1.jpg", "/academy/remedial/english"),
+    NativeSubject("maths", "Maths", "Algebraic simplification, polynomials, quadratic equations, coordinate geometry, trigonometry, and logarithms.", "file:///android_asset/images/freshman/math-natural.jpg", "/academy/remedial/maths"),
+    NativeSubject("physics", "Physics", "Kinematics, Newton's laws of motion, gravitation, work and power, introductory electrostatics, and wave properties.", "file:///android_asset/images/freshman/physics.jpg", "/academy/remedial/physics"),
+    NativeSubject("chemistry", "Chemistry", "Classification of matter, periodic trends, chemical equations, stoichiometric calculations, and introductory acid-base chemistry.", "file:///android_asset/images/freshman/chemistry.jpg", "/academy/remedial/chemistry"),
+    NativeSubject("biology", "Biology", "Cell structure and function, basic taxonomy, human organ systems, plant anatomy, and basic genetics.", "file:///android_asset/images/freshman/biology.jpg", "/academy/remedial/biology"),
+    NativeSubject("history", "History", "Modern Ethiopian history, major political transitions, regional interactions, and key global historical milestones.", "file:///android_asset/images/freshman/history.jpg", "/academy/remedial/history"),
+    NativeSubject("geography", "Geography", "Map reading skills, Ethiopian physical geography, climate zones, population demographics, and economic activities.", "file:///android_asset/images/freshman/geography.jpg", "/academy/remedial/geography")
 )
-
