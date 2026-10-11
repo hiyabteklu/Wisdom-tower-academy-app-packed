@@ -93,6 +93,32 @@ tasks.register<Copy>("copyBrandAssets") {
 }
 tasks.named("preBuild").configure { dependsOn("copyBrandAssets") }
 
+// Packs the images the website added (Grade 9-12 subject photos, Entrance Questions pictures) from the
+// synced website-reference snapshot, so they stay packed in the app and follow every "Sync website reference".
+// Result: src/main/assets/images/web/grade-{9..12}/*, images/web/entrance/{natural,social,entrance-questions}.jpeg
+// (the folder names with spaces on the website are renamed here so the asset paths have no spaces).
+// If the source folder is missing the task copies nothing and the build still succeeds.
+tasks.register<Copy>("copyWebsiteImages") {
+  val webImages = rootDir.resolve("website-reference/public/images")
+  into(layout.projectDirectory.dir("src/main/assets/images/web"))
+  listOf("9", "10", "11", "12").forEach { g ->
+    from(webImages.resolve("Grade $g")) {
+      into("grade-$g")
+      exclude(".gitkeep")
+    }
+  }
+  from(webImages) {
+    include("natural.jpeg", "social.jpeg")
+    into("entrance")
+  }
+  from(webImages) {
+    include("Entrance questions.jpeg")
+    rename("Entrance questions.jpeg", "entrance-questions.jpeg")
+    into("entrance")
+  }
+}
+tasks.named("preBuild").configure { dependsOn("copyWebsiteImages") }
+
 tasks.register<Copy>("copyApkOutputs") {
   from(layout.buildDirectory.dir("outputs/apk/debug"))
   into(rootDir.resolve("build/outputs/apk/debug"))
