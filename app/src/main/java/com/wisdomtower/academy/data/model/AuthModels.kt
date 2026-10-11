@@ -32,7 +32,9 @@ data class UserProfile(
     val avatarPreset: String? = null,
     val avatarUrl: String? = null,
     val studentIdNumber: String? = null,
-    val createdAt: String? = null
+    val createdAt: String? = null,
+    /** website column `preferred_study_time`: morning | afternoon | evening | night */
+    val preferredStudyTime: String? = null
 )
 
 data class StudentIdData(
