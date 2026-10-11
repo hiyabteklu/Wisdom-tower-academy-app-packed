@@ -10,20 +10,17 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,15 +37,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -56,8 +50,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import com.wisdomtower.academy.ui.packages.OpenCard
+import com.wisdomtower.academy.ui.packages.openGrid
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
@@ -69,13 +63,10 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentRose
 import com.wisdomtower.academy.ui.theme.WisdomAccentSky
 import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
-import com.wisdomtower.academy.ui.theme.WisdomCardBorderSubtle
 import com.wisdomtower.academy.ui.theme.WisdomCyan
-import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
-import com.wisdomtower.academy.ui.theme.WisdomOpenButton
 import com.wisdomtower.academy.ui.theme.WisdomPrimaryButton
 import com.wisdomtower.academy.ui.theme.WisdomSecondaryButton
 import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
@@ -180,8 +171,6 @@ fun HomeScreen(
     userName: String? = null,
     onNavigateToUrl: (String) -> Unit
 ) {
-    val context = LocalContext.current
-
     Box(modifier = modifier.fillMaxSize()) {
         // Atmospheric radial background
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
@@ -203,42 +192,18 @@ fun HomeScreen(
                 )
             }
 
-            // 2. Welcome Image Card (Full width, 16:9, rounded, floating pill)
+            // 2. "Open Learning" card: the shared OpenCard (picture, title, Open). No gradient, no floating pill.
             item(key = "welcome_card") {
-                WelcomeCard(
-                    onOpenLearning = { onNavigateToUrl("/learning") }
+                OpenCard(
+                    title = "Open Learning",
+                    image = "file:///android_asset/images/home/academy.jpg",
+                    onClick = { onNavigateToUrl("/learning") }
                 )
             }
 
-            // 3. Program Cards Grid (2 columns on mobile, 16:10 top image, title + Open button)
-            items(
-                count = (HOME_PROGRAMS.size + 1) / 2,
-                key = { rowIndex -> "program_row_$rowIndex" }
-            ) { rowIndex ->
-                val first = HOME_PROGRAMS[rowIndex * 2]
-                val second = HOME_PROGRAMS.getOrNull(rowIndex * 2 + 1)
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        ProgramGridCard(
-                            program = first,
-                            onClick = { onNavigateToUrl(first.path) }
-                        )
-                    }
-                    if (second != null) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            ProgramGridCard(
-                                program = second,
-                                onClick = { onNavigateToUrl(second.path) }
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
+            // 3. Program cards: the shared OpenCard, two per row
+            openGrid("programs", HOME_PROGRAMS) { program ->
+                OpenCard(program.name, program.assetImage) { onNavigateToUrl(program.path) }
             }
 
             // 4. "Other resources" heading & 2-column grid
@@ -440,136 +405,6 @@ private fun HeroSection(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable(onClick = onSignUp)
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun WelcomeCard(
-    onOpenLearning: () -> Unit
-) {
-    val context = LocalContext.current
-    WisdomModernCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f),
-        cornerRadius = 20.dp,
-        onClick = onOpenLearning
-    ) {
-        // Academy visual with fallback
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data("file:///android_asset/images/home/academy.jpg")
-                .crossfade(true)
-                .error(android.R.drawable.stat_notify_sync)
-                .build(),
-            contentDescription = "Wisdom Tower Academy Learning",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        // Dark gradient overlay
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color(0x66000000),
-                            Color(0xCC000000)
-                        )
-                    )
-                )
-        )
-
-        // Floating pill "Open Learning →" bottom-right
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(12.dp)
-                .clip(CircleShape)
-                .background(Color(0xE6060B15))
-                .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.5f)), CircleShape)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.School,
-                contentDescription = null,
-                tint = WisdomCyan,
-                modifier = Modifier.size(14.dp)
-            )
-            Text(
-                text = "Open Learning",
-                color = Color.White,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = WisdomCyan,
-                modifier = Modifier.size(12.dp)
-            )
-        }
-    }
-}
-
-@Composable
-private fun ProgramGridCard(
-    program: ProgramItem,
-    onClick: () -> Unit
-) {
-    val context = LocalContext.current
-
-    WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 14.dp,
-        onClick = onClick
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // 16:10 Image on top
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 10f)
-                    .background(WisdomDark)
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(program.assetImage)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = program.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            // Single content row: title on left, Open button on right
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = program.name,
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 6.dp)
-                )
-
-                WisdomOpenButton(onClick = onClick)
             }
         }
     }
