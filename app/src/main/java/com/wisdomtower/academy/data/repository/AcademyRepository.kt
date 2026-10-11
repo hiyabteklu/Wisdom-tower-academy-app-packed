@@ -1,6 +1,5 @@
 package com.wisdomtower.academy.data.repository
 
-import com.wisdomtower.academy.data.model.EnrolledPackageRecord
 import com.wisdomtower.academy.data.model.LearningResourceItem
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.packages.NativePackage
@@ -84,23 +83,11 @@ object AcademyRepository {
         return "https://www.wisdom-tower-academy.live/api/content/pdf?path=appwrite:$fileId"
     }
 
-    /**
-     * NOTE: this is a deliberate "Free Academic Mode" placeholder, NOT real enrollment data.
-     * The website also keeps enrollments locally (applyDefaultPackagesForLevel), so there is
-     * no server table to read yet. Replace once a real enrollments source exists.
-     */
-    fun getEnrolledPackages(isLoggedIn: Boolean): List<EnrolledPackageRecord> {
-        if (!isLoggedIn) return emptyList()
-        // In Free Mode, all primary curriculum tracks are unlocked for registered students
-        return listOf(
-            EnrolledPackageRecord("freshman", "Freshman Academic Core", "Free Academic Mode", true),
-            EnrolledPackageRecord("grade-9-12", "Grade 9–12 Secondary Track", "Free Academic Mode", true),
-            EnrolledPackageRecord("ece-y3-sem-1", "Electrical & Computer Eng (Sem 1)", "Free Academic Mode", true),
-            EnrolledPackageRecord("ece-y3-sem-2", "Electrical & Computer Eng (Sem 2)", "Free Academic Mode", true),
-            EnrolledPackageRecord("uat", "University Admission Test (UAT)", "Free Academic Mode", true),
-            EnrolledPackageRecord("exit-exam", "National University Exit Exam", "Free Academic Mode", true)
-        )
-    }
+    // S4 item d: the invented `getEnrolledPackages()` ("Free Academic Mode" list of 6 packages with
+    // made-up names such as "Grade 9–12 Secondary Track", "National University Exit Exam") was removed.
+    // grep showed no caller. The website keeps enrollments only in the browser
+    // (`applyDefaultPackagesForLevel`, localStorage key `wt_enrolled_courses_v2`), so there is no real
+    // server source; see STATUS.md S6. The model class `EnrolledPackageRecord` was left in place.
 
     private fun JSONObject.optNullableString(key: String, fallback: String? = null): String? {
         if (!has(key) || isNull(key)) return fallback
