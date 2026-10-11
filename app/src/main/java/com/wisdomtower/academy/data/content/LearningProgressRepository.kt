@@ -26,13 +26,14 @@ import java.util.concurrent.TimeUnit
  * the same table and the same rules as `saveProgress` in `website-reference/src/lib/content.ts`:
  * read the existing row, add the seconds, keep the HIGHER progress percent, merge `meta` over the old `meta`,
  * then upsert on `user_id,resource_id`. One difference on purpose: `last_page` is only sent when given, so a
- * flashcard save never erases a page number saved by the PDF reader.
+ * flashcard save never erases a page number saved by the PDF reader (plan step N4 part 2 added the `lastPage`
+ * argument and [getLastPage]).
  *
  * Uses the student's own access token (refreshed when needed, one retry after a 401). Saves are queued one
  * after the other so a quick series of cards cannot overwrite a newer save with an older one.
  * Never logs tokens or bodies, only HTTP status codes.
  *
- * STATUS: written, NOT compiled, NOT tested on a device (plan step N3).
+ * STATUS: written, NOT compiled, NOT tested on a device (plan steps N3 and N4).
  */
 object LearningProgressRepository {
     private const val TAG = "LearningProgress"
@@ -54,14 +55,16 @@ object LearningProgressRepository {
 
     /**
      * Returns true when the server accepted the progress. [meta] is merged over the stored meta (for
-     * flashcards `{ "flashcards": { know, learning, again, seen, total, accuracy } }`).
+     * flashcards `{ "flashcards": { know, learning, again, seen, total, accuracy } }`). [lastPage] (1-based page
+     * number of a PDF) is written to `last_page` only when it is not null.
      */
     suspend fun saveProgress(
         resourceId: String,
         progressPct: Int,
         meta: JSONObject? = null,
         addSeconds: Int = 0,
-        addFocusSeconds: Int = 0
+        addFocusSeconds: Int = 0,
+        lastPage: Int? = null
     ): Boolean = mutex.withLock {
         withContext(Dispatchers.IO) {
             if (!UUID_REGEX.matches(resourceId)) return@withContext false
@@ -72,12 +75,12 @@ object LearningProgressRepository {
                 if (first == null || token1.isNullOrBlank() || !UUID_REGEX.matches(first.id)) {
                     return@withContext false
                 }
-                var status = write(first.id, token1, resourceId, progressPct, meta, addSeconds, addFocusSeconds)
+                var status = write(first.id, token1, resourceId, progressPct, meta, addSeconds, addFocusSeconds, lastPage)
                 if (status == STATUS_UNAUTHORIZED && AuthStateManager.refreshIfNeeded(force = true)) {
                     val second = AuthStateManager.currentUser.value
                     val token2 = second?.accessToken
                     if (second != null && !token2.isNullOrBlank() && UUID_REGEX.matches(second.id)) {
-                        status = write(second.id, token2, resourceId, progressPct, meta, addSeconds, addFocusSeconds)
+                        status = write(second.id, token2, resourceId, progressPct, meta, addSeconds, addFocusSeconds, lastPage)
                     }
                 }
                 status == STATUS_OK
@@ -90,6 +93,52 @@ object LearningProgressRepository {
         }
     }
 
+    /**
+     * The 1-based page number the student last reached in this PDF (`learning_progress.last_page`), or null when
+     * nothing is saved, the student is signed out, or the server cannot be reached. Never throws.
+     */
+    suspend fun getLastPage(resourceId: String): Int? = withContext(Dispatchers.IO) {
+        if (!UUID_REGEX.matches(resourceId)) return@withContext null
+        try {
+            AuthStateManager.refreshIfNeeded()
+            val user = AuthStateManager.currentUser.value
+            val token = user?.accessToken
+            if (user == null || token.isNullOrBlank() || !UUID_REGEX.matches(user.id)) {
+                return@withContext null
+            }
+            val url = "$supabaseUrl/rest/v1/learning_progress".toHttpUrl().newBuilder()
+                .addQueryParameter("select", "last_page")
+                .addQueryParameter("user_id", "eq.${user.id}")
+                .addQueryParameter("resource_id", "eq.$resourceId")
+                .addQueryParameter("limit", "1")
+                .build()
+            val request = Request.Builder()
+                .url(url)
+                .addHeader("apikey", anonKey)
+                .addHeader("Authorization", "Bearer $token")
+                .addHeader("Accept", "application/json")
+                .get()
+                .build()
+            http.newCall(request).execute().use { resp ->
+                if (!resp.isSuccessful) {
+                    Log.w(TAG, "getLastPage failed: HTTP ${resp.code}")
+                    return@withContext null
+                }
+                val rows = JSONArray(resp.body?.string().orEmpty())
+                if (rows.length() == 0) return@withContext null
+                val row = rows.getJSONObject(0)
+                if (row.isNull("last_page")) return@withContext null
+                val page = row.optInt("last_page", 0)
+                if (page >= 1) page else null
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "getLastPage failed: ${e.javaClass.simpleName}")
+            null
+        }
+    }
+
     /** One read + one upsert. Returns [STATUS_OK], [STATUS_UNAUTHORIZED] (HTTP 401) or [STATUS_FAILED]. */
     private fun write(
         userId: String,
@@ -98,7 +147,8 @@ object LearningProgressRepository {
         progressPct: Int,
         meta: JSONObject?,
         addSeconds: Int,
-        addFocusSeconds: Int
+        addFocusSeconds: Int,
+        lastPage: Int?
     ): Int {
         val table = "$supabaseUrl/rest/v1/learning_progress"
 
@@ -153,6 +203,9 @@ object LearningProgressRepository {
             .put("focus_seconds", focusSeconds + maxOf(0, addFocusSeconds))
             .put("last_opened_at", nowIso())
             .put("meta", mergedMeta)
+        if (lastPage != null && lastPage >= 1) {
+            body.put("last_page", lastPage)
+        }
 
         val writeUrl = table.toHttpUrl().newBuilder()
             .addQueryParameter("on_conflict", "user_id,resource_id")
