@@ -9,7 +9,7 @@
 ## 0. MANDATORY AGENT PROTOCOL (follow exactly)
 
 **At the start of every session**
-1. Read this file, then `STATUS.md`, `NATIVE_APP_BRIEF.md`, `ARCHITECTURE.md`, `docs/BUILD_PITFALLS.md`, `WEBSITE_CHANGES.md`. (Read `docs/BUILD_PITFALLS.md` BEFORE writing any code.)
+1. Read this file, then `STATUS.md`, `NATIVE_APP_BRIEF.md`, `ARCHITECTURE.md`, `docs/BUILD_PITFALLS.md`, `WEBSITE_CHANGES.md`, `docs/PENDING_PATCHES.md`, `docs/EDITING_LARGE_FILES.md`. (Read `docs/BUILD_PITFALLS.md` BEFORE writing any code.)
 2. Do NOT ask the owner to re-explain anything written here or in `STATUS.md`. Ask only what is listed in section 8 or is genuinely new.
 3. Take the first unchecked item in `STATUS.md` section B unless the owner says otherwise. Work on ONE task at a time.
 
@@ -18,6 +18,9 @@
 5. One small commit per task; commit message says what and why. Update the `STATUS.md` checklist in the same commit as the code.
 6. When the owner states a decision, preference or complaint, copy it into `STATUS.md` section A in their words with the date. Never drop earlier ones.
 7. You usually cannot build or run the app. Mark code `[~]` (written, not compiled/tested) until CI is green AND the owner has tested it. Never claim more.
+
+**Big files (rule 10, owner rule 2026-10-11)**
+10. NEVER tell the owner "this file is too big for my tools". The chat tools can only replace whole files, so for a huge file (`MainActivity.kt` about 245 KB, `STATUS.md` about 38 KB) you write a small **patch script** in `scripts/` (exact anchors, safe to run twice, tested on a copy), log it in `docs/PENDING_PATCHES.md`, and tell the owner to run GitHub > Actions > Apply pending patches. Full steps, script template and the list of existing scripts: **`docs/EDITING_LARGE_FILES.md`**. Small and medium files are simply resent whole.
 
 **Before you stop, or when quota is nearly gone**
 8. Write the final session-log entry in `STATUS.md`: what you did (commit ids), what is left, what the owner should test, what you were unsure about. **Log first, everything else after.**
