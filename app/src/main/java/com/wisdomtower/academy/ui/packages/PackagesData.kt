@@ -19,9 +19,10 @@ import com.wisdomtower.academy.ui.theme.WisdomCyan
  * - src/data/grade-subjects.ts  (grade subjects, exact; 2026-10-11 website update: no "Exam tips" in Grade 12,
  *                                subject photos from public/images/Grade N, packed by `copyWebsiteImages`)
  * - src/data/entrance-questions.ts (see EntranceData.kt; the package entry below is the "Entrance Questions" card)
- * - src/data/remedial.ts        (remedial subjects: ids, names, descriptions exact; cover images are
- *                                placeholders from the freshman set because the website's
- *                                /images/remedial/{id}.jpg files are not packed in the app assets)
+ * - src/data/remedial.ts        (remedial subjects: ids, names, descriptions exact; cover images are the files in
+ *                                website-reference/public/images/Remedial/, packed by `copyWebsiteImages` as
+ *                                images/web/remedial/{id}.jpg, because the website data file still names
+ *                                /images/remedial/{id}.jpg, which does not match those real file names)
  */
 
 data class NativePackage(
@@ -418,14 +419,17 @@ val GRADE_12_SUBJECTS = listOf(
 )
 
 // Ids, names, descriptions and paths copied exactly from website-reference/src/data/remedial.ts
-// (the website id for Maths is "maths", not "mathematics"). Cover images are placeholders taken
-// from the freshman set: the website's /images/remedial/{id}.jpg files are not in app assets yet.
+// (the website id for Maths is "maths", not "mathematics"). Cover pictures are the owner's files from
+// website-reference/public/images/Remedial/, packed by `copyWebsiteImages` as images/web/remedial/{id}.jpg.
+private fun remedialImg(id: String): String =
+    "file:///android_asset/images/web/remedial/$id.jpg"
+
 val REMEDIAL_SUBJECTS = listOf(
-    NativeSubject("english", "English", "Grammar fundamentals, reading comprehension, vocabulary expansion, sentence mechanics, and introductory essay writing.", "file:///android_asset/images/freshman/english-1.jpg", "/academy/remedial/english"),
-    NativeSubject("maths", "Maths", "Algebraic simplification, polynomials, quadratic equations, coordinate geometry, trigonometry, and logarithms.", "file:///android_asset/images/freshman/math-natural.jpg", "/academy/remedial/maths"),
-    NativeSubject("physics", "Physics", "Kinematics, Newton's laws of motion, gravitation, work and power, introductory electrostatics, and wave properties.", "file:///android_asset/images/freshman/physics.jpg", "/academy/remedial/physics"),
-    NativeSubject("chemistry", "Chemistry", "Classification of matter, periodic trends, chemical equations, stoichiometric calculations, and introductory acid-base chemistry.", "file:///android_asset/images/freshman/chemistry.jpg", "/academy/remedial/chemistry"),
-    NativeSubject("biology", "Biology", "Cell structure and function, basic taxonomy, human organ systems, plant anatomy, and basic genetics.", "file:///android_asset/images/freshman/biology.jpg", "/academy/remedial/biology"),
-    NativeSubject("history", "History", "Modern Ethiopian history, major political transitions, regional interactions, and key global historical milestones.", "file:///android_asset/images/freshman/history.jpg", "/academy/remedial/history"),
-    NativeSubject("geography", "Geography", "Map reading skills, Ethiopian physical geography, climate zones, population demographics, and economic activities.", "file:///android_asset/images/freshman/geography.jpg", "/academy/remedial/geography")
+    NativeSubject("english", "English", "Grammar fundamentals, reading comprehension, vocabulary expansion, sentence mechanics, and introductory essay writing.", remedialImg("english"), "/academy/remedial/english"),
+    NativeSubject("maths", "Maths", "Algebraic simplification, polynomials, quadratic equations, coordinate geometry, trigonometry, and logarithms.", remedialImg("maths"), "/academy/remedial/maths"),
+    NativeSubject("physics", "Physics", "Kinematics, Newton's laws of motion, gravitation, work and power, introductory electrostatics, and wave properties.", remedialImg("physics"), "/academy/remedial/physics"),
+    NativeSubject("chemistry", "Chemistry", "Classification of matter, periodic trends, chemical equations, stoichiometric calculations, and introductory acid-base chemistry.", remedialImg("chemistry"), "/academy/remedial/chemistry"),
+    NativeSubject("biology", "Biology", "Cell structure and function, basic taxonomy, human organ systems, plant anatomy, and basic genetics.", remedialImg("biology"), "/academy/remedial/biology"),
+    NativeSubject("history", "History", "Modern Ethiopian history, major political transitions, regional interactions, and key global historical milestones.", remedialImg("history"), "/academy/remedial/history"),
+    NativeSubject("geography", "Geography", "Map reading skills, Ethiopian physical geography, climate zones, population demographics, and economic activities.", remedialImg("geography"), "/academy/remedial/geography")
 )
