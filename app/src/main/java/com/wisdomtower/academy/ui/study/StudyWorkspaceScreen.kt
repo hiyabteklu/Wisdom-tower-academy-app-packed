@@ -214,6 +214,9 @@ internal fun safeHubUrl(basePath: String, hubId: String): String {
  * website's "Coming soon" message; a signed-in student without the package sees "Package required" (no price,
  * no purchase button: purchases happen on the website). The state is read when the screen opens and again after
  * every card tap (cached 30 s), so a change made on the website is picked up on the next visit.
+ *
+ * F1 (2026-10-12): while a native list or viewer is shown, [PauseShellWhileShown] pauses the hidden website
+ * WebView underneath (hypothesis for the owner's "vertical scroll freezes" report).
  */
 @Composable
 fun StudyWorkspaceScreen(
@@ -257,6 +260,8 @@ fun StudyWorkspaceScreen(
 
     val shown = view
     if (shown != null && contentScope != null) {
+        // F1: keep the hidden website WebView quiet while a native list or viewer is on screen.
+        PauseShellWhileShown()
         when (shown) {
             is WorkspaceView.HubList -> HubItemListScreen(
                 scopePath = contentScope,
