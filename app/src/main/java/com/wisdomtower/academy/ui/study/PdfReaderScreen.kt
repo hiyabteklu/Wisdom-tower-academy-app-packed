@@ -1,5 +1,6 @@
 package com.wisdomtower.academy.ui.study
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
@@ -32,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,23 +49,36 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.data.content.BookFileStore
+import com.wisdomtower.academy.data.content.LearningProgressRepository
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 
+private const val READER_PREFS = "pdf_reader_state"
+
 /**
  * Native book reader (plan step N4): downloads the PDF once (kept on the phone, so it opens offline later),
  * then draws the pages with Android's built-in `PdfRenderer`, one after the other, scrolling down.
  * Texts "Could not load this PDF." comes from the website's `HubContentView`.
  *
- * Not done yet (later steps): pinch zoom, remembering the last page / saving progress to `learning_progress`.
+ * Last page (N4 part 2): when [resourceId] is given, the reader opens at the page the student reached last
+ * (the copy kept on this phone first, so it also works offline; if there is none, the `last_page` saved in
+ * `learning_progress` by another device or an earlier install), and saves the page, the percent read and the
+ * reading seconds a few seconds after the page changes and when the reader closes (signed-in students only;
+ * a signed-out student still gets the phone copy).
+ *
+ * Not done yet: pinch zoom.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -73,7 +88,8 @@ fun PdfReaderScreen(
     url: String?,
     cacheKey: String,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    resourceId: String? = null
 ) {
     val context = LocalContext.current
     var progress by remember { mutableStateOf<Float?>(null) }
@@ -125,7 +141,7 @@ fun PdfReaderScreen(
             val readyFile = file
             val failure = error
             when {
-                readyFile != null -> PdfPages(readyFile, Modifier.fillMaxSize())
+                readyFile != null -> PdfPages(readyFile, resourceId, Modifier.fillMaxSize())
 
                 failure != null -> Column(
                     modifier = Modifier
@@ -169,7 +185,7 @@ fun PdfReaderScreen(
 }
 
 @Composable
-private fun PdfPages(file: File, modifier: Modifier) {
+private fun PdfPages(file: File, resourceId: String?, modifier: Modifier) {
     var renderer by remember(file) { mutableStateOf<PdfRenderer?>(null) }
     var failed by remember(file) { mutableStateOf(false) }
     val mutex = remember(file) { Mutex() }
@@ -218,6 +234,57 @@ private fun PdfPages(file: File, modifier: Modifier) {
     val currentPage by remember { derivedStateOf { listState.firstVisibleItemIndex + 1 } }
     val widthPx = (LocalConfiguration.current.screenWidthDp * LocalDensity.current.density).toInt().coerceAtLeast(240)
 
+    // --- Last page + progress (N4 part 2) ---------------------------------------------------------------
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(READER_PREFS, Context.MODE_PRIVATE) }
+    // false until the saved page has been restored, so the first screen (page 1) never overwrites it
+    var restored by remember(file) { mutableStateOf(false) }
+    val sessionStart = remember(file) { longArrayOf(System.currentTimeMillis()) }
+    val latestPage = rememberUpdatedState(currentPage)
+    val latestRestored = rememberUpdatedState(restored)
+
+    LaunchedEffect(file, pageCount) {
+        val id = resourceId
+        if (id != null) {
+            val local = prefs.getInt("last_page_$id", 0)
+            if (local in 2..pageCount) {
+                listState.scrollToItem(local - 1)
+            } else if (local == 0) {
+                val remote = LearningProgressRepository.getLastPage(id)
+                if (remote != null && remote in 2..pageCount &&
+                    listState.firstVisibleItemIndex == 0 && !listState.isScrollInProgress
+                ) {
+                    listState.scrollToItem(remote - 1)
+                }
+            }
+        }
+        restored = true
+    }
+
+    LaunchedEffect(currentPage, restored) {
+        val id = resourceId
+        if (!restored || id == null) return@LaunchedEffect
+        // Wait a moment: a quick fling over many pages is saved once, at the page where it stopped.
+        delay(400)
+        prefs.edit().putInt("last_page_$id", currentPage).apply()
+        delay(2100)
+        saveReading(id, currentPage, pageCount, sessionStart)
+    }
+
+    DisposableEffect(file, resourceId) {
+        onDispose {
+            val id = resourceId
+            if (id != null && latestRestored.value) {
+                val page = latestPage.value
+                prefs.edit().putInt("last_page_$id", page).apply()
+                // The screen is closing, so use a scope that is not cancelled with it.
+                CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                    saveReading(id, page, pageCount, sessionStart)
+                }
+            }
+        }
+    }
+
     Box(modifier = modifier) {
         LazyColumn(
             state = listState,
@@ -241,6 +308,24 @@ private fun PdfPages(file: File, modifier: Modifier) {
                 .padding(horizontal = 10.dp, vertical = 5.dp)
         )
     }
+}
+
+/**
+ * Sends the reading state to `learning_progress`: page, percent (page / pages, the server keeps the higher
+ * value) and the seconds since the last save (at most 10 minutes per save, so a phone left open does not
+ * count as reading). Does nothing when the student is signed out.
+ */
+private suspend fun saveReading(resourceId: String, page: Int, pageCount: Int, sessionStart: LongArray) {
+    val now = System.currentTimeMillis()
+    val seconds = ((now - sessionStart[0]) / 1000L).toInt().coerceIn(0, 600)
+    sessionStart[0] = now
+    val percent = (page * 100 / pageCount.coerceAtLeast(1)).coerceIn(0, 100)
+    LearningProgressRepository.saveProgress(
+        resourceId = resourceId,
+        progressPct = percent,
+        addSeconds = seconds,
+        lastPage = page
+    )
 }
 
 @Composable
