@@ -1,5 +1,6 @@
 package com.wisdomtower.academy.ui.learning
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,7 +38,10 @@ import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,6 +64,7 @@ import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
+import com.wisdomtower.academy.ui.study.NativeTutorScreen
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
@@ -85,6 +90,8 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
  *
  * Study Tools Dock (8 tiles):
  * - Timer, Planner, Targets, Notebook, Calculator, AI Tutor, Your status, Courses
+ * - The "AI Tutor" tile opens the NATIVE tutor ([NativeTutorScreen], plan step N10) inside this tab; the other
+ *   tools still go through `onOpenTool` to the website pop-ups.
  *
  * Curriculum Section:
  * - Header: Curriculum with "All Courses (X)", X = number of courses shown
@@ -143,6 +150,14 @@ fun LearningScreen(
     onSelectCourse: (NativePackage) -> Unit = {},
     onNavigateToUrl: (String) -> Unit = {}
 ) {
+    // Native AI tutor (N10): the "AI Tutor" tile shows it in place of this screen; Back returns here.
+    var tutorOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = tutorOpen) { tutorOpen = false }
+    if (tutorOpen) {
+        NativeTutorScreen(onBack = { tutorOpen = false }, modifier = modifier)
+        return
+    }
+
     val displayName = userProfile?.fullName ?: userName ?: "Scholar"
     val email = userProfile?.email ?: userEmail
     val studentIdData = remember(userProfile, isLoggedIn) {
@@ -357,6 +372,8 @@ fun LearningScreen(
                                             onClick = {
                                                 if (tile.key == "courses") {
                                                     onNavigateToUrl("/packages")
+                                                } else if (tile.key == "tutor") {
+                                                    tutorOpen = true
                                                 } else {
                                                     onOpenTool(tile.url)
                                                 }
