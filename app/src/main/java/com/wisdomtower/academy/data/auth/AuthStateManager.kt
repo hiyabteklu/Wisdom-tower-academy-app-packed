@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -24,6 +26,9 @@ object AuthStateManager {
     private const val KEY_USER_ID = "auth_user_id"
     private const val KEY_EMAIL = "auth_email"
     private const val KEY_FULL_NAME = "auth_full_name"
+
+    // Legacy plain-text token keys: only READ once to migrate old installs, then removed.
+    // Tokens now live encrypted in SecureSessionStore.
     private const val KEY_ACCESS_TOKEN = "auth_access_token"
     private const val KEY_REFRESH_TOKEN = "auth_refresh_token"
     private const val KEY_CREATED_AT = "auth_created_at"
@@ -34,6 +39,9 @@ object AuthStateManager {
     private const val KEY_TOWN_REGION = "auth_town_region"
     private const val KEY_AVATAR_PRESET = "auth_avatar_preset"
     private const val KEY_AVATAR_URL = "auth_avatar_url"
+
+    /** Refresh when fewer than this many seconds are left on the access token. */
+    private const val REFRESH_MARGIN_SECONDS = 120L
 
     private val _currentUser = MutableStateFlow<AuthUser?>(null)
     val currentUser: StateFlow<AuthUser?> = _currentUser.asStateFlow()
@@ -46,6 +54,13 @@ object AuthStateManager {
 
     private val scope = CoroutineScope(Dispatchers.IO)
     private var appContext: Context? = null
+
+    /** Full Supabase session JSON (has expires_at). Contains tokens: NEVER log it. */
+    @Volatile
+    private var sessionJson: String? = null
+
+    /** Only one refresh at a time: Supabase rotates refresh tokens, a second use of the old one fails. */
+    private val refreshMutex = Mutex()
 
     private var lastNotifiedAuthEventKey: String? = null
 
@@ -73,16 +88,29 @@ object AuthStateManager {
         .build()
 
     fun init(context: Context) {
-        appContext = context.applicationContext
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val ctx = context.applicationContext
+        appContext = ctx
+        val prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val uid = prefs.getString(KEY_USER_ID, null)
         if (!uid.isNullOrBlank()) {
+            val secureJson = SecureSessionStore.load(ctx)
+            val secureObj = secureJson?.let {
+                try {
+                    JSONObject(it)
+                } catch (_: Exception) {
+                    null
+                }
+            }
+            val legacyAccess = prefs.getString(KEY_ACCESS_TOKEN, null)
+            val legacyRefresh = prefs.getString(KEY_REFRESH_TOKEN, null)
+            val hasLegacyTokens = !legacyAccess.isNullOrBlank() || !legacyRefresh.isNullOrBlank()
+
             val user = AuthUser(
                 id = uid,
                 email = prefs.getString(KEY_EMAIL, null),
                 fullName = prefs.getString(KEY_FULL_NAME, null),
-                accessToken = prefs.getString(KEY_ACCESS_TOKEN, null),
-                refreshToken = prefs.getString(KEY_REFRESH_TOKEN, null),
+                accessToken = secureObj?.optNullableString("access_token") ?: legacyAccess,
+                refreshToken = secureObj?.optNullableString("refresh_token") ?: legacyRefresh,
                 createdAt = prefs.getString(KEY_CREATED_AT, null)
             )
             val profile = UserProfile(
@@ -101,11 +129,25 @@ object AuthStateManager {
             _currentUser.value = user
             _currentProfile.value = profile
             _isLoggedIn.value = true
+            sessionJson = secureJson
+
+            if (hasLegacyTokens) {
+                // One-time migration of an old install: move tokens into the encrypted store,
+                // then delete the plain-text copies.
+                if (secureJson == null && !user.accessToken.isNullOrBlank()) {
+                    val rebuilt = getAuthSessionJson()
+                    if (rebuilt.isNotBlank() && SecureSessionStore.save(ctx, rebuilt)) {
+                        sessionJson = rebuilt
+                    }
+                }
+                prefs.edit().remove(KEY_ACCESS_TOKEN).remove(KEY_REFRESH_TOKEN).apply()
+            }
         }
     }
 
     /**
-     * Called by the WebView JS bridge when localStorage['wt-academy-auth-v1'] changes
+     * Called by the WebView JS bridge when localStorage['wt-academy-auth-v1'] changes,
+     * and by the native sign-in screen with SupabaseAuthResult.Success.sessionJson.
      */
     fun syncAuthSession(rawJson: String?, isExplicitSignOut: Boolean = false) {
         if (rawJson.isNullOrBlank() || rawJson == "null" || rawJson == "undefined" || rawJson == "{}") {
@@ -165,6 +207,19 @@ object AuthStateManager {
                 createdAt = createdAt
             )
 
+            // Keep the FULL session (with expires_at) encrypted. A local-only session without a real
+            // access token (old website fallback) is never stored.
+            if (!accessToken.isNullOrBlank()) {
+                val normalized = withExpiry(obj)
+                if (normalized != sessionJson) {
+                    sessionJson = normalized
+                    appContext?.let { SecureSessionStore.save(it, normalized) }
+                }
+            } else {
+                sessionJson = null
+                appContext?.let { SecureSessionStore.clear(it) }
+            }
+
             _currentUser.value = authUser
             _currentProfile.value = profile
             _isLoggedIn.value = true
@@ -181,10 +236,82 @@ object AuthStateManager {
     }
 
     /**
+     * Result of the native sign-in screen: store it, then hand it to the WebView.
+     * Call from the UI after NativeSignInScreen reports success.
+     */
+    fun applyNativeSession(result: SupabaseAuthResult.Success, webView: WebView? = null) {
+        syncAuthSession(result.sessionJson)
+        injectSessionIntoWebView(webView)
+    }
+
+    private fun nowSeconds(): Long = System.currentTimeMillis() / 1000L
+
+    /** Adds expires_at (seconds) from expires_in when Supabase did not send it. */
+    private fun withExpiry(obj: JSONObject): String {
+        val missing = !obj.has("expires_at") || obj.isNull("expires_at")
+        if (missing && obj.has("expires_in") && !obj.isNull("expires_in")) {
+            obj.put("expires_at", nowSeconds() + obj.optLong("expires_in"))
+        }
+        return obj.toString()
+    }
+
+    private fun expiresAtSeconds(): Long? {
+        val raw = sessionJson ?: return null
+        return try {
+            val o = JSONObject(raw)
+            if (o.has("expires_at") && !o.isNull("expires_at")) o.optLong("expires_at").takeIf { it > 0L } else null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Refreshes the Supabase session when it is about to expire (or when [force] is true).
+     * Safe to call often (app resume, before opening a hub, after a 401). Returns true when the
+     * student still has a usable session afterwards. Always saves the NEW refresh token
+     * (Supabase rotates them). On a refresh that Supabase rejects, signs the student out cleanly.
+     * Network problems keep the current session and return false (try again later).
+     */
+    suspend fun refreshIfNeeded(webView: WebView? = null, force: Boolean = false): Boolean {
+        return refreshMutex.withLock {
+            val user = _currentUser.value ?: return@withLock false
+            val refreshToken = user.refreshToken
+            if (refreshToken.isNullOrBlank()) return@withLock false
+            val expiresAt = expiresAtSeconds()
+            val expiringSoon = expiresAt == null || expiresAt - nowSeconds() < REFRESH_MARGIN_SECONDS
+            if (!force && !expiringSoon) return@withLock true
+
+            when (val result = SupabaseAuthClient.refresh(refreshToken)) {
+                is SupabaseAuthResult.Success -> {
+                    syncAuthSession(result.sessionJson)
+                    if (webView != null) injectSessionIntoWebView(webView)
+                    true
+                }
+                is SupabaseAuthResult.Failure -> {
+                    if (result.kind == AuthFailureKind.WRONG_CREDENTIALS) {
+                        // The web page may already have rotated the token and told us (bridge).
+                        // Only sign out if our token is still the one Supabase just rejected.
+                        if (_currentUser.value?.refreshToken == refreshToken) {
+                            signOut(webView)
+                            false
+                        } else {
+                            true
+                        }
+                    } else {
+                        false
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Generates a valid JSON session string matching Supabase wt-academy-auth-v1 format
      * for injection into the WebView so web handoffs inherit the authenticated session.
+     * Prefers the stored full Supabase session (has token_type, expires_in, expires_at).
      */
     fun getAuthSessionJson(): String {
+        sessionJson?.let { if (it.isNotBlank()) return it }
         val user = _currentUser.value ?: return ""
         val profile = _currentProfile.value
         return try {
@@ -218,6 +345,8 @@ object AuthStateManager {
 
     /**
      * Injects the active native session into the WebView localStorage so handoffs are already signed in.
+     * Overwrites a stale or missing web session (different user, no token, or older expires_at) and
+     * then fires 'wta-auth-change'. A web session that is newer than ours is left alone.
      */
     fun injectSessionIntoWebView(webView: WebView?) {
         val json = getAuthSessionJson()
@@ -233,15 +362,14 @@ object AuthStateManager {
         val js = """
             (function(){
               try {
-                var cur = localStorage.getItem('wt-academy-auth-v1');
-                var shouldSet = !cur || cur === 'null' || cur === '{}' || cur.length < 15;
-                if (!shouldSet) {
-                  try {
-                    var parsed = JSON.parse(cur);
-                    if (!parsed.access_token || !parsed.user) shouldSet = true;
-                  } catch(e) { shouldSet = true; }
-                }
-                if (shouldSet) {
+                var ours = JSON.parse($escaped);
+                if (!ours || !ours.access_token || !ours.user) return;
+                var cur = null;
+                try { cur = JSON.parse(localStorage.getItem('wt-academy-auth-v1') || 'null'); } catch(e) { cur = null; }
+                var curOk = !!(cur && cur.access_token && cur.user && cur.user.id);
+                var sameUser = curOk && cur.user.id === ours.user.id;
+                var oursNewer = !sameUser || ((Number(cur.expires_at) || 0) < (Number(ours.expires_at) || 0));
+                if (!curOk || oursNewer) {
                   localStorage.setItem('wt-academy-auth-v1', $escaped);
                   if ($eduLevel && $eduLevel !== '""') localStorage.setItem('wt_student_academic_level', $eduLevel);
                   if ($stream && $stream !== '""') localStorage.setItem('wt_student_academic_stream', $stream);
@@ -265,8 +393,9 @@ object AuthStateManager {
             putString(KEY_USER_ID, user.id)
             putString(KEY_EMAIL, user.email)
             putString(KEY_FULL_NAME, user.fullName)
-            putString(KEY_ACCESS_TOKEN, user.accessToken)
-            putString(KEY_REFRESH_TOKEN, user.refreshToken)
+            // Tokens are NOT stored here any more (see SecureSessionStore); remove old plain copies.
+            remove(KEY_ACCESS_TOKEN)
+            remove(KEY_REFRESH_TOKEN)
             putString(KEY_CREATED_AT, user.createdAt)
             putString(KEY_STUDENT_ID, profile.studentIdNumber)
             putString(KEY_EDUCATION_LEVEL, profile.educationLevel)
@@ -292,8 +421,10 @@ object AuthStateManager {
         _currentUser.value = null
         _currentProfile.value = null
         _isLoggedIn.value = false
+        sessionJson = null
         resetAuthNotification()
         val ctx = appContext ?: return
+        SecureSessionStore.clear(ctx)
         val prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().clear().apply()
     }
