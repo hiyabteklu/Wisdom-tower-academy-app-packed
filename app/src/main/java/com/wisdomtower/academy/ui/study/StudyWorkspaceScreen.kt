@@ -53,15 +53,17 @@ private const val SITE_ORIGIN = "https://www.wisdom-tower-academy.live"
 
 /**
  * Hubs that open in a NATIVE screen (list from Supabase + native viewer) instead of the website page.
- * Only "books" for now (native PDF reader, plan steps N2 + N4). To switch a hub back to the website page
- * (for example if the native screen misbehaves on a phone), remove its id from this set: nothing else changes.
+ * "books" (native PDF reader, plan steps N2 + N4) and "short-notes" (local KaTeX page, step N6).
+ * To switch a hub back to the website page (for example if the native screen misbehaves on a phone),
+ * remove its id from this set: nothing else changes.
  */
-private val NATIVE_HUB_IDS = setOf("books")
+private val NATIVE_HUB_IDS = setOf("books", "short-notes")
 
 /** Which native screen is open on top of the six hub cards (null = the cards themselves). */
 private sealed interface WorkspaceView {
     data class HubList(val hubId: String) : WorkspaceView
     data class Pdf(val item: LearningResource) : WorkspaceView
+    data class Note(val item: LearningResource) : WorkspaceView
 }
 
 /**
@@ -159,10 +161,10 @@ internal fun safeHubUrl(basePath: String, hubId: String): String {
  * Entrance Questions year (2026-10-11): the year page is the exams page itself, so this screen opens it
  * straight away (LaunchedEffect) and, as a fallback if that is ever missed, shows a single "Exams" card.
  *
- * Native hubs (2026-10-11, plan N2 + N4): a hub listed in [NATIVE_HUB_IDS] opens [HubItemListScreen]
- * (rows read from Supabase) and then [PdfReaderScreen], all inside this screen, so `MainActivity` is not
- * involved. System Back goes PDF -> list -> the six cards. The other hubs still open the website page
- * through `onOpenHub`.
+ * Native hubs (2026-10-11, plan N2 + N4 + N6): a hub listed in [NATIVE_HUB_IDS] opens [HubItemListScreen]
+ * (rows read from Supabase) and then [PdfReaderScreen] (books) or [NotesReaderScreen] (short notes), all
+ * inside this screen, so `MainActivity` is not involved. System Back goes viewer -> list -> the six cards.
+ * The other hubs still open the website page through `onOpenHub`.
  * STATUS: not compiled.
  */
 @Composable
@@ -174,7 +176,6 @@ fun StudyWorkspaceScreen(
     onOpenHub: (hubId: String, hubUrl: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
     val entranceUrl = remember(basePath) { entranceYearUrl(basePath) }
     val contentScope = remember(basePath) { contentScopePath(basePath) }
     var view by remember(basePath) { mutableStateOf<WorkspaceView?>(null) }
@@ -188,6 +189,7 @@ fun StudyWorkspaceScreen(
     BackHandler(enabled = view != null) {
         view = when (view) {
             is WorkspaceView.Pdf -> WorkspaceView.HubList("books")
+            is WorkspaceView.Note -> WorkspaceView.HubList("short-notes")
             else -> null
         }
     }
@@ -201,7 +203,12 @@ fun StudyWorkspaceScreen(
                 hubName = NATIVE_LEARNING_HUBS.firstOrNull { it.id == shown.hubId }?.name ?: shown.hubId,
                 courseTitle = title,
                 onBack = { view = null },
-                onOpenItem = { item -> view = WorkspaceView.Pdf(item) },
+                onOpenItem = { item ->
+                    when (item.contentType) {
+                        "pdf" -> view = WorkspaceView.Pdf(item)
+                        "markdown" -> view = WorkspaceView.Note(item)
+                    }
+                },
                 modifier = modifier
             )
 
@@ -210,6 +217,13 @@ fun StudyWorkspaceScreen(
                 url = LearningContentRepository.appwriteViewUrl(shown.item.storagePath),
                 cacheKey = shown.item.id,
                 onBack = { view = WorkspaceView.HubList("books") },
+                modifier = modifier
+            )
+
+            is WorkspaceView.Note -> NotesReaderScreen(
+                title = shown.item.title,
+                resourceId = shown.item.id,
+                onBack = { view = WorkspaceView.HubList("short-notes") },
                 modifier = modifier
             )
         }
