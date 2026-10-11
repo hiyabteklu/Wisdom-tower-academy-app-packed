@@ -1,7 +1,9 @@
 package com.wisdomtower.academy
 
+import android.app.Activity
 import android.app.Application
 import android.os.Build
+import android.os.Bundle
 import coil.Coil
 import coil.ImageLoader
 import coil.ImageLoaderFactory
@@ -9,8 +11,15 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.memory.MemoryCache
 import coil.request.ImageRequest
+import com.wisdomtower.academy.data.auth.AuthStateManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class WisdomTowerApplication : Application(), ImageLoaderFactory {
+
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun newImageLoader(): ImageLoader {
         return ImageLoader.Builder(this)
@@ -61,6 +70,21 @@ class WisdomTowerApplication : Application(), ImageLoaderFactory {
 
         // Quiet background FCM token registration
         com.wisdomtower.academy.fcm.FcmTokenRegistrar.checkAndRegisterToken(this)
+
+        // Load the saved (encrypted) sign-in session, then keep it fresh: every time the app comes
+        // to the foreground, renew the Supabase session if it is about to expire (no-op otherwise).
+        AuthStateManager.init(this)
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityResumed(activity: Activity) {
+                appScope.launch { AuthStateManager.refreshIfNeeded() }
+            }
+            override fun onActivityPaused(activity: Activity) {}
+            override fun onActivityStopped(activity: Activity) {}
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+            override fun onActivityDestroyed(activity: Activity) {}
+        })
     }
 
     companion object {
