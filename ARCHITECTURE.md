@@ -1,23 +1,26 @@
 # Wisdom Tower Academy — Architecture (Website + Android App)
 
-> **Read this first.** Single source of truth for how the website and the Android app work together.
+> **Read this first**, together with `NATIVE_APP_BRIEF.md`. If the two ever disagree, `NATIVE_APP_BRIEF.md` (newer) wins for *what to build*; this file describes *how the existing shell works*.
 >
-> **Last updated:** 2026-09-17
+> **Last updated:** 2026-10-11
 
 ---
 
-## 1. Two repositories
+## 1. Repositories
 
 | Repo | Purpose | Live URL / Role |
 |------|---------|-----------------|
-| [hiyabteklu/Wisdom-tower-academy](https://github.com/hiyabteklu/Wisdom-tower-academy) | **Website** (source of truth for content, auth, packages, progress, flashcards, PDFs, free resources) | https://wisdom-tower-academy.live |
-| [hiyabteklu/Wisdom-tower-academy-app](https://github.com/hiyabteklu/Wisdom-tower-academy-app) | **Android app** — native shell that loads the website | Built via GitHub Actions → debug APK artifact |
+| [hiyabteklu/Wisdom-tower-academy](https://github.com/hiyabteklu/Wisdom-tower-academy) | **Website** (source of truth for content, auth, packages, progress, flashcards, PDFs, free resources) | https://www.wisdom-tower-academy.live |
+| [hiyabteklu/Wisdom-tower-academy-app-packed](https://github.com/hiyabteklu/Wisdom-tower-academy-app-packed) | **Android app (current)** — Compose screens beside the WebView shell | GitHub Actions → APK / AAB |
+| [hiyabteklu/Wisdom-tower-academy-app](https://github.com/hiyabteklu/Wisdom-tower-academy-app) | Older WebView-only app (legacy) | Not the active project |
 
-There is **no separate backend** for the app. The app is a secure, offline-capable window around the live website.
+There is **no separate backend** for the app. Data comes from the website's API routes (and, for auth, the same Supabase project).
+
+**One host only:** always use `https://www.wisdom-tower-academy.live`. localStorage (where the Supabase session lives) is per-origin, so mixing the bare domain, `www.` and `*.vercel.app` silently loses the login.
 
 ---
 
-## 2. How the app works (current reality — Sep 2026)
+## 2. How the app works (WebView shell — still the fallback and the host for learning content)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -30,11 +33,11 @@ There is **no separate backend** for the app. The app is a secure, offline-capab
 │  │  [☰ Menu]  Logo + "Wisdom Tower Academy"  [🔔 Notif]  │  │
 │  ├───────────────────────────────────────────────────────┴  │
 │  │                                                       │  │
-│  │              WebView (full content area)              │  │
-│  │         loads https://wisdom-tower-academy.live       │  │
+│  │   Native Compose screen  OR  WebView (full content)   │  │
+│  │         loads https://www.wisdom-tower-academy.live   │  │
 │  │                                                       │  │
 │  ├───────────────────────────────────────────────────────┴  │
-│  │  Bottom nav: Home / Learning / Packages / Account / Settings │
+│  │  Bottom nav (see open question below)                 │  │
 │  └───────────────────────────────────────────────────────┘  │
 │                                                             │
 │  + OfflineVault (private app storage for PDFs)              │
@@ -42,44 +45,47 @@ There is **no separate backend** for the app. The app is a secure, offline-capab
 └─────────────────────────────────────────────────────────────┘
 ```
 
+> **Open question:** `NATIVE_APP_BRIEF.md` rule 7 says 4 tabs (Home / Learning / Packages / Account); the Sep-27 change log entry below added Settings as a 5th. Check `StructuralNav.kt` and decide; then fix whichever doc is wrong.
+
 ### Key behaviours
 
 1. **Website is the source of truth**
 2. **Native chrome owns the header + bottom nav** — fixed; website header/footer hidden via injected CSS
 3. **Status bar is clean** — solid navy behind system icons; content padded with WindowInsets.statusBars
 4. **Top-left menu** — Compact native Card with About, Contact us, FAQ, Privacy, Terms
-5. **Notification bell** opens `https://wisdom-tower-academy.live/notifications` only (package / order status list — **not** Settings)
+5. **Notification bell** opens `https://www.wisdom-tower-academy.live/notifications` only (package / order status list — **not** Settings)
 6. Visiting `/notifications` must **not** force bottom-nav tab to Home or Account
-7. **5-tab bottom navigation** — Home, Learning, Packages, Account, Settings
-8. **Offline PDF vault** in private app storage
-9. **FLAG_SECURE** on
-10. **Back button** uses WebView history first
-11. **Offline cache** — Static pages, assets, and PDFs remain vaulted; dynamic list APIs are not persisted
-12. **Study Tool Overlay Layer** — Opening AI Tutor, Calculator, Notebook, Timer, or Planner never navigates the main WebView away. The underlying study page (notes, books, question bank, scroll position) remains fully loaded and alive. The tool runs in an independent overlay layer on top; tapping "Done", Close, or device Back dismisses the overlay and immediately reveals the exact study note intact.
+7. **Offline PDF vault** in private app storage
+8. **FLAG_SECURE** on
+9. **Back button** uses WebView history first
+10. **Offline cache** — Static pages, assets, and PDFs remain vaulted; dynamic list APIs are not persisted
+11. **Study Tool Overlay Layer** — Opening AI Tutor, Calculator, Notebook, Timer, or Planner never navigates the main WebView away. The underlying study page (notes, books, question bank, scroll position) remains fully loaded and alive. The tool runs in an independent overlay layer on top; tapping "Done", Close, or device Back dismisses the overlay and immediately reveals the exact study note intact.
 
 ---
 
-## 3. What is *not* the current architecture
+## 3. Native Compose migration (in progress)
 
-Pure native Jetpack Compose rewrite is future only. This WebView shell is production.
+Native screens (Home, Packages, Learning landing, Account, Settings, Guides) are built beside the WebView shell, per `NATIVE_APP_BRIEF.md`. The WebView shell is **not** deleted: it stays as the fallback and as the host for books/PDFs, flashcards, notes, exams, question banks, AI tutor and checkout.
+
+### Auth (how it really works today)
+
+- The website stores its session in `localStorage['wt-academy-auth-v1']`. The app does **not** sign in by itself; `AuthStateManager` copies that value through a JS bridge.
+- Known gaps (see `WEBSITE_CHANGES.md` and the Oct-11 review): the app never refreshes tokens, the website can create local-only fake sessions when Supabase login fails, and several API routes the app calls do not exist on the website.
+- Target: native Supabase sign-in + token refresh + session handed to the WebView. Until then, treat native auth state as a mirror of the WebView, not as independent auth.
 
 ---
 
 ## 4. Developer quick start
 
 ```bash
-git clone https://github.com/hiyabteklu/Wisdom-tower-academy-app.git
-cd Wisdom-tower-academy-app
+git clone https://github.com/hiyabteklu/Wisdom-tower-academy-app-packed.git
+cd Wisdom-tower-academy-app-packed
 ./gradlew assembleDebug
 ```
 
 - Main: `app/src/main/java/com/wisdomtower/academy/MainActivity.kt`
 - Offline: `OfflineVault.kt`
-- CI: `.github/workflows/build-apk.yml` uploads **Wisdom-Tower-Academy-debug** artifact
-
-### APK from CI
-
-Actions → **Build Debug APK** → open a green run → Artifacts → **Wisdom-Tower-Academy-debug**
+- CI: see `.github/workflows/` (the **Build Production AAB & APK** action must stay green)
 
 ---
 
@@ -117,6 +123,7 @@ Live in website: `FlashcardViewer.tsx` + ui-polish `.fc-*` classes — 3D flip, 
 
 | Date | Change |
 |------|--------|
+| 2026-10-11 | Docs/config cleanup: single host `www.wisdom-tower-academy.live` (`.env.example` SITE_URL fixed), repo table and section 3 updated to match `NATIVE_APP_BRIEF.md`, auth reality documented. |
 | 2026-10-05 | WebCacheVault v3 & Dynamic Content Reliability: (1) Bumped vault index to v3 (`web_index_v3.json`) with automated self-healing migration that purges dynamic list APIs and degraded empty shells. (2) Strictly isolated all dynamic list and catalog endpoints (Supabase, `/_next/data/`, `_rsc`, Next.js route payloads, `/api/`, `/graphql`) so online sessions always fetch fresh lists without disk caching. (3) Added `isDegradedOrEmptyHtml` guard to prevent vaulting 'Offline — open this hub once online to cache it' or error states during weak network sessions, keeping rich offline pages and PDFs intact. (4) Fixed weak network recovery by preventing premature offline page aborts in `checkRawErrors()` and `showOfflinePage()` when online, and increased mobile network timeouts. (5) Replaced blanket immutable caching with safe `no-cache, must-revalidate` headers for HTML/JSON, plus an automated one-time `clearCache(false)` on v3 first run so users never need to wipe app data for routine updates. |
 | 2026-09-29 | Aggressive caching, lifecycle recovery & navigation fix: (1) Upgraded WebCacheVault to 6-thread concurrent worker pool, expanded CORE_HUBS with Grade 12 & Freshman hubs, enabled parallel pre-caching of all srcset and Next.js thumbnails on launch so internet bandwidth actively caches the site, and served all cached resources from disk online for 0ms loads. (2) Added onRenderProcessGone recovery in WebViewClient to prevent white/dead frozen state when switching back from heavy apps like TikTok. (3) Added lifecycle onResume/onPause webView timers handling and unconditional loadUrl in navigateTo so bottom navigation tabs reliably transition. (4) Scoped header hiding strictly to fixed site top bar and removed dragstart touch interceptors so hub cards open instantly. |
 | 2026-09-29 | Fixed Study Timer: removed duplicate floating music-player style widget from WebView content area. Added compact status pill in the native top bar cleanly under the notification bell that only displays while actively running. Added reliable inline (X) stop control that updates web localStorage + events, and ensured timer indicator never awkwardly persists or reappears after app restart when stopped. |
