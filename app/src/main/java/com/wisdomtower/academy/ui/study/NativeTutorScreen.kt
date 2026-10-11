@@ -1,0 +1,767 @@
+package com.wisdomtower.academy.ui.study
+
+import android.annotation.SuppressLint
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.os.SystemClock
+import android.webkit.JavascriptInterface
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import com.wisdomtower.academy.data.content.AiTutorRepository
+import com.wisdomtower.academy.data.content.TutorEvent
+import com.wisdomtower.academy.data.content.TutorMessage
+import com.wisdomtower.academy.data.content.TutorSession
+import com.wisdomtower.academy.data.content.TutorSessionStore
+import com.wisdomtower.academy.ui.theme.AtmosphereBackground
+import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
+import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
+import com.wisdomtower.academy.ui.theme.WisdomCyan
+import com.wisdomtower.academy.ui.theme.WisdomMuted
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
+
+// Texts copied from website-reference/src/components/learning/AiTutor.tsx
+private const val CALM_BUSY =
+    "The Wisdom Tower AI Tutor is currently experiencing high demand. Please wait a moment and try asking your question again."
+private const val STOPPED = "Response stopped. What would you like to explore instead?"
+private const val CUT_NOTICE = "\n\n*(Response stopped due to high server demand. You can ask to continue.)*"
+
+/** Marks a failed stream (thrown inside the collector, caught by the sender). */
+private class TutorStreamFailure : Exception()
+
+/** State of the running request that must not trigger recomposition. [token] changes on every send and abort. */
+private class TutorStreamHolder {
+    var job: Job? = null
+    var token = 0
+    var received = false
+    var sessionId: String? = null
+    var lastPush = 0L
+}
+
+/**
+ * Native AI tutor (plan step N10, port of website-reference/src/components/learning/AiTutor.tsx), opened from the
+ * "AI Tutor" tile of the Learning tab instead of the website pop-up.
+ *  - Chats: several saved chats on this phone ([TutorSessionStore]), "Chats" list, "New", clear, delete, "Clear All
+ *    Past Chats", chat titled from the first question (36 characters), like the website.
+ *  - Answers: streamed from the website route through [AiTutorRepository]; the message list is drawn by the local
+ *    page `assets/notes/tutor.html` with the shared KaTeX renderer (math, tables, ==highlights== as in the notes).
+ *  - Texts (welcome, prompts, placeholders, error and stop notices, follow-up chips) copied from `AiTutor.tsx`.
+ * Differences from the website: no avatar picture on the welcome screen and answers; the chat list opens as a full
+ * panel instead of a side sheet.
+ *
+ * STATUS: written, NOT compiled, NOT tested on a device.
+ */
+@Composable
+fun NativeTutorScreen(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    courseContext: String? = null
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val initial = remember {
+        TutorSessionStore.load(context) ?: TutorSessionStore.newSession().let { listOf(it) to it.id }
+    }
+    var sessions by remember { mutableStateOf(initial.first) }
+    var activeId by remember { mutableStateOf(initial.second) }
+    var showHistory by remember { mutableStateOf(false) }
+    var input by remember { mutableStateOf("") }
+    var isThinking by remember { mutableStateOf(false) }
+    var isStreaming by remember { mutableStateOf(false) }
+    var pageReady by remember { mutableStateOf(false) }
+    val holder = remember { TutorStreamHolder() }
+    val webRef = remember { arrayOfNulls<WebView>(1) }
+    val latestSessions by rememberUpdatedState(sessions)
+    val latestActive by rememberUpdatedState(activeId)
+
+    val activeSession = sessions.firstOrNull { it.id == activeId } ?: sessions.first()
+    val busy = isThinking || isStreaming
+
+    // ---- chat helpers (ported from AiTutor.tsx) ----
+
+    fun updateSession(id: String, transform: (List<TutorMessage>) -> List<TutorMessage>) {
+        sessions = sessions.map { s ->
+            if (s.id != id) {
+                s
+            } else {
+                val next = transform(s.messages)
+                var title = s.title
+                if (title == "New chat" || title == "New Study Session") {
+                    val firstUser = next.firstOrNull { it.role == "user" }
+                    if (firstUser != null && firstUser.content.isNotBlank()) {
+                        val cleaned = firstUser.content.replace(Regex("\\s+"), " ").trim()
+                        title = if (cleaned.length > 36) cleaned.take(36).trim() + "…" else cleaned
+                    }
+                }
+                s.copy(title = title, messages = next, updatedAt = System.currentTimeMillis())
+            }
+        }
+    }
+
+    fun abortStream() {
+        holder.token += 1
+        holder.job?.cancel()
+        holder.job = null
+        isThinking = false
+        isStreaming = false
+    }
+
+    fun send(textOverride: String?) {
+        val q = (textOverride ?: input).trim()
+        if (q.isEmpty() || isThinking || isStreaming) return
+
+        val sid = activeId
+        val userMsg = TutorMessage("user-" + System.currentTimeMillis(), "user", q, timeLabel())
+        val before = sessions.firstOrNull { it.id == sid }?.messages ?: emptyList()
+        val history = (before + userMsg).map { it.role to it.content }
+        updateSession(sid) { it + userMsg }
+        input = ""
+        isThinking = true
+        isStreaming = false
+
+        holder.token += 1
+        val token = holder.token
+        holder.received = false
+        holder.sessionId = sid
+        val botId = "bot-" + System.currentTimeMillis()
+        val botTime = timeLabel()
+
+        holder.job = scope.launch {
+            var acc = ""
+            try {
+                AiTutorRepository.stream(history, courseContext).collect { ev ->
+                    if (holder.token == token) {
+                        when (ev) {
+                            is TutorEvent.Chunk -> {
+                                if (!holder.received) {
+                                    holder.received = true
+                                    isThinking = false
+                                    isStreaming = true
+                                    acc = ev.text
+                                    updateSession(sid) { it + TutorMessage(botId, "assistant", acc, botTime) }
+                                } else {
+                                    acc += ev.text
+                                    updateSession(sid) { list ->
+                                        list.map { if (it.id == botId) it.copy(content = acc) else it }
+                                    }
+                                }
+                            }
+
+                            is TutorEvent.Suggestions -> {
+                                updateSession(sid) { list ->
+                                    list.map { if (it.id == botId) it.copy(suggestions = ev.items) else it }
+                                }
+                            }
+
+                            TutorEvent.Done -> {
+                                // nothing to do: the answer is complete
+                            }
+
+                            TutorEvent.Failed -> throw TutorStreamFailure()
+                        }
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (holder.token == token) {
+                    if (!holder.received) {
+                        updateSession(sid) {
+                            it + TutorMessage(
+                                "err-" + System.currentTimeMillis(),
+                                "assistant",
+                                CALM_BUSY,
+                                botTime,
+                                listOf("Try asking again", "Explain in simpler terms", "Give me an example")
+                            )
+                        }
+                    } else {
+                        updateSession(sid) { list ->
+                            list.map {
+                                if (it.id == botId) {
+                                    it.copy(
+                                        content = it.content + CUT_NOTICE,
+                                        suggestions = listOf("Please continue where you left off", "Summarize this topic")
+                                    )
+                                } else {
+                                    it
+                                }
+                            }
+                        }
+                    }
+                }
+            } finally {
+                if (holder.token == token) {
+                    isThinking = false
+                    isStreaming = false
+                    holder.job = null
+                }
+            }
+        }
+    }
+
+    fun stop() {
+        val sid = holder.sessionId
+        val hadText = holder.received
+        abortStream()
+        if (!hadText && sid != null) {
+            updateSession(sid) {
+                it + TutorMessage(
+                    "bot-" + System.currentTimeMillis(),
+                    "assistant",
+                    STOPPED,
+                    timeLabel(),
+                    listOf("Give me a practice problem", "Explain the formula step-by-step", "What are common exam pitfalls?")
+                )
+            }
+        }
+    }
+
+    fun newChat() {
+        abortStream()
+        val fresh = TutorSessionStore.newSession()
+        sessions = listOf(fresh) + sessions
+        activeId = fresh.id
+        input = ""
+        showHistory = false
+    }
+
+    fun selectSession(id: String) {
+        if (id == activeId) {
+            showHistory = false
+            return
+        }
+        abortStream()
+        activeId = id
+        input = ""
+        showHistory = false
+    }
+
+    fun deleteSession(id: String) {
+        if (id == activeId) abortStream()
+        val filtered = sessions.filter { it.id != id }
+        if (filtered.isEmpty()) {
+            val fresh = TutorSessionStore.newSession()
+            sessions = listOf(fresh)
+            activeId = fresh.id
+        } else {
+            sessions = filtered
+            if (id == activeId) activeId = filtered[0].id
+        }
+    }
+
+    fun clearAll() {
+        abortStream()
+        val fresh = TutorSessionStore.newSession()
+        sessions = listOf(fresh)
+        activeId = fresh.id
+        showHistory = false
+        input = ""
+    }
+
+    fun clearChat() {
+        if (isThinking || isStreaming) abortStream()
+        updateSession(activeId) { emptyList() }
+    }
+
+    // ---- bridge from the message page ----
+
+    val bridge = remember {
+        TutorBridge(
+            onSend = { text -> scope.launch { send(text) }; Unit },
+            onCopy = { text ->
+                scope.launch {
+                    try {
+                        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        cm.setPrimaryClip(ClipData.newPlainText("AI Tutor", text))
+                    } catch (e: Exception) {
+                        // copying is best effort
+                    }
+                }
+                Unit
+            }
+        )
+    }
+
+    // ---- save the chats (debounced) and when the screen is left ----
+
+    LaunchedEffect(sessions, activeId) {
+        delay(250)
+        TutorSessionStore.save(context, sessions, activeId)
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            holder.token += 1
+            holder.job?.cancel()
+            TutorSessionStore.save(context, latestSessions, latestActive)
+        }
+    }
+
+    // ---- push the messages into the page (at most about every 80 ms while streaming) ----
+
+    LaunchedEffect(pageReady, activeSession.id, activeSession.messages, isThinking, isStreaming) {
+        if (pageReady) {
+            val wait = holder.lastPush + 80 - SystemClock.elapsedRealtime()
+            if (wait > 0) delay(wait)
+            holder.lastPush = SystemClock.elapsedRealtime()
+            val json = pageJson(activeSession.id, activeSession.messages, isThinking, isStreaming)
+            webRef[0]?.evaluateJavascript("window.wtTutorSet(${JSONObject.quote(json)});", null)
+        }
+    }
+
+    BackHandler(enabled = showHistory) { showHistory = false }
+
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = WisdomCyan,
+        unfocusedBorderColor = WisdomBorderWhite,
+        focusedTextColor = Color.White,
+        unfocusedTextColor = Color.White,
+        focusedContainerColor = Color(0xFF060B17),
+        unfocusedContainerColor = Color(0xFF060B17)
+    )
+
+    Box(modifier = modifier.fillMaxSize()) {
+        AtmosphereBackground(modifier = Modifier.fillMaxSize())
+
+        Column(modifier = Modifier.fillMaxSize().imePadding()) {
+            // Toolbar: back, Chats, title, New, clear
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ScreenBackButton(onBack)
+                HeaderPill(text = "Chats  ${sessions.size}", accent = showHistory) { showHistory = !showHistory }
+                Text(
+                    text = if (activeSession.title != "New chat") activeSession.title else "AI Tutor",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFCBD5E1),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = Color.Transparent,
+                        modifier = Modifier.size(0.dp)
+                    )
+                    HeaderPill(text = "+ New", accent = true) { newChat() }
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(Color.White.copy(alpha = 0.06f))
+                            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(10.dp))
+                            .clickable { clearChat() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Clear chat",
+                            tint = WisdomMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+
+            if (showHistory) {
+                HistoryPanel(
+                    sessions = sessions,
+                    activeId = activeId,
+                    onClose = { showHistory = false },
+                    onNew = { newChat() },
+                    onSelect = { selectSession(it) },
+                    onDelete = { deleteSession(it) },
+                    onClearAll = { clearAll() },
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    TutorWebView(
+                        bridge = bridge,
+                        webRef = webRef,
+                        onReady = { pageReady = true },
+                        onGone = { pageReady = false },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                // Composer
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = {
+                            Text(
+                                text = if (busy) "AI Tutor is responding (click Stop to cancel)..." else "Ask a concept, formula, or problem…",
+                                fontSize = 12.sp,
+                                color = WisdomMuted,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = fieldColors,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(onSend = { send(null) })
+                    )
+                    if (busy) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(WisdomAccentAmber.copy(alpha = 0.25f))
+                                .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.4f)), RoundedCornerShape(16.dp))
+                                .clickable { stop() }
+                                .padding(horizontal = 16.dp, vertical = 15.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Stop", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFDE68A))
+                        }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(WisdomCyan.copy(alpha = if (input.isBlank()) 0.4f else 1f))
+                                .clickable { send(null) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Send question",
+                                tint = Color(0xFF020617),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Receives the messages of `notes/tutor.html` (`window.WTBridge.*`), on a WebView thread. */
+private class TutorBridge(
+    private val onSend: (String) -> Unit,
+    private val onCopy: (String) -> Unit
+) {
+    @JavascriptInterface
+    fun onSend(text: String) {
+        onSend.invoke(text)
+    }
+
+    @JavascriptInterface
+    fun onCopy(text: String) {
+        onCopy.invoke(text)
+    }
+}
+
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
+@Composable
+private fun TutorWebView(
+    bridge: Any,
+    webRef: Array<WebView?>,
+    onReady: () -> Unit,
+    onGone: () -> Unit,
+    modifier: Modifier
+) {
+    AndroidView(
+        modifier = modifier,
+        factory = { ctx ->
+            WebView(ctx).apply {
+                setBackgroundColor(0xFF0A101D.toInt())
+                settings.javaScriptEnabled = true
+                settings.allowFileAccess = true
+                settings.blockNetworkLoads = true
+                settings.domStorageEnabled = false
+                addJavascriptInterface(bridge, "WTBridge")
+                webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView, url: String?) {
+                        onReady()
+                    }
+
+                    // The tutor page never navigates away; ignore every link tap.
+                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = true
+                }
+                webRef[0] = this
+                loadUrl("file:///android_asset/notes/tutor.html")
+            }
+        },
+        onRelease = {
+            it.removeJavascriptInterface("WTBridge")
+            if (webRef[0] === it) webRef[0] = null
+            it.destroy()
+            onGone()
+        }
+    )
+}
+
+@Composable
+private fun HeaderPill(text: String, accent: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (accent) WisdomCyan.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.06f))
+            .border(
+                BorderStroke(1.dp, if (accent) WisdomCyan.copy(alpha = 0.4f) else WisdomBorderWhite),
+                RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = text,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (accent) Color(0xFFA5F3FC) else Color.White,
+            maxLines = 1
+        )
+    }
+}
+
+/** The list of saved chats ("Study Chats" of the website's side sheet). */
+@Composable
+private fun HistoryPanel(
+    sessions: List<TutorSession>,
+    activeId: String,
+    onClose: () -> Unit,
+    onNew: () -> Unit,
+    onSelect: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onClearAll: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Study Chats", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(WisdomCyan.copy(alpha = 0.2f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text("${sessions.size}", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFA5F3FC))
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .clickable { onClose() },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close history",
+                    tint = WisdomMuted,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(WisdomCyan)
+                .clickable { onNew() }
+                .padding(vertical = 11.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("+ Start New Chat", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF020617))
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            items(sessions, key = { it.id }) { s ->
+                val isActive = s.id == activeId
+                val questions = s.messages.count { it.role == "user" }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isActive) WisdomCyan.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.03f))
+                        .border(
+                            BorderStroke(1.dp, if (isActive) WisdomCyan.copy(alpha = 0.4f) else WisdomBorderWhite),
+                            RoundedCornerShape(12.dp)
+                        )
+                        .clickable { onSelect(s.id) }
+                        .padding(horizontal = 10.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = s.title,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (isActive) Color(0xFFA5F3FC) else Color(0xFFE2E8F0),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = formatSessionTime(s.updatedAt) + " • " + questions + (if (questions == 1) " question" else " questions") +
+                                (if (isActive) " • Active" else ""),
+                            fontSize = 10.sp,
+                            color = WisdomMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { onDelete(s.id) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete chat session",
+                            tint = WisdomMuted,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        if (sessions.size > 1) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .border(BorderStroke(1.dp, Color(0xFFF43F5E).copy(alpha = 0.25f)), RoundedCornerShape(12.dp))
+                    .clickable { onClearAll() }
+                    .padding(vertical = 9.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Clear All Past Chats", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFDA4AF))
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+    }
+}
+
+private fun timeLabel(): String =
+    java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date())
+
+/** Same wording as the website's `formatSessionTime`. */
+private fun formatSessionTime(timestamp: Long): String {
+    val diff = System.currentTimeMillis() - timestamp
+    val minutes = diff / 60000
+    if (minutes < 1) return "Just now"
+    if (minutes < 60) return "${minutes}m ago"
+    val hours = minutes / 60
+    if (hours < 24) return "${hours}h ago"
+    val days = hours / 24
+    if (days == 1L) return "Yesterday"
+    if (days < 7) return "${days}d ago"
+    return java.text.SimpleDateFormat("MMM d", java.util.Locale.getDefault()).format(java.util.Date(timestamp))
+}
+
+/** The JSON that `window.wtTutorSet` in `notes/tutor.html` reads. */
+private fun pageJson(sessionId: String, messages: List<TutorMessage>, thinking: Boolean, streaming: Boolean): String {
+    val arr = JSONArray()
+    messages.forEach { m ->
+        arr.put(
+            JSONObject()
+                .put("id", m.id)
+                .put("role", m.role)
+                .put("content", m.content)
+                .put("timestamp", m.timestamp)
+                .put("suggestions", JSONArray(m.suggestions))
+        )
+    }
+    return JSONObject()
+        .put("sid", sessionId)
+        .put("busy", thinking || streaming)
+        .put("thinking", thinking)
+        .put("messages", arr)
+        .toString()
+}
