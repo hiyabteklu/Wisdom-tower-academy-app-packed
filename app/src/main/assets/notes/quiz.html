@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="katex/katex.min.css">
+<link rel="stylesheet" href="richtext.css">
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; padding: 0; background: #0a101d; }
+  body { color: #cbd5e1; font: 15px/1.55 -apple-system, Roboto, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+  #root { padding: 12px 12px 0; max-width: 680px; margin: 0 auto; overflow-wrap: anywhere; }
+  button { font-family: inherit; cursor: pointer; }
+  .msg { text-align: center; color: #94a3b8; padding: 40px 0; font-size: .9rem; }
+
+  /* top bar */
+  .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid rgba(255,255,255,.1); background: rgba(10,16,29,.7); border-radius: 12px; padding: 6px 10px; font-size: .75rem; margin-bottom: 10px; }
+  .tl, .tr { display: flex; align-items: center; gap: 8px; }
+  .st { font-weight: 800; }
+  .st.cy { color: #a5f3fc; } .st.em { color: #6ee7b7; } .st.am { color: #fcd34d; } .st.wh { color: rgba(255,255,255,.9); font-weight: 600; }
+  .dot { color: rgba(255,255,255,.2); }
+  .seg { display: inline-flex; padding: 2px; border-radius: 8px; background: rgba(0,0,0,.7); border: 1px solid rgba(255,255,255,.1); }
+  .seg button { border: 0; background: transparent; color: #94a3b8; font-size: .72rem; font-weight: 800; padding: 5px 9px; border-radius: 6px; }
+  .seg button.on { background: #22d3ee; color: #020617; }
+  .timer { font: 800 .75rem/1 ui-monospace, Menlo, monospace; padding: 5px 8px; border-radius: 8px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.1); color: #a7f3d0; }
+  .timer.warn { color: #fda4af; border-color: rgba(251,113,133,.4); }
+
+  /* question number pills */
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .pill { position: relative; width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,.15); background: transparent; color: #94a3b8; font-size: .75rem; font-weight: 800; padding: 0; }
+  .pill.cur { border-color: #fbbf24; background: rgba(245,158,11,.2); color: #fef3c7; }
+  .pill.ok { border-color: rgba(52,211,153,.6); background: rgba(16,185,129,.15); color: #a7f3d0; }
+  .pill.bad { border-color: rgba(251,113,133,.6); background: rgba(244,63,94,.15); color: #fecdd3; }
+  .pill.none { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.05); color: rgba(255,255,255,.4); }
+  .pill.flg { border-color: rgba(251,146,60,.5); background: rgba(249,115,22,.1); color: #fed7aa; }
+  .pill.ans { border-color: rgba(34,211,238,.5); background: rgba(6,182,212,.1); color: #a5f3fc; }
+  .pill i { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; border-radius: 50%; background: #fb923c; }
+
+  /* question card */
+  .qcard { border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 14px; background: linear-gradient(160deg, #131f38, #0e172a 60%, #0a101d); }
+  .qhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .qn { font-size: .75rem; font-weight: 600; color: #94a3b8; }
+  .lockbadge { margin-left: 8px; font-size: .68rem; font-weight: 800; color: #fcd34d; background: rgba(245,158,11,.15); border: 1px solid rgba(251,191,36,.3); padding: 2px 8px; border-radius: 999px; }
+  .flag { border: 1px solid rgba(255,255,255,.12); background: transparent; color: #94a3b8; font-size: .75rem; font-weight: 800; padding: 5px 10px; border-radius: 8px; }
+  .flag.on { border-color: rgba(251,146,60,.5); background: rgba(249,115,22,.15); color: #fed7aa; }
+  .prompt { color: #fff; font-weight: 700; margin-bottom: 12px; }
+  .prompt .study-p { margin: 0 0 .5em; }
+  .crow { position: relative; display: flex; align-items: center; margin-bottom: 8px; }
+  .choice { width: 100%; text-align: left; display: flex; align-items: baseline; gap: 8px; padding: 10px 40px 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: rgba(255,255,255,.9); font-size: .85rem; font-weight: 600; }
+  .choice .cl { color: #fcd34d; font-weight: 800; flex: none; }
+  .choice .ct { min-width: 0; flex: 1; }
+  .choice.sel { border-color: #22d3ee; background: rgba(6,182,212,.2); color: #fff; font-weight: 800; }
+  .choice.right { border-color: #34d399; background: rgba(16,185,129,.2); color: #d1fae5; font-weight: 800; }
+  .choice.wrong { border-color: #f43f5e; background: rgba(244,63,94,.2); color: #ffe4e6; font-weight: 800; }
+  .choice.elim { border-color: rgba(255,255,255,.05); background: rgba(0,0,0,.4); color: #64748b; opacity: .5; text-decoration: line-through; }
+  .choice.locked { opacity: .95; }
+  .choice.shake { animation: shake .45s; box-shadow: 0 0 0 2px #f43f5e; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+  .xbtn { position: absolute; right: 6px; width: 28px; height: 28px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #64748b; font-size: .7rem; opacity: .6; padding: 0; }
+  .xbtn.on { background: rgba(244,63,94,.2); color: #fda4af; border-color: rgba(251,113,133,.4); opacity: 1; }
+  .sol { margin-top: 6px; border: 1px solid rgba(52,211,153,.45); background: rgba(16,185,129,.15); color: #ecfdf5; font-size: .75rem; font-weight: 800; padding: 6px 10px; border-radius: 8px; }
+  .solbox { margin-top: 10px; border: 1px solid rgba(52,211,153,.3); background: rgba(16,185,129,.1); border-radius: 12px; padding: 10px 12px; font-size: .85rem; color: #ecfdf5; font: italic 500 .9rem/1.5 Georgia, "Times New Roman", serif; }
+  .solbox .lbl { margin: 0 0 4px; font: 900 .68rem/1 -apple-system, Roboto, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #6ee7b7; font-style: normal; }
+  .solbox .study-p { margin: .4em 0; }
+
+  /* bottom navigation */
+  .nav { position: sticky; bottom: 0; background: #0a101d; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 8px; }
+  .btn { font: 700 .85rem/1 -apple-system, Roboto, sans-serif; padding: 11px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: transparent; color: #e2e8f0; }
+  .btn:disabled { opacity: .4; }
+  .btn.amber { background: #f59e0b; border-color: #f59e0b; color: #0a101d; }
+  .btn.fin { margin-left: auto; border-color: rgba(52,211,153,.4); background: rgba(16,185,129,.15); color: #a7f3d0; }
+
+  /* dialogs */
+  .ovl { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 50; background: rgba(2,6,23,.82); display: flex; align-items: center; justify-content: center; padding: 14px; overflow-y: auto; }
+  .sheet { position: relative; width: 100%; max-width: 360px; box-sizing: border-box; border-radius: 24px; border: 1px solid rgba(255,255,255,.15); background: linear-gradient(180deg, #111a2e, #0c1426 60%, #080d19); padding: 20px; text-align: center; margin: auto; }
+  .sheet h3 { margin: 0 0 8px; font-size: 1.05rem; color: #fff; }
+  .sheet p { margin: 0 0 16px; font-size: .85rem; color: #94a3b8; }
+  .sheet .row { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn.go { background: #10b981; border-color: #10b981; color: #0a101d; font-weight: 800; }
+  .eyebrow { display: inline-block; padding: 3px 12px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: #cbd5e1; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  .rtitle { margin: 0 0 6px; font-size: .95rem; font-weight: 800; color: #fff; }
+  .gauge { position: relative; width: 112px; height: 112px; margin: 8px auto; }
+  .gauge svg { width: 112px; height: 112px; transform: rotate(-90deg); }
+  .gauge .mid { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .gauge .big { font-size: 1.9rem; font-weight: 900; color: #fff; line-height: 1; }
+  .gauge .of { font-size: .68rem; font-weight: 600; color: #cbd5e1; margin-top: 4px; }
+  .tier { margin: 0; font-size: .95rem; font-weight: 800; }
+  .cap { margin: 2px auto 14px; font-size: .75rem; color: #94a3b8; max-width: 280px; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .tile { border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); padding: 8px 4px; }
+  .tile.g { border-color: rgba(52,211,153,.2); background: rgba(16,185,129,.1); }
+  .tile .k { font-size: .62rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #cbd5e1; }
+  .tile.g .k { color: #6ee7b7; }
+  .tile .v { margin: 2px 0 0; font-size: 1.1rem; font-weight: 900; color: #fff; }
+  .wide { display: block; width: 100%; box-sizing: border-box; margin-bottom: 8px; text-align: center; font-size: .78rem; padding: 10px 12px; }
+  .wide.cy { background: #22d3ee; border-color: #22d3ee; color: #020617; font-weight: 800; }
+  .xclose { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: #94a3b8; font-size: 1.1rem; padding: 0; }
+
+  /* review */
+  .rhead { border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: #0e172a; padding: 12px; margin-bottom: 10px; }
+  .rhead .sc { font-size: 1rem; font-weight: 800; color: #fff; }
+  .rhead .acc { margin-left: 8px; font-size: .68rem; font-weight: 800; color: #67e8f9; background: rgba(6,182,212,.2); border: 1px solid rgba(34,211,238,.3); padding: 2px 8px; border-radius: 999px; }
+  .rhead .sub { margin: 4px 0 10px; font-size: .75rem; color: #94a3b8; }
+  .rhead .acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .mini { border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.05); color: #cbd5e1; font-size: .72rem; font-weight: 800; padding: 6px 10px; border-radius: 8px; }
+  .mini.score { background: #f59e0b; border-color: #f59e0b; color: #0a101d; }
+  .seg.f button.on.rose { background: #f43f5e; color: #fff; }
+  .seg.f button.on.orange { background: #fb923c; color: #020617; }
+  .ritem { border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: #0e172a; padding: 12px; margin-bottom: 10px; }
+  .ritem.ok { border-color: rgba(52,211,153,.3); }
+  .ritem.bad { border-color: rgba(251,113,133,.3); }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .badge { font-size: .62rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid; }
+  .badge.ok { color: #6ee7b7; background: rgba(16,185,129,.2); border-color: rgba(52,211,153,.3); }
+  .badge.bad { color: #fda4af; background: rgba(244,63,94,.2); border-color: rgba(251,113,133,.3); }
+  .badge.skip { color: #fcd34d; background: rgba(245,158,11,.2); border-color: rgba(251,191,36,.3); }
+  .badge.fl { color: #fdba74; background: rgba(249,115,22,.2); border-color: rgba(251,146,60,.3); }
+  .rchoice { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.02); color: rgba(255,255,255,.7); font-size: .85rem; font-weight: 600; }
+  .rchoice.right { border-color: rgba(52,211,153,.6); background: rgba(16,185,129,.15); color: #fff; font-weight: 800; }
+  .rchoice.user { border-color: rgba(251,113,133,.6); background: rgba(244,63,94,.15); color: #fff; font-weight: 800; }
+  .rchoice .cl { color: #fcd34d; font-weight: 800; margin-right: 8px; }
+  .rchoice .mk { flex: none; font-size: .72rem; font-weight: 800; }
+  .rchoice.right .mk { color: #6ee7b7; } .rchoice.user .mk { color: #fda4af; }
+  .empty { border: 1px solid rgba(255,255,255,.1); background: #0e172a; border-radius: 12px; padding: 24px; text-align: center; font-size: .8rem; color: #94a3b8; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="katex/katex.min.js"></script>
+<script src="richtext.js"></script>
+<script>
+/*
+ * Quiz / exam runner (plan step N5). Port of the website's components/learning/QuizExamViewer.tsx and
+ * QuizResultModal.tsx (same texts, same rules):
+ *  - question banks: counters, "Right Away" / "After Finish" answer checking, official solution (locks the question),
+ *    cross-out of choices, flag, question number pills, swipe, "Finish Practice";
+ *  - exams: countdown from meta.durationMin, no feedback until "Submit Exam", automatic submit at 0:00;
+ *  - score card with the website's tiers, review (All / Missed / Flagged) with solutions, Retake.
+ * NOT ported (yet): the draggable scientific calculator, confetti/haptics, "Explain with AI" (plan step N10).
+ * The app calls window.setQuiz(metaJsonText, optionsJsonText); options = { isExam, title, feedbackMode }.
+ * Back to the app through window.WTBridge: onProgress(json), onSubmit(json), onMode(json).
+ * window.wtBack() closes an open dialog and returns true, or returns false when the app should leave.
+ */
+(function () {
+  var root = document.getElementById("root");
+  var Q = [], isExam = false, title = "", durationMin = 0, feedbackMode = "immediate";
+  var idx = 0, answers = {}, flagged = {}, eliminated = {}, lockedBySol = {}, showSol = false;
+  var submitted = false, saved = false, confirmOpen = false, resultOpen = false;
+  var reviewFilter = "all", reviewSol = {}, shake = null;
+  var startedAt = Date.now(), elapsedFinal = null, deadline = 0, timerId = null;
+  var startX = null, startY = null;
+
+  function hasOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function R(t) { try { return window.WTRich.render(String(t == null ? "" : t)); } catch (e) { return ""; } }
+  function RI(t) { try { return window.WTRich.renderInline(String(t == null ? "" : t)); } catch (e) { return ""; } }
+  function cleanChoice(c) { return String(c == null ? "" : c).replace(/^[A-Da-d][.)]\s*/, "").replace(/[\r\n]+/g, " ").trim(); }
+  function letter(i) { return String.fromCharCode(65 + i); }
+  function send(name, obj) {
+    try { if (window.WTBridge && window.WTBridge[name]) window.WTBridge[name](JSON.stringify(obj)); } catch (e) {}
+  }
+  function elapsed() { return elapsedFinal != null ? elapsedFinal : Math.max(0, Math.round((Date.now() - startedAt) / 1000)); }
+  function isImmediate() { return !isExam && feedbackMode === "immediate"; }
+
+  function counts() {
+    var attempted = 0, score = 0, wrong = 0, fl = 0, i, k, a;
+    for (i = 0; i < Q.length; i++) {
+      a = answers[i];
+      if (a != null) { attempted++; if (a === Q[i].correct) score++; else wrong++; }
+    }
+    for (k in flagged) { if (hasOwn(flagged, k) && flagged[k]) fl++; }
+    return { attempted: attempted, score: score, wrong: wrong, skipped: Q.length - attempted, flaggedCount: fl,
+             accuracy: attempted ? Math.round((score / attempted) * 100) : 0 };
+  }
+
+  /* progress, same numbers as the website effect (saveProgress with meta.quiz); exams only once submitted */
+  function reportProgress() {
+    if (!Q.length) return;
+    if (isExam && !submitted) return;
+    var c = counts();
+    send("onProgress", {
+      pct: submitted ? 100 : Math.round((c.attempted / Q.length) * 100),
+      quiz: { attempted: c.attempted, correct: c.score, total: Q.length,
+              accuracy: submitted ? Math.round((c.score / Q.length) * 100) : c.accuracy,
+              submitted: !!submitted, wrong: c.wrong, skipped: c.skipped, elapsedSec: elapsed() }
+    });
+  }
+
+  /* ---------- timer (exams) ---------- */
+  function leftSec() { return Math.max(0, Math.ceil((deadline - Date.now()) / 1000)); }
+  function timerText() { var l = leftSec(); return Math.floor(l / 60) + ":" + (l % 60 < 10 ? "0" : "") + (l % 60); }
+  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+  function tick() {
+    var l = leftSec(), el = document.getElementById("timer");
+    if (el) { el.textContent = timerText(); el.className = "timer" + (l < 60 ? " warn" : ""); }
+    if (l <= 0 && !submitted) doSubmit();
+  }
+  function startTimer() {
+    stopTimer();
+    if (!isExam || durationMin <= 0 || submitted) return;
+    deadline = Date.now() + durationMin * 60000;
+    timerId = setInterval(tick, 1000);
+  }
+
+  /* ---------- actions ---------- */
+  function doSubmit() {
+    if (submitted) return;
+    submitted = true; elapsedFinal = elapsed(); stopTimer();
+    confirmOpen = false; resultOpen = true; reviewFilter = "all";
+    var c = counts();
+    reportProgress();
+    if (isExam && !saved) { saved = true; send("onSubmit", { score: c.score, total: Q.length, answers: answers }); }
+    draw();
+  }
+  function retake() {
+    submitted = false; saved = false; answers = {}; flagged = {}; eliminated = {}; idx = 0; showSol = false;
+    lockedBySol = {}; reviewSol = {}; resultOpen = false; confirmOpen = false; reviewFilter = "all";
+    startedAt = Date.now(); elapsedFinal = null;
+    startTimer(); draw(); window.scrollTo(0, 0);
+    if (!isExam) reportProgress();
+  }
+  function goTo(i) {
+    if (i < 0 || i >= Q.length) return;
+    idx = i; showSol = !!lockedBySol[i];
+    if (submitted) {
+      if (reviewFilter === "missed") {
+        var missed = answers[i] == null || answers[i] !== Q[i].correct;
+        if (!missed) reviewFilter = "all";
+      }
+      draw();
+      var el = document.getElementById("review-q-" + i);
+      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      draw(); window.scrollTo(0, 0);
+    }
+  }
+  function pick(ci) {
+    if (submitted || lockedBySol[idx]) return;
+    if (isImmediate() && answers[idx] != null) return;
+    if (eliminated[idx] && eliminated[idx][ci]) eliminated[idx][ci] = false;
+    answers[idx] = ci;
+    var q = Q[idx];
+    if (isImmediate() && q.correct !== undefined && ci !== q.correct) {
+      shake = { i: idx, c: ci };
+      setTimeout(function () { shake = null; }, 500);
+    }
+    draw(); reportProgress();
+  }
+  function toggleElim(ci) {
+    if (!eliminated[idx]) eliminated[idx] = {};
+    eliminated[idx][ci] = !eliminated[idx][ci];
+    draw();
+  }
+  function toggleSol() {
+    showSol = !showSol;
+    if (showSol) lockedBySol[idx] = true;
+    draw();
+  }
+
+  /* ---------- views ---------- */
+  function topBar(c) {
+    var left, right = "";
+    if (!isExam) {
+      left = '<span class="st cy">' + c.attempted + "/" + Q.length + '</span><span class="dot">\u00B7</span><span class="st em">' + c.score +
+        '</span><span class="dot">\u00B7</span><span class="st am">' + c.accuracy + "%</span>";
+    } else {
+      left = '<span class="st wh">' + c.attempted + "/" + Q.length + " Answered" + (c.skipped > 0 ? " \u00B7 " + c.skipped + " left" : "") + "</span>";
+    }
+    if (!isExam && !submitted) {
+      right += '<span class="seg"><button class="' + (feedbackMode === "immediate" ? "on" : "") + '" data-act="mode" data-m="immediate">Right Away</button>' +
+        '<button class="' + (feedbackMode === "completion" ? "on" : "") + '" data-act="mode" data-m="completion">After Finish</button></span>';
+    }
+    if (isExam && durationMin > 0 && !submitted) {
+      right += '<span id="timer" class="timer' + (leftSec() < 60 ? " warn" : "") + '">' + timerText() + "</span>";
+    }
+    return '<div class="top"><div class="tl">' + left + '</div><div class="tr">' + right + "</div></div>";
+  }
+
+  function pills() {
+    var reveal = isExam ? submitted : (isImmediate() ? true : submitted), h = '<div class="pills">', i, answered, isFl, ok, bad, cls;
+    for (i = 0; i < Q.length; i++) {
+      answered = answers[i] != null; isFl = !!flagged[i];
+      ok = reveal && answered && answers[i] === Q[i].correct;
+      bad = reveal && answered && answers[i] !== Q[i].correct;
+      cls = "pill";
+      if (i === idx) cls += " cur";
+      else if (ok) cls += " ok";
+      else if (bad) cls += " bad";
+      else if (reveal && !answered) cls += " none";
+      else if (isFl) cls += " flg";
+      else if (answered) cls += " ans";
+      h += '<button class="' + cls + '" data-act="pill" data-i="' + i + '">' + (i + 1) + (isFl ? "<i></i>" : "") + "</button>";
+    }
+    return h + "</div>";
+  }
+
+  function questionCard() {
+    var q = Q[idx], answered = answers[idx] != null, imm = isImmediate();
+    var lockedImm = imm && answered, locked = submitted || !!lockedBySol[idx] || lockedImm;
+    var showMark = isExam ? submitted : (imm ? answered : (showSol || submitted));
+    var h = '<div class="qcard"><div class="qhead"><div><span class="qn">Question ' + (idx + 1) + " of " + Q.length + "</span>" +
+      (lockedImm ? '<span class="lockbadge">Locked</span>' : "") + '</div><button class="flag' + (flagged[idx] ? " on" : "") + '" data-act="flag">' +
+      (flagged[idx] ? "Flagged" : "Flag") + "</button></div>";
+    h += '<div class="prompt">' + R(q.prompt) + "</div>";
+    var ci, selected, isRight, elim, cls;
+    for (ci = 0; ci < q.choices.length; ci++) {
+      selected = answers[idx] === ci; isRight = q.correct === ci; elim = !!(eliminated[idx] && eliminated[idx][ci]);
+      cls = "choice";
+      if (showMark && isRight) cls += " right";
+      else if (showMark && selected && !isRight) cls += " wrong";
+      else if (selected) cls += " sel";
+      else if (elim) cls += " elim";
+      if (shake && shake.i === idx && shake.c === ci) cls += " shake";
+      if (locked) cls += " locked";
+      h += '<div class="crow"><button class="' + cls + '" data-act="pick" data-ci="' + ci + '"' + (locked ? " disabled" : "") + '><span class="cl">' + letter(ci) +
+        '.</span><span class="ct">' + RI(cleanChoice(q.choices[ci])) + "</span></button>" +
+        (locked ? "" : '<button class="xbtn' + (elim ? " on" : "") + '" data-act="elim" data-ci="' + ci + '" aria-label="' + (elim ? "Restore choice" : "Cross out choice") + '"><s>ab</s></button>') + "</div>";
+    }
+    if (!isExam) {
+      h += '<button class="sol" data-act="sol">' + (showSol ? "Hide solution" : "Official solution") + "</button>";
+      if (showSol && q.solution) h += '<div class="solbox"><p class="lbl">Official solution</p>' + R(q.solution) + "</div>";
+    }
+    return h + "</div>";
+  }
+
+  function navBar() {
+    return '<div class="nav"><button class="btn" data-act="prev"' + (idx === 0 ? " disabled" : "") + '>\u2039 Prev</button>' +
+      '<button class="btn amber" data-act="next"' + (idx >= Q.length - 1 ? " disabled" : "") + '>Next \u203A</button>' +
+      '<button class="btn fin" data-act="finish">' + (isExam ? "Submit Exam" : "Finish Practice") + "</button></div>";
+  }
+
+  function confirmDialog(c) {
+    return '<div class="ovl"><div class="sheet"><h3>' + (isExam ? "Submit this exam?" : "Finish this practice?") + "</h3><p>Answered " + c.attempted + " of " + Q.length +
+      " \u00B7 Skipped " + c.skipped + (c.flaggedCount > 0 ? " \u00B7 Flagged " + c.flaggedCount : "") +
+      '</p><div class="row"><button class="btn" data-act="keep">Keep Going</button><button class="btn go" data-act="confirm">Submit &amp; View Results</button></div></div></div>';
+  }
+
+  function tier(pct) {
+    if (pct >= 90) return { label: "Mastery Level", color: "#10b981", cap: "Outstanding! You demonstrated rock-solid mastery of these questions." };
+    if (pct >= 75) return { label: "Strong Performance", color: "#06b6d4", cap: "Great effort! A few targeted reviews will get you to top scores." };
+    if (pct >= 50) return { label: "Good Progress", color: "#38bdf8", cap: "Solid start. Reviewing the missed questions will quickly boost your score." };
+    return { label: "Practice Reinforcement", color: "#06b6d4", cap: "Keep practicing! Step-by-step solutions below will help you master every question." };
+  }
+
+  var CIRC = 2 * Math.PI * 48;
+  function resultModal(c) {
+    var pct = Q.length ? Math.round((c.score / Q.length) * 100) : 0, t = tier(pct), noMiss = c.wrong === 0 && c.skipped === 0;
+    return '<div class="ovl"><div class="sheet"><button class="xclose" data-act="rclose" aria-label="Close">\u2715</button>' +
+      '<span class="eyebrow">' + (isExam ? "Exam Result" : "Practice Completed") + "</span>" +
+      (title ? '<p class="rtitle">' + esc(title) + "</p>" : "") +
+      '<div class="gauge"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" stroke="rgba(255,255,255,.08)" stroke-width="8" fill="transparent"></circle>' +
+      '<circle id="gcirc" cx="60" cy="60" r="48" stroke="' + t.color + '" stroke-width="8" stroke-linecap="round" fill="transparent" stroke-dasharray="' + CIRC + '" stroke-dashoffset="' + CIRC + '"></circle></svg>' +
+      '<div class="mid"><span class="big" id="gpct">0%</span><span class="of">' + c.score + " of " + Q.length + " Correct</span></div></div>" +
+      '<p class="tier" style="color:' + t.color + '">' + t.label + '</p><p class="cap">' + t.cap + "</p>" +
+      '<div class="tiles"><div class="tile g"><div class="k">Correct</div><p class="v">' + c.score + '</p></div><div class="tile"><div class="k">Missed</div><p class="v">' + c.wrong +
+      '</p></div><div class="tile"><div class="k">Skipped</div><p class="v">' + c.skipped + "</p></div></div>" +
+      '<button class="btn wide" data-act="rmissed"' + (noMiss ? " disabled" : "") + ">Review Missed (" + (c.wrong + c.skipped) + ")</button>" +
+      '<button class="btn wide cy" data-act="rall">Review All (' + Q.length + ")</button>" +
+      (c.flaggedCount > 0 ? '<button class="btn wide" data-act="rflagged">Review Flagged (' + c.flaggedCount + ")</button>" : "") +
+      '<button class="btn wide" data-act="retake">Retake ' + (isExam ? "Exam" : "Practice") + "</button></div></div>";
+  }
+
+  function animateGauge(c) {
+    var pct = Q.length ? Math.round((c.score / Q.length) * 100) : 0, t0 = Date.now();
+    function step() {
+      var circ = document.getElementById("gcirc"), txt = document.getElementById("gpct");
+      if (!circ || !txt) return;
+      var p = Math.min(1, (Date.now() - t0) / 700), e = 1 - Math.pow(1 - p, 3), v = Math.round(e * pct);
+      txt.textContent = v + "%";
+      circ.setAttribute("stroke-dashoffset", String(CIRC - (v / 100) * CIRC));
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function reviewBlock(c) {
+    var pct = Q.length ? Math.round((c.score / Q.length) * 100) : 0;
+    var h = '<div class="rhead"><div><span class="sc">Score: ' + c.score + "/" + Q.length + '</span><span class="acc">' + pct + '% Accuracy</span></div>' +
+      '<p class="sub">' + c.score + " Correct \u00B7 " + c.wrong + " Missed \u00B7 " + c.skipped + ' Skipped</p><div class="acts">' +
+      '<button class="mini score" data-act="scorecard">Score Card</button><span class="seg f">' +
+      '<button class="' + (reviewFilter === "all" ? "on" : "") + '" data-act="filter" data-f="all">All (' + Q.length + ")</button>" +
+      '<button class="' + (reviewFilter === "missed" ? "on rose" : "") + '" data-act="filter" data-f="missed">Missed (' + (c.wrong + c.skipped) + ")</button>" +
+      (c.flaggedCount > 0 ? '<button class="' + (reviewFilter === "flagged" ? "on orange" : "") + '" data-act="filter" data-f="flagged">Flagged (' + c.flaggedCount + ")</button>" : "") +
+      '</span><button class="mini" data-act="retake">Retake</button></div></div>';
+    var list = [], i, a;
+    for (i = 0; i < Q.length; i++) {
+      a = answers[i];
+      if (reviewFilter === "missed" && !(a == null || a !== Q[i].correct)) continue;
+      if (reviewFilter === "flagged" && !flagged[i]) continue;
+      list.push(i);
+    }
+    if (!list.length) {
+      return h + '<div class="empty">' + (reviewFilter === "missed" ? "No missed questions: perfect score on this set!" :
+        reviewFilter === "flagged" ? "No flagged questions in this session." : "No questions to review.") + "</div>";
+    }
+    var n, qi, q, sel, correct, skipped, ci, rc, mk;
+    for (n = 0; n < list.length; n++) {
+      qi = list[n]; q = Q[qi]; sel = answers[qi]; correct = sel != null && sel === q.correct; skipped = sel == null;
+      h += '<div class="ritem ' + (correct ? "ok" : (skipped ? "" : "bad")) + '" id="review-q-' + qi + '"><div class="badges"><span class="qn">Question ' + (qi + 1) + "</span>" +
+        (correct ? '<span class="badge ok">Correct</span>' : "") + (!correct && !skipped ? '<span class="badge bad">Wrong</span>' : "") +
+        (skipped ? '<span class="badge skip">Skipped</span>' : "") + (flagged[qi] ? '<span class="badge fl">Flagged</span>' : "") + "</div>" +
+        '<div class="prompt">' + R(q.prompt) + "</div>";
+      for (ci = 0; ci < q.choices.length; ci++) {
+        rc = "rchoice"; mk = "";
+        if (q.correct === ci) { rc += " right"; mk = "\u2713 Correct"; }
+        else if (sel === ci) { rc += " user"; mk = "\u2717 Your Choice"; }
+        if (q.correct === ci && sel === ci) mk = "\u2713 Correct";
+        h += '<div class="' + rc + '"><span><span class="cl">' + letter(ci) + ".</span>" + RI(cleanChoice(q.choices[ci])) + "</span>" + (mk ? '<span class="mk">' + mk + "</span>" : "") + "</div>";
+      }
+      if (q.solution) {
+        h += '<button class="sol" data-act="rsol" data-i="' + qi + '">' + (reviewSol[qi] ? "Hide solution" : "Official solution") + "</button>";
+        if (reviewSol[qi]) h += '<div class="solbox">' + R(q.solution) + "</div>";
+      }
+      h += "</div>";
+    }
+    return h;
+  }
+
+  function draw() {
+    if (!Q.length) { root.innerHTML = '<p class="msg">No questions yet.</p>'; return; }
+    var c = counts();
+    var h = topBar(c) + pills();
+    if (!submitted) h += questionCard() + navBar();
+    else h += reviewBlock(c);
+    if (confirmOpen) h += confirmDialog(c);
+    if (resultOpen) h += resultModal(c);
+    root.innerHTML = h;
+    if (resultOpen) animateGauge(c);
+  }
+
+  /* ---------- events ---------- */
+  root.addEventListener("click", function (e) {
+    var el = e.target;
+    while (el && el !== root && !(el.getAttribute && el.getAttribute("data-act"))) el = el.parentNode;
+    if (!el || el === root) return;
+    var act = el.getAttribute("data-act"), c;
+    if (act === "pick") pick(Number(el.getAttribute("data-ci")));
+    else if (act === "elim") toggleElim(Number(el.getAttribute("data-ci")));
+    else if (act === "flag") { flagged[idx] = !flagged[idx]; draw(); }
+    else if (act === "sol") toggleSol();
+    else if (act === "prev") goTo(idx - 1);
+    else if (act === "next") goTo(idx + 1);
+    else if (act === "pill") goTo(Number(el.getAttribute("data-i")));
+    else if (act === "finish") { confirmOpen = true; draw(); }
+    else if (act === "keep") { confirmOpen = false; draw(); }
+    else if (act === "confirm") doSubmit();
+    else if (act === "mode") { feedbackMode = el.getAttribute("data-m") === "completion" ? "completion" : "immediate"; send("onMode", { mode: feedbackMode }); draw(); }
+    else if (act === "rclose") { resultOpen = false; draw(); }
+    else if (act === "rmissed") { reviewFilter = "missed"; resultOpen = false; draw(); }
+    else if (act === "rall") { reviewFilter = "all"; resultOpen = false; draw(); }
+    else if (act === "rflagged") { reviewFilter = "flagged"; resultOpen = false; draw(); }
+    else if (act === "retake") retake();
+    else if (act === "scorecard") { resultOpen = true; draw(); }
+    else if (act === "filter") { reviewFilter = el.getAttribute("data-f"); draw(); }
+    else if (act === "rsol") { var n = Number(el.getAttribute("data-i")); reviewSol[n] = !reviewSol[n]; draw(); }
+  });
+
+  document.addEventListener("touchstart", function (e) {
+    var t = e.touches[0]; startX = t.clientX; startY = t.clientY;
+  }, { passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (startX == null) return;
+    var t = e.changedTouches[0], dx = t.clientX - startX, dy = t.clientY - startY;
+    startX = null; startY = null;
+    if (submitted || confirmOpen || resultOpen) return;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0 && idx < Q.length - 1) goTo(idx + 1);
+    else if (dx > 0 && idx > 0) goTo(idx - 1);
+  }, { passive: true });
+
+  window.wtBack = function () {
+    if (resultOpen) { resultOpen = false; draw(); return true; }
+    if (confirmOpen) { confirmOpen = false; draw(); return true; }
+    return false;
+  };
+
+  window.setQuiz = function (metaText, optText) {
+    try {
+      var meta = JSON.parse(metaText || "{}"), opt = JSON.parse(optText || "{}");
+      isExam = !!opt.isExam; title = opt.title || ""; feedbackMode = opt.feedbackMode === "completion" ? "completion" : "immediate";
+      var list = Array.isArray(meta.questions) ? meta.questions : [];
+      Q = list.map(function (q) {
+        q = q || {};
+        var cr = q.correct;
+        if (typeof cr !== "number") cr = (cr != null && cr !== "" && isFinite(Number(cr))) ? Number(cr) : undefined;
+        return { prompt: q.prompt, choices: Array.isArray(q.choices) ? q.choices : [], correct: cr, solution: q.solution };
+      });
+      var d = Number(meta.durationMin || 0);
+      durationMin = isFinite(d) && d > 0 ? d : 0;
+      idx = 0; answers = {}; flagged = {}; eliminated = {}; lockedBySol = {}; showSol = false; submitted = false; saved = false;
+      confirmOpen = false; resultOpen = false; reviewFilter = "all"; reviewSol = {}; shake = null; startedAt = Date.now(); elapsedFinal = null;
+      startTimer(); draw();
+      if (!isExam && Q.length) reportProgress();
+    } catch (e) {
+      root.innerHTML = '<p class="msg">Could not display this quiz.</p>';
+    }
+  };
+})();
+</script>
+</body>
+</html>
