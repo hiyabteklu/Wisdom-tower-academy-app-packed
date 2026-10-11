@@ -4,12 +4,9 @@ import com.wisdomtower.academy.data.model.EnrolledPackageRecord
 import com.wisdomtower.academy.data.model.LearningResourceItem
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.packages.NativePackage
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -21,46 +18,19 @@ object AcademyRepository {
         .readTimeout(20, TimeUnit.SECONDS)
         .build()
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     private val _packages = MutableStateFlow(CATALOG_PACKAGES)
     val packages: StateFlow<List<NativePackage>> = _packages.asStateFlow()
 
+    /**
+     * Intentionally a no-op. The website has NO `/api/content/catalog` route
+     * (checked against hiyabteklu/Wisdom-tower-academy on 2026-10-11; only
+     * `content/pdf` and `content/resources` exist), so the old call always 404'd,
+     * and even a 200 only toggled items on/off. The catalog comes from the
+     * static CATALOG_PACKAGES seed until the website exposes a real catalog route
+     * or the app reads Supabase directly. Signature kept so callers still compile.
+     */
     fun refreshCatalog() {
-        scope.launch {
-            try {
-                val url = "https://www.wisdom-tower-academy.live/api/content/catalog"
-                val request = Request.Builder().url(url).build()
-                val response = httpClient.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val body = response.body?.string().orEmpty()
-                    if (body.isNotBlank()) {
-                        val root = JSONObject(body)
-                        val arr = root.optJSONArray("items")
-                        if (arr != null && arr.length() > 0) {
-                            val map = mutableMapOf<String, NativePackage>()
-                            CATALOG_PACKAGES.forEach { map[it.id] = it }
-                            for (i in 0 until arr.length()) {
-                                val item = arr.getJSONObject(i)
-                                val id = item.optString("id")
-                                val existing = map[id]
-                                if (existing != null) {
-                                    val active = item.optBoolean("active", true)
-                                    if (active) {
-                                        map[id] = existing
-                                    } else {
-                                        map.remove(id)
-                                    }
-                                }
-                            }
-                            _packages.value = map.values.toList()
-                        }
-                    }
-                }
-            } catch (_: Exception) {
-                // Offline fallback maintains curated static catalog
-            }
-        }
+        // no network call on purpose
     }
 
     suspend fun fetchLearningResources(scopePath: String, hub: String? = null): List<LearningResourceItem> {
@@ -114,6 +84,11 @@ object AcademyRepository {
         return "https://www.wisdom-tower-academy.live/api/content/pdf?path=appwrite:$fileId"
     }
 
+    /**
+     * NOTE: this is a deliberate "Free Academic Mode" placeholder, NOT real enrollment data.
+     * The website also keeps enrollments locally (applyDefaultPackagesForLevel), so there is
+     * no server table to read yet. Replace once a real enrollments source exists.
+     */
     fun getEnrolledPackages(isLoggedIn: Boolean): List<EnrolledPackageRecord> {
         if (!isLoggedIn) return emptyList()
         // In Free Mode, all primary curriculum tracks are unlocked for registered students
