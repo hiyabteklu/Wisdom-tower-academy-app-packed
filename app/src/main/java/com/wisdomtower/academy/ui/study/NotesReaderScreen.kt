@@ -1,6 +1,7 @@
 package com.wisdomtower.academy.ui.study
 
 import android.annotation.SuppressLint
+import android.os.SystemClock
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -21,6 +22,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -42,12 +44,47 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.wisdomtower.academy.data.content.AiExplainRepository
 import com.wisdomtower.academy.data.content.ContentItemResult
 import com.wisdomtower.academy.data.content.LearningContentRepository
+import com.wisdomtower.academy.data.content.LearningProgressRepository
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+
+/**
+ * Saves started from the notes page must survive the student leaving the screen, so they run in this app-wide
+ * scope, not in the screen's own scope (that one is cancelled on leaving).
+ */
+private val notesSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+/** What the reader has reached so far, shared by the page bridge and the reading-time ticker. */
+private class NoteProgress {
+    @Volatile var pct: Int = 0
+    @Volatile var active: Boolean = false
+    @Volatile var lastFlush: Long = 0L
+}
+
+/** Adds the reading seconds since the last flush (and the current percent) to `learning_progress`. */
+private fun flushNoteProgress(resourceId: String, progress: NoteProgress) {
+    if (!progress.active) return
+    val now = SystemClock.elapsedRealtime()
+    val seconds = ((now - progress.lastFlush) / 1000L).toInt()
+    if (seconds < 1) return
+    progress.lastFlush = now
+    val pct = progress.pct
+    notesSaveScope.launch {
+        LearningProgressRepository.saveProgress(
+            resourceId = resourceId,
+            progressPct = pct,
+            addSeconds = seconds
+        )
+    }
+}
 
 /**
  * Native reader for one short note (plan step N6): loads the full row from Supabase
@@ -56,7 +93,10 @@ import org.json.JSONObject
  * The page's "Summary" button (plan step N10, port of the website's `NotesViewer.tsx`) asks this screen through
  * `WTBridge.onSummarize({ id, text })`; the answer of [AiExplainRepository.summarize] goes back with
  * `window.wtSummaryResult(id, text)` (dropped if the screen was left).
- * Not done yet: reading progress (`learning_progress`).
+ * Reading progress (plan step N10, like the website's `NotesViewer` + `HubContentView`): the page reports the
+ * scrolled percent with `WTBridge.onProgress({ pct })` (100 from 95 percent on and after a Summary), saved to
+ * `learning_progress` (the higher percent is kept by the repository); the reading time is added every 30 seconds
+ * and once more when the screen is left. Nothing is saved for a signed-out student (the repository returns false).
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -72,10 +112,27 @@ fun NotesReaderScreen(
     var attempt by remember { mutableStateOf(0) }
     var result by remember(resourceId) { mutableStateOf<ContentItemResult?>(null) }
     val webRef = remember { arrayOfNulls<WebView>(1) }
+    val progress = remember(resourceId) { NoteProgress() }
 
     LaunchedEffect(resourceId, attempt) {
         result = null
         result = LearningContentRepository.getResource(context, resourceId)
+    }
+
+    // Reading time: starts when the note is shown, added every 30 seconds (the website does the same)
+    val noteShown = result is ContentItemResult.Found
+    LaunchedEffect(resourceId, noteShown) {
+        if (noteShown) {
+            progress.lastFlush = SystemClock.elapsedRealtime()
+            progress.active = true
+            while (true) {
+                delay(30_000L)
+                flushNoteProgress(resourceId, progress)
+            }
+        }
+    }
+    DisposableEffect(resourceId) {
+        onDispose { flushNoteProgress(resourceId, progress) }
     }
 
     val bridge = remember(resourceId) {
@@ -99,6 +156,18 @@ fun NotesReaderScreen(
                             null
                         )
                     }
+                }
+                Unit
+            },
+            onProgress = { json ->
+                try {
+                    val pct = JSONObject(json).optInt("pct", 0).coerceIn(0, 100)
+                    progress.pct = pct
+                    notesSaveScope.launch {
+                        LearningProgressRepository.saveProgress(resourceId = resourceId, progressPct = pct)
+                    }
+                } catch (e: Exception) {
+                    // A bad progress message must never break the reader.
                 }
                 Unit
             }
@@ -152,11 +221,17 @@ fun NotesReaderScreen(
 
 /** Receives the messages of `notes/index.html` (`window.WTBridge.*(json)`), on a WebView thread. */
 private class NotesBridge(
-    private val onSummarize: (String) -> Unit
+    private val onSummarize: (String) -> Unit,
+    private val onProgress: (String) -> Unit
 ) {
     @JavascriptInterface
     fun onSummarize(json: String) {
         onSummarize.invoke(json)
+    }
+
+    @JavascriptInterface
+    fun onProgress(json: String) {
+        onProgress.invoke(json)
     }
 }
 
