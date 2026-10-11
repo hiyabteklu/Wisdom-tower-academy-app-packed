@@ -138,6 +138,18 @@ tasks.register<Copy>("copyWebsiteImages") {
 }
 tasks.named("preBuild").configure { dependsOn("copyWebsiteImages") }
 
+// Keeps the ECE / special-package pictures (home card ece.jpg, semester covers, course covers) in step with the
+// synced website snapshot. Same folder and file names as the website, so the paths already used by the app
+// (file:///android_asset/images/special-packages/...) now show the website's current pictures. A file that is
+// missing on the website keeps the picture already stored in the app.
+tasks.register<Copy>("copySpecialPackageImages") {
+  from(rootDir.resolve("website-reference/public/images/special-packages")) {
+    exclude(".gitkeep", "README.md")
+  }
+  into(layout.projectDirectory.dir("src/main/assets/images/special-packages"))
+}
+tasks.named("preBuild").configure { dependsOn("copySpecialPackageImages") }
+
 tasks.register<Copy>("copyApkOutputs") {
   from(layout.buildDirectory.dir("outputs/apk/debug"))
   into(rootDir.resolve("build/outputs/apk/debug"))

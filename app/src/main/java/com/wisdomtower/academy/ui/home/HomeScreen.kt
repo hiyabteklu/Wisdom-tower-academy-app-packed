@@ -92,11 +92,17 @@ data class ResourceGuide(
 // Cards in the order of the website home / academy page (LandingPathways.tsx, 2026-10-11):
 // ECE, Freshman, Grade 9, 10, 11, 12 (independent cards, no combined "Grade 9-12"), Entrance Questions,
 // COC, UAT, GAT, Exit Exam, Remedial. Grade pictures are the website package images.
+//
+// ECE: the website card links to /academy/special-packages/electrical-computer-engineering, a page that is not a
+// catalog package, so the app router sent it to the website (online only). The native ECE package screen
+// (path .../sem-1) already shows BOTH semesters, every course and the six hub cards without a connection,
+// so the card opens that. Name and picture (ece.jpg, kept in step with the website by `copySpecialPackageImages`)
+// are unchanged.
 val HOME_PROGRAMS = listOf(
     ProgramItem(
         id = "ece",
         name = "ECE Engineering",
-        path = "/academy/special-packages/electrical-computer-engineering",
+        path = "/academy/special-packages/electrical-computer-engineering/sem-1",
         assetImage = "file:///android_asset/images/special-packages/ece.jpg",
         webImageFallback = "https://wisdom-tower-academy.live/images/special-packages/ece.jpg",
         accentColor = WisdomAccentViolet
