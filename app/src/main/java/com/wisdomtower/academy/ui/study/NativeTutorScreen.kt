@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,7 +32,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
@@ -401,33 +399,22 @@ fun NativeTutorScreen(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                HeaderPill(text = "+ New", accent = true) { newChat() }
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White.copy(alpha = 0.06f))
+                        .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(10.dp))
+                        .clickable { clearChat() },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        tint = Color.Transparent,
-                        modifier = Modifier.size(0.dp)
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Clear chat",
+                        tint = WisdomMuted,
+                        modifier = Modifier.size(16.dp)
                     )
-                    HeaderPill(text = "+ New", accent = true) { newChat() }
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color.White.copy(alpha = 0.06f))
-                            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(10.dp))
-                            .clickable { clearChat() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Clear chat",
-                            tint = WisdomMuted,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
                 }
             }
 
