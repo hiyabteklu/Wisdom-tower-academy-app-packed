@@ -68,6 +68,12 @@ import kotlinx.coroutines.launch
  * privacy/page.tsx, terms/page.tsx (the last two live in LegalContent.kt).
  * The website call-to-action buttons ("Create Free Account...", "Explore Academic Pathways" ...)
  * are left out on purpose; they are website navigation.
+ *
+ * OWNER DECISION 2026-10-12 (About Us only): the numeric claims of the website About page are NOT
+ * shown in the app. The four metric cards (30K+, 20+, 100%, 0ms) are replaced by one line,
+ * "Trusted by tens of thousands of scholars", and the other numbers in the About text
+ * ("100% Aligned", "20+ common freshman courses", "100% focused") were reworded without the number.
+ * This is the only intended difference from the website text.
  */
 
 @Composable
@@ -167,7 +173,7 @@ private fun AboutTextCard(
 }
 
 /* =========================================================================================
-   1. ABOUT US  (website-reference/src/app/about/page.tsx)
+   1. ABOUT US  (website-reference/src/app/about/page.tsx; numeric claims left out, see top comment)
 ========================================================================================= */
 
 @Composable
@@ -177,7 +183,7 @@ fun AboutScreen(
 ) {
     val pillars = listOf(
         Triple("21st-Century Learning Architecture", "Advanced EdTech", "Learning today requires active cognition, not passive consumption. We fuse adaptive question banks, interactive flashcard recall, and on-demand AI conceptual tutoring into a single frictionless workspace."),
-        Triple("100% Aligned to the New Curriculum", "Official Alignment", "Built from the ground up to reflect Ethiopia’s reformed competence-based modular framework. Every chapter note, practice test, and syllabus track matches the exact standards taught across the nation."),
+        Triple("Aligned to the New Curriculum", "Official Alignment", "Built from the ground up to reflect Ethiopia’s reformed competence-based modular framework. Every chapter note, practice test, and syllabus track matches the exact standards taught across the nation."),
         Triple("Nationwide Low-Bandwidth Resilience", "Offline-First", "Education must reach every student, regardless of connectivity. Our platform uses edge-caching and offline-first storage so materials remain instantly readable across all regions of Ethiopia."),
         Triple("Beyond Academics: The Whole Scholar", "Holistic Trajectory", "We bridge students from exam halls to real-world impact. Explore verified scholarship databases, university campus guides, career competency prep, and lifelong intellectual networks.")
     )
@@ -185,15 +191,8 @@ fun AboutScreen(
     val continuum = listOf(
         Triple("Grades 9 – 12", "Secondary Foundation & National Matriculation", "Comprehensive natural and social science curriculum tracks, chapter question banks, model exams, and matriculation preparation."),
         Triple("Remedial & UAT", "Higher Education Transition & Entrance", "Rigorous prerequisite remediation and University Admission Test (UAT) drills designed to secure university placement."),
-        Triple("Freshman Core", "First-Year University Excellence", "All 20+ common freshman courses with official midterm and final exams worked, Ethiopian GPA tracking, and field leaderboards."),
+        Triple("Freshman Core", "First-Year University Excellence", "All common freshman courses with official midterm and final exams worked, Ethiopian GPA tracking, and field leaderboards."),
         Triple("Senior Tracks & Exit Exam", "Department Specialization & Graduation", "Advanced engineering tracks (ECE), professional competency assessments (COC), and National University Exit Exam question banks.")
-    )
-
-    val metrics = listOf(
-        Triple("30K+", "Ambitious Scholars", "Active across secondary and universities"),
-        Triple("20+", "Freshman Courses", "Complete notes, banks, and worked exams"),
-        Triple("100%", "Curriculum Aligned", "Tailored to Ethiopia's new modular system"),
-        Triple("0ms", "Offline Cache Delay", "Read downloaded notes with zero data usage")
     )
 
     val horizon = listOf(
@@ -241,32 +240,22 @@ fun AboutScreen(
                 }
             }
 
-            // Metrics: 2 x 2
-            item(key = "metrics") {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    metrics.chunked(2).forEach { pair ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            pair.forEach { (value, label, sub) ->
-                                Box(modifier = Modifier.weight(1f)) {
-                                    WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(12.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.spacedBy(2.dp)
-                                        ) {
-                                            Text(value, fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color.White)
-                                            Text(label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber, textAlign = TextAlign.Center)
-                                            Text(sub, fontSize = 10.sp, color = WisdomMuted, textAlign = TextAlign.Center, lineHeight = 13.sp)
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            // Owner decision 2026-10-12: one trust line instead of the four numeric metric cards.
+            item(key = "trusted") {
+                WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Trusted by tens of thousands of scholars",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = WisdomAccentAmber,
+                            textAlign = TextAlign.Center
+                        )
                     }
                 }
             }
@@ -375,7 +364,7 @@ fun AboutScreen(
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "Wisdom Tower Academy is the dedicated educational wing of Wisdom Tower. Our digital agency services, custom software development, and enterprise technologies operate under Wisdom Digital. Here at the Academy, every line of code and every faculty hour is 100% focused on student success, academic excellence, and the intellectual future of Ethiopia.",
+                            text = "Wisdom Tower Academy is the dedicated educational wing of Wisdom Tower. Our digital agency services, custom software development, and enterprise technologies operate under Wisdom Digital. Here at the Academy, every line of code and every faculty hour is fully focused on student success, academic excellence, and the intellectual future of Ethiopia.",
                             fontSize = 12.sp, color = WisdomMuted, lineHeight = 17.sp, textAlign = TextAlign.Center
                         )
                         Text(
