@@ -98,7 +98,8 @@ import java.io.File
  * 3. Game Sound
  * 4. Reading & Display
  * 5. Offline Data & Cloud Sync        (size is the real app storage; Sync pushes the profile for real)
- * 6. Security                          (Update Password calls Supabase, like the website's updateUser)
+ * 6. Security                          (Update Password calls Supabase, like the website's updateUser;
+ *                                       "Delete Account" block calls the website route, see AccountDeletionSection.kt)
  *
  * 2026-10-11: the password form used to show "updated successfully" without calling the server,
  * and the storage size and sync message were fixed texts. All three are now real.
@@ -109,6 +110,8 @@ import java.io.File
  * Preview" box with "Preview" tag and the website's px sizes, "Change Password" heading and the two
  * password placeholders). Not changed on purpose: "Edit Profile" still opens the native Account tab
  * (the website's ?tab=profile has no native meaning) and the avatar is still a generic icon.
+ * 2026-10-12 (session Z): Security now ends with the "Delete Account" block (Google Play requires
+ * in-app account deletion). The block is NOT on the website settings page; it is the only addition.
  */
 @Composable
 fun SettingsScreen(
@@ -1019,6 +1022,9 @@ fun SettingsScreen(
                                 color = WisdomDarkOnCyan
                             )
                         }
+
+                        // Google Play: in-app account deletion (shown only when signed in).
+                        AccountDeletionSection(prefsStorage)
                     }
                 }
             }
