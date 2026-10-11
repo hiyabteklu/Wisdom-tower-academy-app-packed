@@ -7,15 +7,12 @@ import {
   Library,
   GraduationCap as GradCap,
   Trees,
-  Shield,
-  Compass,
 } from "lucide-react";
 import VoiceMessageCard from "@/components/VoiceMessageCard";
 import TestimonialMarquee from "@/components/TestimonialMarquee";
 import PartnershipPath from "@/components/PartnershipPath";
-import SafeCoverImage from "@/components/SafeCoverImage";
 import { packageImages } from "@/data/packages";
-import { SPECIAL_PACKAGES_HUB_IMAGE } from "@/data/special-packages";
+import { ENTRANCE_BASE_PATH, ENTRANCE_IMAGE } from "@/data/entrance-questions";
 
 /** Flip to true when real student voices and quotes are ready. */
 const SHOW_STUDENT_VOICES = false;
@@ -30,6 +27,21 @@ type ProgramCard = {
   border: string;
   description: string;
 };
+
+/** Grades 9-12 are independent top-level cards (no combined "Grade 9-12" card). */
+function gradeCard(n: "9" | "10" | "11" | "12", accent: string, border: string): ProgramCard {
+  const id = `grade-${n}`;
+  return {
+    id,
+    href: `/academy/grades/${n}`,
+    name: `Grade ${n}`,
+    category: "Secondary Education",
+    image: packageImages[id as keyof typeof packageImages],
+    accent,
+    border,
+    description: `Grade ${n} national curriculum with chapter-by-chapter drills and practice.`,
+  };
+}
 
 const programs: ProgramCard[] = [
   {
@@ -52,15 +64,19 @@ const programs: ProgramCard[] = [
     border: "hover:border-purple-400/40",
     description: "Complete course hubs for Natural & Social streams with textbook notes, question banks, and exams.",
   },
+  gradeCard("9", "text-sky-400", "hover:border-sky-400/40"),
+  gradeCard("10", "text-violet-400", "hover:border-violet-400/40"),
+  gradeCard("11", "text-amber-400", "hover:border-amber-400/40"),
+  gradeCard("12", "text-emerald-400", "hover:border-emerald-400/40"),
   {
-    id: "grade-9-12",
-    href: "/academy/grades",
-    name: "Grade 9–12",
-    category: "Secondary Education",
-    image: packageImages["grade-9-12"],
-    accent: "text-sky-400",
-    border: "hover:border-sky-400/40",
-    description: "National secondary curriculum with chapter-by-chapter drills and matriculation practice.",
+    id: "entrance-questions",
+    href: ENTRANCE_BASE_PATH,
+    name: "Entrance Questions",
+    category: "University Entrance",
+    image: ENTRANCE_IMAGE,
+    accent: "text-teal-400",
+    border: "hover:border-teal-400/40",
+    description: "Past entrance exams for Natural and Social Science by subject and year (2014-2019).",
   },
   {
     id: "coc",
@@ -115,37 +131,13 @@ const programs: ProgramCard[] = [
 ];
 
 const freeResources = [
-  /* Games commented out per request
-  {
-    href: "/games/tower-climb",
-    name: "Tower Climb",
-    blurb: "Ascend course chapters floor by floor with your scholarly owl",
-    icon: Compass,
-    accent: "text-amber-300",
-    border: "border-white/12 hover:border-amber-400/40",
-    iconBg: "border-amber-400/30 bg-amber-500/15 text-amber-300",
-    glow: "group-hover:shadow-[0_12px_40px_-16px_rgba(251,191,36,0.35)]",
-  },
-  {
-    href: "/games/tower-defense",
-    name: "Tower Defense",
-    blurb: "Survive exam problem waves and defend your Knowledge Citadel",
-    icon: Shield,
-    accent: "text-emerald-300",
-    border: "border-white/12 hover:border-emerald-400/40",
-    iconBg: "border-emerald-400/30 bg-emerald-500/15 text-emerald-300",
-    glow: "group-hover:shadow-[0_12px_40px_-16px_rgba(52,211,153,0.3)]",
-  },
-  */
   {
     href: "/academy/success-stories",
     name: "Success Stories",
     blurb: "How top students prepared and what they learned along the way",
     icon: Trophy,
     accent: "text-amber-300",
-    border: "border-white/12 hover:border-amber-400/40",
     iconBg: "border-amber-400/30 bg-amber-500/15 text-amber-300",
-    glow: "group-hover:shadow-[0_12px_40px_-16px_rgba(251,191,36,0.35)]",
   },
   {
     href: "/academy/study-techniques",
@@ -153,9 +145,7 @@ const freeResources = [
     blurb: "Practical ways to learn faster and remember more",
     icon: Lightbulb,
     accent: "text-cyan-300",
-    border: "border-white/12 hover:border-cyan-400/40",
     iconBg: "border-cyan-400/30 bg-cyan-500/15 text-cyan-300",
-    glow: "group-hover:shadow-[0_12px_40px_-16px_rgba(34,211,238,0.3)]",
   },
   {
     href: "/academy/campus-life",
@@ -163,9 +153,7 @@ const freeResources = [
     blurb: "Friends, focus, lectures, and life between classes",
     icon: Trees,
     accent: "text-sky-300",
-    border: "border-white/12 hover:border-sky-400/40",
     iconBg: "border-sky-400/30 bg-sky-500/15 text-sky-300",
-    glow: "group-hover:shadow-[0_12px_40px_-16px_rgba(56,189,248,0.3)]",
   },
   {
     href: "/academy/universities",
@@ -173,9 +161,7 @@ const freeResources = [
     blurb: "Schools, programs, and what each is known for",
     icon: Building2,
     accent: "text-violet-300",
-    border: "border-white/12 hover:border-violet-400/40",
     iconBg: "border-violet-400/30 bg-violet-500/15 text-violet-300",
-    glow: "group-hover:shadow-[0_12px_40px_-16px_rgba(167,139,250,0.3)]",
   },
   {
     href: "/academy/departments",
@@ -183,9 +169,7 @@ const freeResources = [
     blurb: "Clear picture of each field before you choose",
     icon: Library,
     accent: "text-orange-300",
-    border: "border-white/12 hover:border-orange-400/40",
     iconBg: "border-orange-400/30 bg-orange-500/15 text-orange-300",
-    glow: "group-hover:shadow-[0_12px_40px_-16px_rgba(251,146,60,0.3)]",
   },
   {
     href: "/academy/scholarships",
@@ -193,9 +177,7 @@ const freeResources = [
     blurb: "Funding options and how to apply with confidence",
     icon: GradCap,
     accent: "text-rose-300",
-    border: "border-white/12 hover:border-rose-400/40",
     iconBg: "border-rose-400/30 bg-rose-500/15 text-rose-300",
-    glow: "group-hover:shadow-[0_12px_40px_-16px_rgba(244,63,94,0.3)]",
   },
 ];
 

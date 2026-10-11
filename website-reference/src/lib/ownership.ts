@@ -1,7 +1,7 @@
 /**
  * Which packages the signed-in user already owns
  * (enrollments, verified orders, or admin access grants).
- * ECE Year 3 Semester 1, Freshman, and Grades 9–12 are free for any registered user.
+ * ECE Year 3 Semester 1, Freshman, Grades 9–12 and Entrance Questions are free for any registered user.
  */
 import { listMyEnrollments, listMyOrders } from "@/lib/orders";
 import {
@@ -34,6 +34,8 @@ export const FREE_FOR_REGISTERED_PACKAGE_IDS = [
   "grade-10",
   "grade-11",
   "grade-12",
+  // Not sold in the catalog (not in academyPackages), always free for registered users
+  "entrance-questions",
 ] as const;
 
 /** Soft-lock flag for UI (landing + academy). Content remains closed until this is flipped. */
@@ -93,6 +95,7 @@ export async function getOwnedPackageIds(force = false): Promise<OwnershipMap> {
     // When FREE_MODE is active: Authenticated users have immediate full access to all curriculum packages
     if (IS_FREE_MODE) {
       const allIds = new Set<string>(allCatalogIds());
+      for (const id of FREE_FOR_REGISTERED_PACKAGE_IDS) allIds.add(id);
       allIds.add(ALL_PACKAGES_ID);
       cache = { at: Date.now(), ids: allIds, userId };
       return allIds;

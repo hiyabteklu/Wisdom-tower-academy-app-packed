@@ -1,6 +1,5 @@
-/**
- * Live vs uploading + purchase gates.
- * Grades 9–12 and Freshman unlock for any signed-in user via FREE_FOR_REGISTERED_PACKAGE_IDS.
+/** Live vs uploading + purchase gates.
+ * Grades 9–12, Freshman and Entrance Questions unlock for any signed-in user via FREE_FOR_REGISTERED_PACKAGE_IDS.
  */
 
 export const PURCHASABLE_PACKAGE_IDS = new Set([
@@ -38,6 +37,7 @@ export function unlockPackageIdsForPath(basePath: string): string[] {
   if (basePath.includes("/academy/grades/10")) return ["grade-10"];
   if (basePath.includes("/academy/grades/11")) return ["grade-11"];
   if (basePath.includes("/academy/grades/12")) return ["grade-12"];
+  if (basePath.includes("/academy/entrance-questions")) return ["entrance-questions"];
   if (basePath.includes("/academy/uat")) return ["uat"];
   if (basePath.includes("/academy/coc")) return ["coc"];
   if (basePath.includes("/academy/remedial")) return ["remedial"];
@@ -54,8 +54,9 @@ export function getHubLockMode(basePath: string): HubLockMode {
   if (basePath.includes("/academy/gat") || basePath.includes("/academy/exit-exam")) {
     return "coming_soon";
   }
-  // Grades 9–12: free for every registered user (ownership grants grade-* automatically)
+  // Grades 9–12 and Entrance Questions: free for every registered user (ownership grants them automatically)
   if (basePath.includes("/academy/grades/")) return "require_purchase";
+  if (basePath.includes("/academy/entrance-questions")) return "require_purchase";
   if (basePath.includes("/academy/freshman")) return "require_purchase";
   if (
     basePath.includes("/academy/uat") ||

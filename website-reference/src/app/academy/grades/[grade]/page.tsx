@@ -25,7 +25,8 @@ export default async function GradeDetailPage({
   return (
     <div className="relative min-h-[80vh]">
       <div className="relative max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 md:py-10">
-        <CategoryBackButton fallback="/academy/grades" />
+        {/* /academy/grades (combined list) was retired; grades are independent packages now */}
+        <CategoryBackButton fallback="/learning" />
 
         <div className="mb-4 sm:mb-5 animate-fade-up">
           <div className="flex flex-wrap items-baseline justify-between gap-2">

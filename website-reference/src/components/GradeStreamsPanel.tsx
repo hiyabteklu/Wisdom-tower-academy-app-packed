@@ -17,11 +17,21 @@ export default function GradeStreamsPanel({ gradeId }: { gradeId: string }) {
           prefetch={true}
           className="card-modern group flex flex-col shadow-md shadow-black/20 hover:border-sky-400/35 transition-all overflow-hidden"
         >
-          {/* Big native icon container representing the subject */}
-          <div className="relative aspect-video w-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-wisdom-navy to-slate-900 border-b border-white/8 group-hover:from-slate-900 group-hover:to-sky-950/50 transition-colors">
-            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border border-sky-400/30 bg-sky-500/10 text-sky-300 group-hover:scale-110 group-hover:border-sky-400/50 group-hover:bg-sky-500/20 group-hover:text-sky-200 transition-all duration-300 shadow-inner">
-              <GradeSubjectIcon name={sub.icon} className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2]" />
-            </div>
+          {/* Subject thumbnail from public/images/Grade N/ (icon fallback when no image exists) */}
+          <div className="relative aspect-video w-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-slate-900 via-wisdom-navy to-slate-900 border-b border-white/8">
+            {sub.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={sub.image}
+                alt={sub.name}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                loading="lazy"
+              />
+            ) : (
+              <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border border-sky-400/30 bg-sky-500/10 text-sky-300 group-hover:scale-110 group-hover:border-sky-400/50 group-hover:bg-sky-500/20 group-hover:text-sky-200 transition-all duration-300 shadow-inner">
+                <GradeSubjectIcon name={sub.icon} className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2]" />
+              </div>
+            )}
           </div>
 
           {/* Title + Open button side-by-side, no junk texts */}

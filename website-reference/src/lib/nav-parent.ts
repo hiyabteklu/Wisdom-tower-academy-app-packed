@@ -37,7 +37,9 @@ export const PARENT_OF: Record<string, string> = {
   "/orders": "/account",
 
   // Academic track roots -> parent is Learning root (/learning), never / or /academy directly
+  // ("/academy/grades" itself now redirects to /academy; grade pages /academy/grades/9..12 use a /learning fallback)
   "/academy/grades": "/learning",
+  "/academy/entrance-questions": "/learning",
   "/academy/freshman": "/learning",
   "/academy/remedial": "/learning",
   "/academy/special-packages": "/learning",
@@ -46,6 +48,12 @@ export const PARENT_OF: Record<string, string> = {
   "/academy/gat": "/learning",
   "/academy/coc": "/learning",
   "/academy/exit-exam": "/learning",
+
+  // Grade roots (independent packages) -> Learning root
+  "/academy/grades/9": "/learning",
+  "/academy/grades/10": "/learning",
+  "/academy/grades/11": "/learning",
+  "/academy/grades/12": "/learning",
 
   // Academy guidance and resources
   "/academy/universities": "/academy",
@@ -191,6 +199,7 @@ export function parentLabel(parentPath: string): string {
     "/orders": "Orders",
     "/cart": "Cart",
     "/academy/grades": "Grades",
+    "/academy/entrance-questions": "Entrance Questions",
     "/academy/freshman": "Freshman",
     "/academy/uat": "UAT",
     "/academy/gat": "GAT",
@@ -207,6 +216,7 @@ export function parentLabel(parentPath: string): string {
   };
   if (labels[parentPath]) return labels[parentPath];
   if (parentPath.startsWith("/academy/grades/")) return "Grade";
+  if (parentPath.startsWith("/academy/entrance-questions/")) return "Entrance Questions";
   if (parentPath.startsWith("/academy/freshman/")) return "Subject";
   if (parentPath.startsWith("/academy/remedial/")) return "Subject";
   if (parentPath.startsWith("/academy/special-packages/")) return "Course";

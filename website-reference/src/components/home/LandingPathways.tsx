@@ -13,9 +13,7 @@ import {
 import { useInView } from "@/hooks/useInView";
 import PartnershipPath from "@/components/PartnershipPath";
 import { packageImages, getPackage, CORE_PACKAGE_INCLUDES } from "@/data/packages";
-import { SPECIAL_PACKAGES_HUB_IMAGE } from "@/data/special-packages";
-
-const OPEN_BTN = "btn-open";
+import { ENTRANCE_BASE_PATH, ENTRANCE_IMAGE } from "@/data/entrance-questions";
 
 type ProgramCard = {
   id: string;
@@ -30,12 +28,28 @@ type ProgramCard = {
 };
 
 const freshmanPkg = getPackage("freshman");
-const g912Pkg = getPackage("grade-9-12");
 const uatPkg = getPackage("uat");
 const gatPkg = getPackage("gat");
 const cocPkg = getPackage("coc");
 const exitPkg = getPackage("exit-exam");
 const remedialPkg = getPackage("remedial");
+
+/** Grades 9-12 are independent top-level cards (no combined "Grade 9-12" card). */
+function gradeCard(n: "9" | "10" | "11" | "12", accent: string, border: string): ProgramCard {
+  const id = `grade-${n}`;
+  const pkg = getPackage(id);
+  return {
+    id,
+    href: `/academy/grades/${n}`,
+    name: `Grade ${n}`,
+    category: "Secondary Curriculum",
+    image: packageImages[id as keyof typeof packageImages],
+    accent,
+    border,
+    description: pkg?.description || `Complete Grade ${n} curriculum.`,
+    includes: pkg?.includes || [`Complete Grade ${n} curriculum`, ...CORE_PACKAGE_INCLUDES],
+  };
+}
 
 const allPrograms: ProgramCard[] = [
   {
@@ -71,20 +85,24 @@ const allPrograms: ProgramCard[] = [
       ...CORE_PACKAGE_INCLUDES,
     ],
   },
+  gradeCard("9", "text-sky-400", "hover:border-sky-400/40"),
+  gradeCard("10", "text-violet-400", "hover:border-violet-400/40"),
+  gradeCard("11", "text-amber-400", "hover:border-amber-400/40"),
+  gradeCard("12", "text-emerald-400", "hover:border-emerald-400/40"),
   {
-    id: "grade-9-12",
-    href: "/academy/grades",
-    name: "Grade 9–12",
-    category: "Secondary Curriculum",
-    image: packageImages["grade-9-12"],
-    accent: "text-sky-400",
-    border: "hover:border-sky-400/40",
+    id: "entrance-questions",
+    href: ENTRANCE_BASE_PATH,
+    name: "Entrance Questions",
+    category: "University Entrance",
+    image: ENTRANCE_IMAGE,
+    accent: "text-teal-400",
+    border: "hover:border-teal-400/40",
     description:
-      g912Pkg?.description ||
-      "Complete Grade 9 to 12 secondary curriculum. Master textbook chapters, drill with targeted questions, practice with timed exams, and prepare thoroughly for national matriculation.",
-    includes: g912Pkg?.includes || [
-      "Complete Grade 9, 10, 11, and 12 Ethiopian national curriculum",
-      ...CORE_PACKAGE_INCLUDES,
+      "Past entrance exams for Natural and Social Science students, organised by subject and year (2014-2019).",
+    includes: [
+      "Natural Science and Social Science entrance exams",
+      "English, Mathematics, SAT and stream subjects",
+      "Exams for 2014 to 2019",
     ],
   },
   {

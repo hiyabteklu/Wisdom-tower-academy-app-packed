@@ -5,6 +5,12 @@ import { grades, resourceHubs } from "@/data/academy";
 import { subjectsForGrade } from "@/data/grade-subjects";
 import { specialPackages } from "@/data/special-packages";
 import { packageIdForGrade } from "@/data/packages";
+import {
+  ENTRANCE_PACKAGE_ID,
+  ENTRANCE_STREAMS,
+  ENTRANCE_YEARS,
+  entranceScope,
+} from "@/data/entrance-questions";
 
 export type AdminNavNode = {
   id: string;
@@ -42,6 +48,48 @@ const gradeNodes: AdminNavNode[] = grades.map((g) => {
   };
 });
 
+/**
+ * Entrance Questions: stream > subject > year > Exams.
+ * Scope = entrance/{stream}/{subject}/{year}, hub = exams (read by the public year page).
+ */
+const entranceNode: AdminNavNode = {
+  id: "entrance-questions",
+  label: "Entrance Questions",
+  packageId: ENTRANCE_PACKAGE_ID,
+  useAppwrite: true,
+  children: ENTRANCE_STREAMS.map((stream) => ({
+    id: `entrance-${stream.id}`,
+    label: stream.label,
+    packageId: ENTRANCE_PACKAGE_ID,
+    useAppwrite: true,
+    children: stream.subjects.map((sub) => ({
+      id: `${stream.id}-${sub.id}`,
+      label: sub.name,
+      packageId: ENTRANCE_PACKAGE_ID,
+      useAppwrite: true,
+      children: ENTRANCE_YEARS.map((year) => {
+        const scopePath = entranceScope(stream.id, sub.id, year);
+        return {
+          id: `${stream.id}-${sub.id}-${year}`,
+          label: year,
+          packageId: ENTRANCE_PACKAGE_ID,
+          scopePath,
+          useAppwrite: true,
+          children: resourceHubs
+            .filter((h) => h.id === "exams")
+            .map((h) => ({
+              id: h.id,
+              label: h.name,
+              packageId: ENTRANCE_PACKAGE_ID,
+              scopePath,
+              useAppwrite: true,
+            })),
+        };
+      }),
+    })),
+  })),
+};
+
 export const ADMIN_CONTENT_TREE: AdminNavNode[] = [
   {
     id: "grades",
@@ -49,6 +97,7 @@ export const ADMIN_CONTENT_TREE: AdminNavNode[] = [
     useAppwrite: true,
     children: gradeNodes,
   },
+  entranceNode,
   {
     id: "freshman",
     label: "Freshman",
