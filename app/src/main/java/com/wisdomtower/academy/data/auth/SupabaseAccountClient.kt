@@ -1,5 +1,6 @@
 package com.wisdomtower.academy.data.auth
 
+import android.util.Log
 import com.wisdomtower.academy.BuildConfig
 import com.wisdomtower.academy.data.model.UserProfile
 import kotlinx.coroutines.CancellationException
@@ -25,6 +26,19 @@ sealed class AccountCallResult {
     data class Failure(val message: String, val sessionExpired: Boolean = false) : AccountCallResult()
 }
 
+/** Outcome of reading the student's `profiles` row: the caller can tell "no row" from "failed". */
+sealed class ProfileFetchResult {
+    data class Found(val profile: UserProfile) : ProfileFetchResult()
+
+    /** The call worked but this student has no row yet. */
+    object NotFound : ProfileFetchResult()
+
+    object SessionExpired : ProfileFetchResult()
+
+    /** Network or server problem: nothing is known about the row. */
+    object Failed : ProfileFetchResult()
+}
+
 /**
  * Real server calls for the signed-in student, against the SAME Supabase project as the website
  * (public URL + anon key from BuildConfig, the student's own access token; no secrets):
@@ -33,7 +47,7 @@ sealed class AccountCallResult {
  *    (`public.profiles`, read `select *`, write `update ... where id = user id`; if the student has no
  *    row yet it is created, like the website's `ensureProfile`).
  *
- * STATUS: written, NOT yet compiled or tested on a device (see STATUS.md).
+ * STATUS: compiles in CI (builds #43/#44), NOT yet tested on a device (see STATUS.md).
  */
 object SupabaseAccountClient {
     private val http = OkHttpClient.Builder()
@@ -45,6 +59,9 @@ object SupabaseAccountClient {
 
     private val supabaseUrl: String get() = BuildConfig.NEXT_PUBLIC_SUPABASE_URL.trim().trimEnd('/')
     private val anonKey: String get() = BuildConfig.NEXT_PUBLIC_SUPABASE_ANON_KEY.trim()
+
+    private const val TAG = "SupabaseAccount"
+    private val UUID_REGEX = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
     private const val SESSION_EXPIRED = "Your session expired. Please sign in again."
     private const val NO_INTERNET = "Check your internet connection and try again."
@@ -109,10 +126,13 @@ object SupabaseAccountClient {
 
     // ---------- profile ----------
 
-    /** Reads the student's row from `profiles`. Returns null when there is no row or the call failed. */
-    suspend fun fetchProfile(userId: String, accessToken: String, base: UserProfile?): UserProfile? =
+    /**
+     * Reads the student's row from `profiles`. Tells apart: found, no row yet, session expired (401)
+     * and any other failure, so the caller never treats a failed call as "no profile".
+     */
+    suspend fun fetchProfile(userId: String, accessToken: String, base: UserProfile?): ProfileFetchResult =
         withContext(Dispatchers.IO) {
-            if (userId.isBlank() || accessToken.isBlank()) return@withContext null
+            if (!UUID_REGEX.matches(userId) || accessToken.isBlank()) return@withContext ProfileFetchResult.Failed
             try {
                 val request = Request.Builder()
                     .url("$supabaseUrl/rest/v1/profiles?id=eq.$userId&select=*")
@@ -122,17 +142,26 @@ object SupabaseAccountClient {
                     .get()
                     .build()
                 http.newCall(request).execute().use { resp ->
-                    if (!resp.isSuccessful) {
-                        null
-                    } else {
-                        val arr = JSONArray(resp.body?.string().orEmpty())
-                        if (arr.length() == 0) null else rowToProfile(arr.getJSONObject(0), userId, base)
+                    when {
+                        resp.code == 401 -> ProfileFetchResult.SessionExpired
+                        !resp.isSuccessful -> {
+                            Log.w(TAG, "fetchProfile failed: HTTP ${resp.code}")
+                            ProfileFetchResult.Failed
+                        }
+                        else -> {
+                            val arr = JSONArray(resp.body?.string().orEmpty())
+                            if (arr.length() == 0) {
+                                ProfileFetchResult.NotFound
+                            } else {
+                                ProfileFetchResult.Found(rowToProfile(arr.getJSONObject(0), userId, base))
+                            }
+                        }
                     }
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                null
+                ProfileFetchResult.Failed
             }
         }
 
@@ -140,14 +169,24 @@ object SupabaseAccountClient {
      * Writes the student's profile fields to `profiles`. Only fields that are not null are sent,
      * so unknown values never overwrite server data. Success only when the server really returned
      * the updated row (a row-level-security refusal returns no row and is reported as a failure).
+     * [includeDailyGoal] must be false when the app never read the server value (the model's 45 is
+     * then only a default and must not overwrite the student's real goal).
      */
-    suspend fun saveProfile(userId: String, accessToken: String, profile: UserProfile): AccountCallResult =
+    suspend fun saveProfile(
+        userId: String,
+        accessToken: String,
+        profile: UserProfile,
+        includeDailyGoal: Boolean = true
+    ): AccountCallResult =
         withContext(Dispatchers.IO) {
-            if (userId.isBlank() || accessToken.isBlank()) {
+            if (!UUID_REGEX.matches(userId)) {
+                return@withContext AccountCallResult.Failure(SERVER_SAVE_FAILED)
+            }
+            if (accessToken.isBlank()) {
                 return@withContext AccountCallResult.Failure(SESSION_EXPIRED, true)
             }
             try {
-                val body = profileBody(profile)
+                val body = profileBody(profile, includeDailyGoal)
                 val (code, text) = send(
                     "PATCH",
                     "$supabaseUrl/rest/v1/profiles?id=eq.$userId",
@@ -170,6 +209,9 @@ object SupabaseAccountClient {
                     )
                     if (code2 == 401) return@withContext AccountCallResult.Failure(SESSION_EXPIRED, true)
                     if (code2 in 200..299 && rowCount(text2) > 0) return@withContext AccountCallResult.Success
+                    Log.w(TAG, "saveProfile failed: PATCH $code returned no row, POST $code2")
+                } else {
+                    Log.w(TAG, "saveProfile failed: PATCH $code")
                 }
                 AccountCallResult.Failure(SERVER_SAVE_FAILED)
             } catch (e: CancellationException) {
@@ -207,7 +249,7 @@ object SupabaseAccountClient {
         }.format(Date())
 
     /** Column names exactly as in the website's `UserProfileRecord` (lib/profile.ts). */
-    private fun profileBody(p: UserProfile): JSONObject {
+    private fun profileBody(p: UserProfile, includeDailyGoal: Boolean): JSONObject {
         val body = JSONObject()
         fun put(key: String, value: String?) {
             if (value != null) body.put(key, value)
@@ -226,7 +268,7 @@ object SupabaseAccountClient {
         put("preferred_study_time", p.preferredStudyTime)
         put("avatar_preset", p.avatarPreset)
         put("avatar_url", p.avatarUrl)
-        body.put("daily_study_goal_minutes", p.dailyStudyGoalMinutes)
+        if (includeDailyGoal) body.put("daily_study_goal_minutes", p.dailyStudyGoalMinutes)
         body.put("updated_at", nowIso())
         return body
     }

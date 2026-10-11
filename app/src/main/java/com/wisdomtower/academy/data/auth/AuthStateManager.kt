@@ -20,6 +20,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 object AuthStateManager {
     private const val PREFS_NAME = "wt_academy_auth_prefs"
@@ -63,6 +64,16 @@ object AuthStateManager {
     private val refreshMutex = Mutex()
 
     private var lastNotifiedAuthEventKey: String? = null
+
+    /** Bumped on every local profile edit; a profile fetch that started before an edit is discarded. */
+    private val profileEditVersion = AtomicInteger(0)
+
+    /** Number of profile saves in flight; a fetch must not overwrite the screen while one is running. */
+    private val pendingSaves = AtomicInteger(0)
+
+    /** User id whose real `profiles` row was read from the server in this run (null = never read). */
+    @Volatile
+    private var serverProfileUserId: String? = null
 
     /**
      * Deduplicates the "Signed in successfully / Welcome back" toast so it displays
@@ -191,12 +202,13 @@ object AuthStateManager {
                 createdAt = createdAt
             )
 
-            // Keep existing profile metadata if available, otherwise bootstrap default
-            val existing = _currentProfile.value
-            val profile = UserProfile(
+            // Keep EVERYTHING already known about this same student (phone, bio, names, goals ...);
+            // only fill the auth-metadata fields that are still empty. A different user starts clean.
+            val existing = _currentProfile.value?.takeIf { it.id == uid }
+            val profile = (existing ?: UserProfile(id = uid)).copy(
                 id = uid,
-                email = email,
-                fullName = fullName,
+                email = email ?: existing?.email,
+                fullName = existing?.fullName ?: fullName,
                 educationLevel = existing?.educationLevel ?: meta?.optNullableString("education_level"),
                 stream = existing?.stream ?: meta?.optNullableString("stream"),
                 schoolName = existing?.schoolName ?: meta?.optNullableString("school_name"),
@@ -204,7 +216,7 @@ object AuthStateManager {
                 avatarPreset = existing?.avatarPreset ?: meta?.optNullableString("avatar_preset"),
                 avatarUrl = existing?.avatarUrl ?: meta?.optNullableString("avatar_url"),
                 studentIdNumber = existing?.studentIdNumber ?: meta?.optNullableString("student_id_number"),
-                createdAt = createdAt
+                createdAt = createdAt ?: existing?.createdAt
             )
 
             // Keep the FULL session (with expires_at) encrypted. A local-only session without a real
@@ -410,6 +422,7 @@ object AuthStateManager {
 
     /** Keeps the edited profile on this phone (state + SharedPreferences). Does not touch the server. */
     private fun updateLocalProfile(updated: UserProfile) {
+        profileEditVersion.incrementAndGet()
         _currentProfile.value = updated
         _currentUser.value?.let { user ->
             val mergedUser = user.copy(fullName = updated.fullName ?: user.fullName)
@@ -438,12 +451,32 @@ object AuthStateManager {
     }
 
     private suspend fun pushProfile(profile: UserProfile): AccountCallResult {
-        refreshIfNeeded()
-        val token = _currentUser.value?.accessToken
-        if (token.isNullOrBlank()) {
-            return AccountCallResult.Failure("Your session expired. Please sign in again.", true)
+        pendingSaves.incrementAndGet()
+        try {
+            refreshIfNeeded()
+            var token = _currentUser.value?.accessToken
+            if (token.isNullOrBlank()) {
+                return AccountCallResult.Failure("Your session expired. Please sign in again.", true)
+            }
+            var result = trySave(profile, token)
+            if (result is AccountCallResult.Failure && result.sessionExpired) {
+                // The token may have expired between the check and the call: refresh once and retry once.
+                if (refreshIfNeeded(force = true)) {
+                    token = _currentUser.value?.accessToken
+                    if (!token.isNullOrBlank()) result = trySave(profile, token)
+                }
+            }
+            return result
+        } finally {
+            pendingSaves.decrementAndGet()
         }
-        return SupabaseAccountClient.saveProfile(profile.id, token, profile)
+    }
+
+    private suspend fun trySave(profile: UserProfile, token: String): AccountCallResult {
+        // Never overwrite the server's daily goal with the model default (45) unless the real
+        // server value was read for this student or the student chose a different value.
+        val includeGoal = serverProfileUserId == profile.id || profile.dailyStudyGoalMinutes != 45
+        return SupabaseAccountClient.saveProfile(profile.id, token, profile, includeGoal)
     }
 
     fun clearSession() {
@@ -451,6 +484,7 @@ object AuthStateManager {
         _currentProfile.value = null
         _isLoggedIn.value = false
         sessionJson = null
+        serverProfileUserId = null
         resetAuthNotification()
         val ctx = appContext ?: return
         SecureSessionStore.clear(ctx)
@@ -482,9 +516,16 @@ object AuthStateManager {
      */
     private suspend fun fetchFullProfile(userId: String, token: String?) {
         if (token.isNullOrBlank()) return
-        val fetched = SupabaseAccountClient.fetchProfile(userId, token, _currentProfile.value) ?: return
-        // Ignore the answer if the student signed out or switched account while we waited.
+        // Do not read while a save is running (the server may still hold the old values).
+        if (pendingSaves.get() > 0) return
+        val versionAtStart = profileEditVersion.get()
+        val result = SupabaseAccountClient.fetchProfile(userId, token, _currentProfile.value)
+        // Only a real row is applied. "No row", "session expired" and failures change nothing here.
+        val fetched = (result as? ProfileFetchResult.Found)?.profile ?: return
+        // Ignore the answer if the student signed out, switched account, or edited/saved meanwhile.
         if (_currentUser.value?.id != userId) return
+        if (profileEditVersion.get() != versionAtStart || pendingSaves.get() > 0) return
+        serverProfileUserId = userId
         _currentProfile.value = fetched
         _currentUser.value?.let { saveToPrefs(it, fetched) }
     }
