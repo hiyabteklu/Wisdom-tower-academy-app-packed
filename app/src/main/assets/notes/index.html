@@ -28,8 +28,12 @@
 /* Short-notes page (plan step N6). The renderer lives in richtext.js (shared with flashcards).
  * Called from the app: window.setNote(text).
  * "Summary" (plan step N10): the page cannot reach the network, so it asks the app through
- * WTBridge.onSummarize({ id, text }) and the app answers with window.wtSummaryResult(id, text). */
+ * WTBridge.onSummarize({ id, text }) and the app answers with window.wtSummaryResult(id, text).
+ * Reading progress (plan step N10, as the website's NotesViewer): the scrolled share of the page is reported
+ * through WTBridge.onProgress({ pct }) (0 to 100, at most about every 2 seconds, 100 at once from 95 percent on
+ * and after a successful Summary); the app saves it to learning_progress. */
 var noteText = "", summary = "", loading = false, pendingId = "", seq = 0;
+var lastPct = -1, pendingPct = -1, progTimer = 0, sent100 = false;
 
 /* the AI writes math as \( ... \) and \[ ... \]; the shared renderer reads $ ... $ and $$ ... $$ */
 function aiText(s) {
@@ -37,6 +41,36 @@ function aiText(s) {
     .replace(/\\\[([\s\S]+?)\\\]/g, function (m, a) { return "$$" + a + "$$"; })
     .replace(/\\\(([\s\S]+?)\\\)/g, function (m, a) { return "$" + a + "$"; });
 }
+
+function sendProgress(pct) {
+  if (!(window.WTBridge && window.WTBridge.onProgress)) return;
+  if (pct === lastPct) return;
+  lastPct = pct;
+  try { window.WTBridge.onProgress(JSON.stringify({ pct: pct })); } catch (e) { /* ignore */ }
+}
+
+function flushProgress() {
+  progTimer = 0;
+  if (pendingPct >= 0) sendProgress(pendingPct);
+}
+
+function reportScroll() {
+  if (!noteText) return;
+  var h = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+  var y = window.scrollY || document.documentElement.scrollTop || 0;
+  var pct = Math.min(100, Math.round((y / h) * 100));
+  pendingPct = pct;
+  if (pct >= 95 && !sent100) {
+    sent100 = true;
+    pendingPct = 100;
+    sendProgress(100);
+    return;
+  }
+  if (!progTimer) progTimer = window.setTimeout(flushProgress, 2000);
+}
+
+window.addEventListener("scroll", reportScroll, { passive: true });
+window.addEventListener("resize", reportScroll, { passive: true });
 
 function drawSummary() {
   var w = document.getElementById("sumwrap");
@@ -54,6 +88,8 @@ window.setNote = function (text) {
   var note = document.getElementById("note");
   noteText = String(text == null ? "" : text);
   summary = ""; loading = false; pendingId = "";
+  lastPct = -1; pendingPct = -1; sent100 = false;
+  if (progTimer) { window.clearTimeout(progTimer); progTimer = 0; }
   try {
     note.innerHTML = window.WTRich.render(text);
   } catch (e) {
@@ -67,6 +103,12 @@ window.wtSummaryResult = function (id, text) {
   if (id !== pendingId) return;
   pendingId = ""; loading = false; summary = text;
   drawSummary();
+  /* like the website: a finished summary counts as read, unless the AI could not be reached */
+  if (text !== "Could not reach AI. Try again later.") {
+    sent100 = true;
+    pendingPct = 100;
+    sendProgress(100);
+  }
 };
 
 document.getElementById("sumwrap").addEventListener("click", function (e) {
