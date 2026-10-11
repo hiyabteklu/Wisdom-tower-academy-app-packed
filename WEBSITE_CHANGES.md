@@ -60,3 +60,16 @@ The app calls these; both currently 404:
 ## 3. Secure `GET /api/notifications`
 
 The app currently sends `?userId=...&email=...` with no token. Anyone who guesses an id or email could read that user's notifications. The route should read the user from the Bearer token (`supabase.auth.getUser(token)`) and ignore the query params.
+
+## 4. Account deletion (Google Play REQUIRES this, it blocks the Play Store release)
+
+Added 2026-10-11. Google Play rule: an app that lets people create an account must (a) let them delete the account from inside the app and (b) have a public web page for deletion requests, whose link is entered in Play Console. A code search of both repos (app and website) on 2026-10-11 found NO account deletion anywhere.
+
+**Needed on the website:**
+1. Route `POST /api/account/delete`. Read the user from the `Authorization: Bearer <supabase access token>` header with `supabase.auth.getUser(token)` (ignore any user id in the body). Require a body like `{ "confirm": "DELETE" }`. Then, with the service-role key (Vercel env only, never in the app): delete the user's rows in every table keyed by the user id (at least `profiles`, `learning_progress`, `academic_results`, device/notification tokens; list the real tables in the Supabase dashboard first), delete the user's files in Appwrite (for example an uploaded avatar), then call `supabase.auth.admin.deleteUser(userId)`. Return `{ success: true }`.
+2. Public page `/delete-account` (no login needed to read it): says what is deleted, what is kept (if anything) and for how long; a button for signed-in users that calls the route; and a contact way (e-mail or the `/contact` form) for people who cannot sign in. This page's address is what goes into Play Console.
+3. Update `/privacy` so it lists the data really collected (see `PLAY_STORE_CHECKLIST.md` section 3C) and mentions deletion.
+
+**Owner decision needed first:** is any record kept after deletion (for legal or money reasons)? If nothing is kept, say so on the page.
+
+**App side (after the route exists):** a "Delete my account" button in Settings > Security that asks for confirmation, calls the route with the current token, then signs out and clears local data. Not written yet, because it must not call a route that does not exist.
