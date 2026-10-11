@@ -4,230 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="stylesheet" href="katex/katex.min.css">
+<link rel="stylesheet" href="richtext.css">
 <style>
   :root { color-scheme: dark; }
   html, body { margin: 0; padding: 0; background: #0a101d; }
   body { color: #cbd5e1; font: 16px/1.7 -apple-system, Roboto, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; }
   #root { padding: 16px 16px 64px; max-width: 760px; margin: 0 auto; overflow-wrap: anywhere; }
-  .study-h1 { font-size: 1.6rem; line-height: 1.25; color: #fff; margin: 1.4em 0 .6em; font-weight: 800; }
-  .study-h2 { font-size: 1.3rem; line-height: 1.3; color: #67e8f9; margin: 1.6em 0 .6em; font-weight: 800; display: flex; gap: .6em; align-items: flex-start; }
-  .study-h2-bar { flex: 0 0 4px; align-self: stretch; border-radius: 2px; background: linear-gradient(#22d3ee, #38bdf8); }
-  .study-h3 { font-size: 1.1rem; color: #fcd34d; margin: 1.3em 0 .4em; font-weight: 700; }
-  .study-p { margin: .8em 0; }
-  .study-list { margin: .8em 0; padding-left: 1.3em; }
-  .study-list li { margin: .4em 0; }
-  .study-callout { margin: 1em 0; padding: 12px 14px; border-left: 4px solid #22d3ee; background: rgba(34,211,238,.08); border-radius: 0 12px 12px 0; color: #e2e8f0; }
-  .study-hr { border: 0; border-top: 1px solid rgba(255,255,255,.12); margin: 1.5em 0; }
-  strong { color: #fff; font-weight: 600; }
-  em { color: #cffafe; }
-  mark.key-term { background: rgba(251,191,36,.18); color: #fde68a; padding: 0 .25em; border-radius: 4px; font-weight: 600; }
-  mark.hl-term { background: rgba(34,211,238,.2); color: #fff; padding: 0 .25em; border-radius: 4px; }
-  code.md-code { background: rgba(255,255,255,.1); color: #fef3c7; padding: .1em .35em; border-radius: 6px; font-size: .85em; }
-  pre { background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 12px; overflow-x: auto; font-size: .8rem; color: #cffafe; }
-  .scroll-x { overflow-x: auto; margin: .8em 0; }
-  table.study-table { border-collapse: collapse; min-width: 100%; font-size: .9rem; }
-  table.study-table th, table.study-table td { border: 1px solid rgba(255,255,255,.14); padding: 8px 10px; text-align: left; vertical-align: top; }
-  table.study-table th { background: rgba(255,255,255,.07); color: #fff; }
-  .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
-  .katex { color: #fff; font-size: 1.05em; }
-  .math-fallback { color: #fde68a; }
   .msg { text-align: center; color: #94a3b8; padding: 40px 0; }
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script src="katex/katex.min.js"></script>
+<script src="richtext.js"></script>
 <script>
-/*
- * Local rich-text renderer for notes (plan step N6). A direct port of the website's
- * components/learning/RichContent.tsx (blocks, inline syntax) and components/MathText.tsx (math).
- * Syntax: # ## ###, > callouts, - / * lists, tables, ``` code, ---, **bold**, *italic*, `code`,
- * ==highlight==, [[key term]], math $..$, $$..$$, \(..\), \[..\].
- * Called from the app: window.setNote(text). STATUS: written, NOT tested on a device.
- */
-(function () {
-  var MATH_RE_SRC = "\\$\\$([\\s\\S]+?)\\$\\$|\\\\\\[([\\s\\S]+?)\\\\\\]|(?<!\\\\)\\$(?!\\s)([^$\\n]+?)(?<!\\s)\\$|\\\\\\(([\\s\\S]+?)\\\\\\)";
-  function mathRe() { return new RegExp(MATH_RE_SRC, "g"); }
-
-  function esc(s) {
-    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+/* Short-notes page (plan step N6). The renderer lives in richtext.js (shared with flashcards). Called from the app: window.setNote(text). */
+window.setNote = function (text) {
+  var root = document.getElementById("root");
+  try {
+    root.innerHTML = window.WTRich.render(text);
+  } catch (e) {
+    root.innerHTML = '<p class="msg">Could not display this note.</p>';
   }
-
-  function cleanDelims(src) {
-    var s = src.trim(), inner;
-    if (s.indexOf("$$") === 0 && s.slice(-2) === "$$" && s.length >= 4) {
-      inner = s.slice(2, -2); if (inner.indexOf("$$") === -1) s = inner.trim();
-    } else if (s.indexOf("\\[") === 0 && s.slice(-2) === "\\]" && s.length >= 4) {
-      inner = s.slice(2, -2); if (inner.indexOf("\\[") === -1) s = inner.trim();
-    } else if (s.charAt(0) === "$" && s.slice(-1) === "$" && s.length >= 2) {
-      inner = s.slice(1, -1); if (inner.indexOf("$") === -1) s = inner.trim();
-    } else if (s.indexOf("\\(") === 0 && s.slice(-2) === "\\)" && s.length >= 4) {
-      inner = s.slice(2, -2); if (inner.indexOf("\\(") === -1) s = inner.trim();
-    }
-    return s;
-  }
-
-  function renderTex(src, display) {
-    var clean = cleanDelims(src);
-    if (!window.katex) return '<code class="math-fallback">' + esc(src) + "</code>";
-    try {
-      return window.katex.renderToString(clean, { throwOnError: false, displayMode: display, strict: "ignore", trust: false });
-    } catch (e) {
-      return '<code class="math-fallback">' + esc(src) + "</code>";
-    }
-  }
-
-  // MathText: split plain / math segments, render each; plain text is escaped, newlines become <br/>
-  function renderMixedMath(input) {
-    if (!input) return "";
-    var re = mathRe(), out = "", last = 0, m;
-    while ((m = re.exec(input)) !== null) {
-      if (m.index > last) out += esc(input.slice(last, m.index)).replace(/\n/g, "<br/>");
-      if (m[1] != null) out += renderTex(m[1].trim(), true);
-      else if (m[2] != null) out += renderTex(m[2].trim(), true);
-      else if (m[3] != null) out += renderTex(m[3].trim(), false);
-      else if (m[4] != null) out += renderTex(m[4].trim(), false);
-      last = m.index + m[0].length;
-    }
-    if (last < input.length) out += esc(input.slice(last)).replace(/\n/g, "<br/>");
-    return out || esc(input).replace(/\n/g, "<br/>");
-  }
-
-  function protectMath(text) {
-    var math = [];
-    var out = text.replace(mathRe(), function (full) {
-      var idx = math.length; math.push(full); return "@@WTMATH" + idx + "@@";
-    });
-    return { text: out, math: math };
-  }
-  function restoreMath(text, math) {
-    return text.replace(/@@WTMATH(\d+)@@/g, function (_, n) { var i = Number(n); return math[i] != null ? math[i] : ""; });
-  }
-
-  function sanitizeHighlightMarkers(text) {
-    var parts = [], i = 0;
-    while (i < text.length) {
-      var open = text.indexOf("==", i);
-      if (open === -1) { parts.push(text.slice(i)); break; }
-      parts.push(text.slice(i, open));
-      var close = text.indexOf("==", open + 2);
-      if (close === -1) { i = open + 2; continue; }
-      var inner = text.slice(open + 2, close);
-      if (inner.indexOf("\n") !== -1 || !inner.trim()) {
-        parts.push(text.slice(open, close + 2).replace(/==/g, ""));
-        i = close + 2; continue;
-      }
-      parts.push("==" + inner + "==");
-      i = close + 2;
-    }
-    return parts.join("");
-  }
-
-  function renderInline(text) {
-    var p = protectMath(text || "");
-    var cleaned = sanitizeHighlightMarkers(p.text);
-    var math = p.math;
-    var re = /\[\[([^\]]+)\]\]|==([^\n]+?)==|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/g;
-    var html = "", last = 0, m;
-    function leaf(chunk) { return renderMixedMath(restoreMath(chunk, math)); }
-    while ((m = re.exec(cleaned)) !== null) {
-      if (m.index > last) html += leaf(cleaned.slice(last, m.index));
-      if (m[1] != null) html += '<mark class="key-term">' + leaf(m[1]) + "</mark>";
-      else if (m[2] != null) html += '<mark class="hl-term">' + leaf(m[2]) + "</mark>";
-      else if (m[3] != null) html += "<strong>" + leaf(m[3]) + "</strong>";
-      else if (m[4] != null) html += "<em>" + leaf(m[4]) + "</em>";
-      else if (m[5] != null) html += '<code class="md-code">' + esc(restoreMath(m[5], math)) + "</code>";
-      last = m.index + m[0].length;
-    }
-    if (last < cleaned.length) html += leaf(cleaned.slice(last));
-    return html || leaf(cleaned);
-  }
-
-  function splitRow(line) {
-    var s = line.trim();
-    if (s.charAt(0) === "|") s = s.slice(1);
-    if (s.slice(-1) === "|") s = s.slice(0, -1);
-    return s.split("|").map(function (c) { return c.trim(); });
-  }
-  function isSep(line) {
-    var cells = splitRow(line);
-    return cells.length > 0 && cells.every(function (c) { return /^:?-+:?$/.test(c) || c === ""; });
-  }
-  function looksLikeHeader(line) { return line.indexOf("|") !== -1 && splitRow(line).length >= 2; }
-
-  function render(raw) {
-    var p = protectMath(raw || "");
-    var math = p.math;
-    var lines = p.text.replace(/\r\n/g, "\n").split("\n");
-    var out = [], para = [], i = 0;
-    function restore(s) { return restoreMath(s, math); }
-    function flush() {
-      var t = para.join(" ").trim();
-      if (t) out.push('<p class="study-p">' + renderInline(restore(t)) + "</p>");
-      para = [];
-    }
-    while (i < lines.length) {
-      var line = lines[i], t = line.trim(), m;
-      if (!t) { flush(); i++; continue; }
-      if (/^---+$/.test(t) || /^\*\*\*+$/.test(t)) { flush(); out.push('<hr class="study-hr">'); i++; continue; }
-      if (t.indexOf("```") === 0) {
-        flush(); i++;
-        var code = [];
-        while (i < lines.length && lines[i].trim().indexOf("```") !== 0) { code.push(lines[i]); i++; }
-        if (i < lines.length) i++;
-        out.push("<pre><code>" + esc(restore(code.join("\n"))) + "</code></pre>");
-        continue;
-      }
-      if (looksLikeHeader(t) && i + 1 < lines.length && isSep(lines[i + 1].trim())) {
-        flush();
-        var heads = splitRow(t).map(restore);
-        i += 2;
-        var rows = [];
-        while (i < lines.length && lines[i].trim().indexOf("|") !== -1) { rows.push(splitRow(lines[i].trim()).map(restore)); i++; }
-        var th = heads.map(function (h) { return "<th>" + renderInline(h) + "</th>"; }).join("");
-        var tb = rows.map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + renderInline(c) + "</td>"; }).join("") + "</tr>"; }).join("");
-        out.push('<div class="scroll-x"><table class="study-table"><thead><tr>' + th + "</tr></thead><tbody>" + tb + "</tbody></table></div>");
-        continue;
-      }
-      var h1 = t.match(/^#\s+(.+)/), h2 = t.match(/^##\s+(.+)/), h3 = t.match(/^###\s+(.+)/);
-      if (h1 || h2 || h3) {
-        flush();
-        var text = restore(((h1 && h1[1]) || (h2 && h2[1]) || (h3 && h3[1]) || "").trim());
-        if (h1) out.push('<h1 class="study-h1">' + renderInline(text) + "</h1>");
-        else if (h2) out.push('<h2 class="study-h2"><span class="study-h2-bar"></span><span>' + renderInline(text) + "</span></h2>");
-        else out.push('<h3 class="study-h3">' + renderInline(text) + "</h3>");
-        i++; continue;
-      }
-      if (t.indexOf("> ") === 0 || t === ">") {
-        flush();
-        var parts = [];
-        while (i < lines.length && (lines[i].trim().charAt(0) === ">")) { parts.push(lines[i].replace(/^>\s?/, "")); i++; }
-        out.push('<aside class="study-callout">' + renderInline(restore(parts.join(" ").trim())) + "</aside>");
-        continue;
-      }
-      if (/^[-*]\s+/.test(t)) {
-        flush();
-        var items = [];
-        while (i < lines.length && /^[-*]\s+/.test(lines[i].trim())) { items.push(restore(lines[i].trim().replace(/^[-*]\s+/, ""))); i++; }
-        out.push('<ul class="study-list">' + items.map(function (it) { return "<li>" + renderInline(it) + "</li>"; }).join("") + "</ul>");
-        continue;
-      }
-      para.push(t); i++;
-    }
-    flush();
-    return out.join("\n");
-  }
-
-  window.setNote = function (text) {
-    var root = document.getElementById("root");
-    try {
-      root.innerHTML = render(text);
-    } catch (e) {
-      root.innerHTML = '<p class="msg">Could not display this note.</p>';
-    }
-    window.scrollTo(0, 0);
-  };
-})();
+  window.scrollTo(0, 0);
+};
 </script>
 </body>
 </html>
