@@ -226,7 +226,7 @@ object AuthStateManager {
 
             saveToPrefs(authUser, profile)
 
-            // Asynchronously fetch full student profile from website API / Supabase
+            // Asynchronously read the student's real profile row from Supabase (same table as the website)
             scope.launch {
                 fetchFullProfile(uid, accessToken)
             }
@@ -408,13 +408,42 @@ object AuthStateManager {
         }
     }
 
-    fun updateProfile(updated: UserProfile) {
+    /** Keeps the edited profile on this phone (state + SharedPreferences). Does not touch the server. */
+    private fun updateLocalProfile(updated: UserProfile) {
         _currentProfile.value = updated
         _currentUser.value?.let { user ->
             val mergedUser = user.copy(fullName = updated.fullName ?: user.fullName)
             _currentUser.value = mergedUser
             saveToPrefs(mergedUser, updated)
         }
+    }
+
+    /**
+     * Saves the edited profile on this phone AND pushes it to Supabase in the background (same
+     * `profiles` table as the website). Fire and forget: the caller is not told whether the server
+     * accepted it. Prefer [saveProfile] when the screen must show an honest result.
+     */
+    fun updateProfile(updated: UserProfile) {
+        updateLocalProfile(updated)
+        scope.launch { pushProfile(updated) }
+    }
+
+    /**
+     * Saves the edited profile on this phone, then writes it to Supabase and returns the real result
+     * ([AccountCallResult.Success] only when the server returned the updated row).
+     */
+    suspend fun saveProfile(updated: UserProfile): AccountCallResult {
+        updateLocalProfile(updated)
+        return pushProfile(updated)
+    }
+
+    private suspend fun pushProfile(profile: UserProfile): AccountCallResult {
+        refreshIfNeeded()
+        val token = _currentUser.value?.accessToken
+        if (token.isNullOrBlank()) {
+            return AccountCallResult.Failure("Your session expired. Please sign in again.", true)
+        }
+        return SupabaseAccountClient.saveProfile(profile.id, token, profile)
     }
 
     fun clearSession() {
@@ -446,47 +475,18 @@ object AuthStateManager {
         }
     }
 
+    /**
+     * Reads the student's real row from Supabase `profiles` (same table and columns as the website's
+     * getFullProfile). The old call to the website route /api/account/profile is gone: that route does
+     * not exist on the website (STATUS.md S8).
+     */
     private suspend fun fetchFullProfile(userId: String, token: String?) {
-        try {
-            // Attempt query against website API endpoint or Supabase
-            val url = "https://www.wisdom-tower-academy.live/api/account/profile?userId=$userId"
-            val reqBuilder = Request.Builder().url(url)
-            if (!token.isNullOrBlank()) {
-                reqBuilder.addHeader("Authorization", "Bearer $token")
-            }
-            val resp = httpClient.newCall(reqBuilder.build()).execute()
-            if (resp.isSuccessful) {
-                val body = resp.body?.string().orEmpty()
-                if (body.isNotBlank()) {
-                    val root = JSONObject(body)
-                    val pObj = root.optJSONObject("profile") ?: root
-                    val updated = UserProfile(
-                        id = userId,
-                        email = pObj.optNullableString("email", _currentProfile.value?.email),
-                        fullName = pObj.optNullableString("full_name", _currentProfile.value?.fullName),
-                        firstName = pObj.optNullableString("first_name"),
-                        lastName = pObj.optNullableString("last_name"),
-                        phone = pObj.optNullableString("phone"),
-                        educationLevel = pObj.optNullableString("education_level", _currentProfile.value?.educationLevel),
-                        schoolName = pObj.optNullableString("school_name", _currentProfile.value?.schoolName),
-                        townRegion = pObj.optNullableString("town_region", _currentProfile.value?.townRegion),
-                        stream = pObj.optNullableString("stream", _currentProfile.value?.stream),
-                        bio = pObj.optNullableString("bio"),
-                        targetExam = pObj.optNullableString("target_exam"),
-                        targetScore = pObj.optNullableString("target_score"),
-                        dailyStudyGoalMinutes = pObj.optInt("daily_study_goal_minutes", 45),
-                        avatarPreset = pObj.optNullableString("avatar_preset", _currentProfile.value?.avatarPreset),
-                        avatarUrl = pObj.optNullableString("avatar_url", _currentProfile.value?.avatarUrl),
-                        studentIdNumber = pObj.optNullableString("student_id_number", _currentProfile.value?.studentIdNumber),
-                        createdAt = pObj.optNullableString("created_at", _currentUser.value?.createdAt)
-                    )
-                    _currentProfile.value = updated
-                    _currentUser.value?.let { saveToPrefs(it, updated) }
-                }
-            }
-        } catch (_: Exception) {
-            // Offline or private endpoint; keep deterministic student card
-        }
+        if (token.isNullOrBlank()) return
+        val fetched = SupabaseAccountClient.fetchProfile(userId, token, _currentProfile.value) ?: return
+        // Ignore the answer if the student signed out or switched account while we waited.
+        if (_currentUser.value?.id != userId) return
+        _currentProfile.value = fetched
+        _currentUser.value?.let { saveToPrefs(it, fetched) }
     }
 
     fun getStudentIdData(): StudentIdData {
