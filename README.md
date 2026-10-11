@@ -1,18 +1,20 @@
 # Wisdom Tower Academy — Android App
 
-Production Android shell for [Wisdom Tower Academy](https://wisdom-tower-academy.live).
+> **AI agents: read [HANDOFF.md](HANDOFF.md) FIRST.** It has the plan, what is done, what is left, and the owner's decisions. Update it before you stop.
 
-**Read [ARCHITECTURE.md](ARCHITECTURE.md) first.**
+Android app for [Wisdom Tower Academy](https://www.wisdom-tower-academy.live). Native Compose screens beside a WebView shell, using the same Supabase / Appwrite backend as the website.
+
+Then read [NATIVE_APP_BRIEF.md](NATIVE_APP_BRIEF.md) and [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## What this app is
 
-- Native Compose chrome + full-screen WebView of the live site
+- Native Compose screens (Home, Packages, Learning, Account, Settings, Guides) plus a WebView host for learning content
 - Fixed top bar: menu · "Wisdom Tower Academy" · notifications
 - Notification bell opens **`/notifications` only** (not Settings / Account)
 - Clean status-bar area (no overlap with clock/battery)
-- Bottom nav: Home / Learning / Packages / Account
+- Bottom nav: see `HANDOFF.md` section 5 (S9, tab count open)
 - Offline PDF vault + FLAG_SECURE
-- Built by GitHub Actions → debug APK artifact
+- Built by GitHub Actions
 
 ## Build locally
 
@@ -20,13 +22,8 @@ Production Android shell for [Wisdom Tower Academy](https://wisdom-tower-academy
 ./gradlew assembleDebug
 ```
 
-## Build APK via GitHub Actions
+## Build via GitHub Actions
 
-1. Push to `main` **or** run **Actions → Build Debug APK → Run workflow**.
-2. Open the successful run → **Artifacts** → download **Wisdom-Tower-Academy-debug**.
-3. Unzip and install the APK on a device.
-
-Recent successful runs:  
-https://github.com/hiyabteklu/Wisdom-tower-academy-app/actions/workflows/build-apk.yml
+Push to `main` **or** run the workflow from the **Actions** tab (see `.github/workflows/`), open the successful run, and download the artifact.
 
 Website content updates appear in the app automatically. Only native chrome / offline vault changes need a new APK.
