@@ -1,0 +1,20 @@
+name: Apply pending patches
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - run: python3 scripts/apply_pending_patches.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b fix/nav-bell-refresh
+          git add -A
+          git commit -m "S12 P1-P3 navigation, bell, refresh"
+          git push --force origin fix/nav-bell-refresh
