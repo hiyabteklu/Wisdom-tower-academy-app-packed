@@ -8,6 +8,9 @@ import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +19,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +35,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -38,14 +44,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.data.content.BookFileStore
@@ -64,8 +74,10 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import kotlin.math.roundToInt
 
 private const val READER_PREFS = "pdf_reader_state"
+private const val MAX_ZOOM = 3f
 
 /**
  * Native book reader (plan step N4): downloads the PDF once (kept on the phone, so it opens offline later),
@@ -78,7 +90,9 @@ private const val READER_PREFS = "pdf_reader_state"
  * reading seconds a few seconds after the page changes and when the reader closes (signed-in students only;
  * a signed-out student still gets the phone copy).
  *
- * Not done yet: pinch zoom.
+ * Zoom (N4 part 3): pinch with two fingers to zoom from 1x to 3x, drag sideways to move across a zoomed page
+ * (up and down is the normal scroll), double tap to zoom in to 2x or back to 1x. Pages are drawn at 1.5x the
+ * screen width so a zoomed page stays reasonably sharp; at 3x it is softer (hypothesis, not tested).
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -190,7 +204,7 @@ private fun PdfPages(file: File, resourceId: String?, modifier: Modifier) {
     var failed by remember(file) { mutableStateOf(false) }
     val mutex = remember(file) { Mutex() }
     val cache = remember(file) {
-        val kb = (Runtime.getRuntime().maxMemory() / 1024L / 8L).toInt().coerceAtLeast(8 * 1024)
+        val kb = (Runtime.getRuntime().maxMemory() / 1024L / 6L).toInt().coerceAtLeast(16 * 1024)
         object : LruCache<Int, Bitmap>(kb) {
             override fun sizeOf(key: Int, value: Bitmap): Int = value.byteCount / 1024
         }
@@ -232,7 +246,15 @@ private fun PdfPages(file: File, resourceId: String?, modifier: Modifier) {
     val pageCount = ready.pageCount
     val listState = rememberLazyListState()
     val currentPage by remember { derivedStateOf { listState.firstVisibleItemIndex + 1 } }
-    val widthPx = (LocalConfiguration.current.screenWidthDp * LocalDensity.current.density).toInt().coerceAtLeast(240)
+    val density = LocalDensity.current
+    val viewWidthPx = (LocalConfiguration.current.screenWidthDp * density.density).coerceAtLeast(240f)
+    // Pages are drawn 1.5x wider than the screen so that a zoomed page is still fairly sharp.
+    val renderWidthPx = (viewWidthPx * 1.5f).toInt().coerceAtMost(1800)
+
+    // --- Zoom (N4 part 3) -------------------------------------------------------------------------------
+    var zoom by remember(file) { mutableFloatStateOf(1f) }
+    var panX by remember(file) { mutableFloatStateOf(0f) }
+    val pageWidthDp = with(density) { (viewWidthPx * zoom).toDp() }
 
     // --- Last page + progress (N4 part 2) ---------------------------------------------------------------
     val context = LocalContext.current
@@ -285,14 +307,63 @@ private fun PdfPages(file: File, resourceId: String?, modifier: Modifier) {
         }
     }
 
-    Box(modifier = modifier) {
+    Box(
+        modifier = modifier
+            .clipToBounds()
+            // Double tap: 1x -> 2x -> 1x. Does not use up any other touch.
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onDoubleTap = {
+                        if (zoom > 1f) {
+                            zoom = 1f
+                            panX = 0f
+                        } else {
+                            zoom = 2f
+                        }
+                    }
+                )
+            }
+            // Two fingers: zoom + move. One finger: only sideways movement while zoomed, never used up,
+            // so the list still scrolls up and down.
+            .pointerInput(viewWidthPx) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    do {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        val pressed = event.changes.count { it.pressed }
+                        if (pressed >= 2) {
+                            val newZoom = (zoom * event.calculateZoom()).coerceIn(1f, MAX_ZOOM)
+                            val pan = event.calculatePan()
+                            zoom = newZoom
+                            panX = (panX + pan.x).coerceIn(-(viewWidthPx * (newZoom - 1f)), 0f)
+                            event.changes.forEach { if (it.positionChanged()) it.consume() }
+                        } else if (pressed == 1 && zoom > 1f) {
+                            val pan = event.calculatePan()
+                            panX = (panX + pan.x).coerceIn(-(viewWidthPx * (zoom - 1f)), 0f)
+                        }
+                    } while (event.changes.any { it.pressed })
+                }
+            }
+    ) {
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             items(count = pageCount, key = { it }) { index ->
-                PdfPageImage(index, ready, mutex, widthPx, cache)
+                // The page is as wide as the screen times the zoom; panX slides it sideways.
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopStart) {
+                    PdfPageImage(
+                        index = index,
+                        renderer = ready,
+                        mutex = mutex,
+                        renderWidthPx = renderWidthPx,
+                        cache = cache,
+                        modifier = Modifier
+                            .requiredWidth(pageWidthDp)
+                            .offset { IntOffset(panX.roundToInt(), 0) }
+                    )
+                }
             }
         }
         Text(
@@ -333,13 +404,14 @@ private fun PdfPageImage(
     index: Int,
     renderer: PdfRenderer,
     mutex: Mutex,
-    widthPx: Int,
-    cache: LruCache<Int, Bitmap>
+    renderWidthPx: Int,
+    cache: LruCache<Int, Bitmap>,
+    modifier: Modifier = Modifier
 ) {
-    val bitmap by produceState<Bitmap?>(initialValue = cache.get(index), index, renderer, widthPx) {
+    val bitmap by produceState<Bitmap?>(initialValue = cache.get(index), index, renderer, renderWidthPx) {
         if (value == null) {
             val rendered = withContext(Dispatchers.IO) {
-                mutex.withLock { renderPage(renderer, index, widthPx) }
+                mutex.withLock { renderPage(renderer, index, renderWidthPx) }
             }
             if (rendered != null) cache.put(index, rendered)
             value = rendered
@@ -351,12 +423,11 @@ private fun PdfPageImage(
             bitmap = bmp.asImageBitmap(),
             contentDescription = "Page ${index + 1}",
             contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth()
+            modifier = modifier
         )
     } else {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
+            modifier = modifier
                 .aspectRatio(0.707f)
                 .background(Color.White.copy(alpha = 0.06f)),
             contentAlignment = Alignment.Center
