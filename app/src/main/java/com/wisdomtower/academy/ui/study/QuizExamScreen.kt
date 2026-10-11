@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.wisdomtower.academy.data.content.AiExplainRepository
 import com.wisdomtower.academy.data.content.ContentItemResult
 import com.wisdomtower.academy.data.content.ExamAttemptRepository
 import com.wisdomtower.academy.data.content.LearningContentRepository
@@ -73,7 +75,10 @@ private const val QUIZ_PREF_MODE = "feedback_mode"
  *  - `onSubmit` (exams only): saved to `exam_attempts` and, with [trackerScopeId], to `academic_results`
  *    ([ExamAttemptRepository]), the same rows as the website;
  *  - `onMode`: the "Right Away" / "After Finish" choice, remembered on this phone like the website's
- *    `wta_qb_feedback_mode`.
+ *    `wta_qb_feedback_mode`;
+ *  - `onExplain` (plan step N10): "Explain with AI". The page sends `{ id, payload }`; this screen adds
+ *    `resourceId`, asks the website route through [AiExplainRepository] (the page itself cannot reach the
+ *    network) and answers with `window.wtExplainResult(id, text)`. The answer is dropped if the screen was left.
  * Exams keep the screen on (the website asks for a screen wake lock). System Back first closes an open dialog
  * inside the page, otherwise leaves.
  *
@@ -89,6 +94,7 @@ fun QuizExamScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val screenScope = rememberCoroutineScope()
     var attempt by remember { mutableStateOf(0) }
     var result by remember(resourceId) { mutableStateOf<ContentItemResult?>(null) }
     val webRef = remember { arrayOfNulls<WebView>(1) }
@@ -158,6 +164,33 @@ fun QuizExamScreen(
                     // ignore
                 }
                 Unit
+            },
+            onExplain = { json ->
+                // Runs in the screen's own scope: leaving the screen cancels a pending request, which is fine.
+                screenScope.launch {
+                    var id = ""
+                    var text = "AI unavailable"
+                    try {
+                        val data = JSONObject(json)
+                        id = data.optString("id", "")
+                        val payload = data.optJSONObject("payload")
+                        if (payload != null) {
+                            payload.put("resourceId", resourceId)
+                            text = AiExplainRepository.explain(payload.toString())
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        // keep "AI unavailable"
+                    }
+                    if (id.isNotEmpty()) {
+                        webRef[0]?.evaluateJavascript(
+                            "window.wtExplainResult(${JSONObject.quote(id)}, ${JSONObject.quote(text)});",
+                            null
+                        )
+                    }
+                }
+                Unit
             }
         )
     }
@@ -222,7 +255,8 @@ fun QuizExamScreen(
 private class QuizBridge(
     private val onProgress: (String) -> Unit,
     private val onSubmit: (String) -> Unit,
-    private val onMode: (String) -> Unit
+    private val onMode: (String) -> Unit,
+    private val onExplain: (String) -> Unit
 ) {
     @JavascriptInterface
     fun onProgress(json: String) {
@@ -237,6 +271,11 @@ private class QuizBridge(
     @JavascriptInterface
     fun onMode(json: String) {
         onMode.invoke(json)
+    }
+
+    @JavascriptInterface
+    fun onExplain(json: String) {
+        onExplain.invoke(json)
     }
 }
 
