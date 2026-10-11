@@ -150,6 +150,44 @@ tasks.register<Copy>("copySpecialPackageImages") {
 }
 tasks.named("preBuild").configure { dependsOn("copySpecialPackageImages") }
 
+// Packs KaTeX (the website's math library, same major version 0.16) for the local notes page
+// (src/main/assets/notes/index.html, plan step N6). The files cannot be committed from the chat tools, so every
+// build downloads the pinned version from the jsDelivr npm mirror into src/main/assets/notes/katex/ and keeps
+// them (a file that is already there is not downloaded again). If a download fails the build still succeeds
+// with a warning: the notes page then shows formulas as plain text instead of typeset math.
+tasks.register("fetchKatex") {
+  val katexVersion = "0.16.11"
+  val outDir = layout.projectDirectory.dir("src/main/assets/notes/katex").asFile
+  val fontNames = listOf(
+    "AMS-Regular", "Caligraphic-Bold", "Caligraphic-Regular", "Fraktur-Bold", "Fraktur-Regular",
+    "Main-Bold", "Main-BoldItalic", "Main-Italic", "Main-Regular", "Math-BoldItalic", "Math-Italic",
+    "SansSerif-Bold", "SansSerif-Italic", "SansSerif-Regular", "Script-Regular",
+    "Size1-Regular", "Size2-Regular", "Size3-Regular", "Size4-Regular", "Typewriter-Regular"
+  )
+  doLast {
+    val base = "https://cdn.jsdelivr.net/npm/katex@$katexVersion/dist"
+    val names = listOf("katex.min.js", "katex.min.css") + fontNames.map { "fonts/KaTeX_$it.woff2" }
+    var failed = 0
+    for (name in names) {
+      val target = java.io.File(outDir, name)
+      if (target.exists() && target.length() > 0L) continue
+      try {
+        target.parentFile.mkdirs()
+        val connection = java.net.URI("$base/$name").toURL().openConnection()
+        connection.connectTimeout = 15000
+        connection.readTimeout = 30000
+        connection.getInputStream().use { input -> target.outputStream().use { out -> input.copyTo(out) } }
+      } catch (e: Exception) {
+        target.delete()
+        failed += 1
+        logger.warn("fetchKatex: could not download $name (${e.javaClass.simpleName})")
+      }
+    }
+    if (failed > 0) logger.warn("fetchKatex: $failed KaTeX file(s) missing, formulas in notes will show as plain text")
+  }
+}
+tasks.named("preBuild").configure { dependsOn("fetchKatex") }
+
 tasks.register<Copy>("copyApkOutputs") {
   from(layout.buildDirectory.dir("outputs/apk/debug"))
   into(rootDir.resolve("build/outputs/apk/debug"))
