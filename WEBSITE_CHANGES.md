@@ -73,3 +73,20 @@ Added 2026-10-11. Google Play rule: an app that lets people create an account mu
 **Owner decision needed first:** is any record kept after deletion (for legal or money reasons)? If nothing is kept, say so on the page.
 
 **App side (after the route exists):** a "Delete my account" button in Settings > Security that asks for confirmation, calls the route with the current token, then signs out and clears local data. Not written yet, because it must not call a route that does not exist.
+
+## 5. Privacy page (`src/app/privacy/page.tsx`): the third-party list does not match what the code does
+
+Added 2026-10-12 (found while comparing the app's Privacy text with the website page; the app copies the website text word for word, so the app's Privacy screen has the same gaps). This is the concrete list behind item 3 of section 4 and `PLAY_STORE_CHECKLIST.md` section 5 point 3.
+
+**Verified in the website source (`website-reference/`):**
+- Section 05 "Third-Party Sub-processors" names **Google Gemini AI** as the only AI processor for "Explain with AI". But `src/app/api/explain/route.ts`, `src/app/api/ai/explain/route.ts` and `src/app/api/ai/tutor/route.ts` also send the question text to **Groq** (`api.groq.com`), and the tutor route tries Gemini first and then Groq. Groq is not named anywhere on the page.
+- The same section lists "Supabase ... encrypted receipt asset storage" and "Google Cloud Platform & Vercel", but the project also uses **Appwrite** for file storage (PDFs and other files) and **Firebase Cloud Messaging** for push notifications (see `HANDOFF.md` section 3 and `PLAY_STORE_CHECKLIST.md` section 3C). Neither is named.
+
+**Hypothesis (check before editing):** Section 02 D ("Device, Cache & Network Telemetry") only talks about browser data. If the Android app stores a push-notification token (Firebase) against the account, add "device push-notification token" there. Whether the token is saved in a database table was not checked here.
+
+**Owner decisions needed:**
+1. Add Groq, Appwrite and Firebase (and what each one receives) to section 05, and a line about the Android app's push token to section 02 D.
+2. The page (and the Terms, section 05 and 06) describe paid packages, payment methods, receipts and refunds. The app is free for now and has no purchase buttons (owner decision 2026-10-11), but the website still sells (or will sell) packages, so this wording is probably right for the website. Say whether the app screens should keep showing it unchanged (current behaviour: yes, a word-for-word copy) or whether Google Play review is likely to want a shorter app-specific policy. Hypothesis: one policy URL for both is fine as long as it lists everything the app collects.
+3. After the website page is changed, copy the new text into `ui/drawer/LegalContent.kt` (the file says: change the website first, then copy).
+
+**Not a problem:** the app's Privacy and Terms screens were compared section by section with the two website pages on 2026-10-12 and match them (version 3.2, 28 September 2026).
