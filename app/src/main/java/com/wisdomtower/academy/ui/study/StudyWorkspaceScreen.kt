@@ -254,6 +254,20 @@ fun StudyWorkspaceScreen(
         }
     }
 
+    // P13 initial hub: a link that ends with a hub id (for example .../physics/life-savers) opens that native
+    // hub list straight away, once the access check says the course is open. Back returns to the six cards.
+    val initialHub = remember(basePath) {
+        cleanBase(basePath).substringAfterLast('/')
+            .takeIf { it in NATIVE_HUB_IDS && contentScope != null && entranceUrl == null }
+    }
+    var initialHubHandled by remember(basePath) { mutableStateOf(false) }
+    LaunchedEffect(basePath, access.gate) {
+        if (initialHub != null && !initialHubHandled && access.gate == HubGate.Open) {
+            initialHubHandled = true
+            view = WorkspaceView.HubList(initialHub)
+        }
+    }
+
     // The quiz screen has its own BackHandler (it closes its dialogs first and then calls onBack below).
     BackHandler(enabled = view != null && view !is WorkspaceView.Quiz) {
         val open = view
