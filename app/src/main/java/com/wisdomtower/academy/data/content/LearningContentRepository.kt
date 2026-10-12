@@ -4,7 +4,10 @@ import android.content.Context
 import android.util.Log
 import com.wisdomtower.academy.BuildConfig
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -32,6 +35,11 @@ import java.util.concurrent.TimeUnit
  * Offline: every successful answer is saved as a small JSON file in the app's private storage; when the
  * phone cannot reach the server the saved copy is returned (`fromCache = true`).
  *
+ * F4 (2026-10-12, owner report problem 4: "opening material should be instant"): [getResource] is now
+ * cache-first (a saved item opens at once and is refreshed quietly in the background for the next visit;
+ * `refresh = true` forces a real download, used by the Download buttons), and [list] gives up on a slow
+ * network after a few seconds when it has a saved copy, instead of waiting 15 seconds.
+ *
  * The sign-in check (real content needs a signed-in student) belongs to the screen that calls this.
  *
  * STATUS: written, NOT compiled, NOT tested on a device (plan step N1, `docs/NATIVE_CONTENT_PLAN.md`).
@@ -45,6 +53,15 @@ object LearningContentRepository {
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .build()
+
+    /** Used when a saved copy exists: a slow or missing network must not keep the student waiting. */
+    private val fastHttp = http.newBuilder()
+        .connectTimeout(4, TimeUnit.SECONDS)
+        .readTimeout(8, TimeUnit.SECONDS)
+        .build()
+
+    /** Quiet background refreshes of saved items (never tied to a screen). */
+    private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val ECE_SCOPE = Regex("^ece/(sem-[12])/([^/]+)$")
     private val UUID_REGEX = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
@@ -71,7 +88,8 @@ object LearningContentRepository {
     ): ContentListResult = withContext(Dispatchers.IO) {
         val cacheFile = cacheFile(context, "list_${scopePath}_${hub}_${if (full) "full" else "light"}")
         try {
-            val rows = fetchRows(scopePath, hub, full)
+            val client = if (cacheFile.exists()) fastHttp else http
+            val rows = fetchRows(scopePath, hub, full, client)
             writeCache(cacheFile, rows.toString())
             ContentListResult.Success(rows.objects().map(::rowToResource), false)
         } catch (e: CancellationException) {
@@ -87,34 +105,46 @@ object LearningContentRepository {
         }
     }
 
-    /** Loads one resource with its full body and meta (note text, flashcards, questions). */
-    suspend fun getResource(context: Context, id: String): ContentItemResult = withContext(Dispatchers.IO) {
-        if (!UUID_REGEX.matches(id)) return@withContext ContentItemResult.NotFound
-        val cacheFile = cacheFile(context, "item_$id")
-        try {
-            val url = "$supabaseUrl/rest/v1/learning_resources".toHttpUrl().newBuilder()
-                .addQueryParameter("select", "*")
-                .addQueryParameter("id", "eq.$id")
-                .addQueryParameter("published", "eq.true")
-                .addQueryParameter("limit", "1")
-                .build().toString()
-            val rows = JSONArray(get(url))
-            if (rows.length() == 0) return@withContext ContentItemResult.NotFound
-            val row = rows.getJSONObject(0)
-            writeCache(cacheFile, row.toString())
-            ContentItemResult.Found(rowToResource(row), false)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w(TAG, "getResource failed: ${e.javaClass.simpleName}")
-            val cached = readCache(cacheFile)?.let { runCatching { JSONObject(it) }.getOrNull() }
-            if (cached != null) {
-                ContentItemResult.Found(rowToResource(cached), true)
-            } else {
-                ContentItemResult.Failure(if (e is IOException) NO_INTERNET else LOAD_FAILED)
+    /**
+     * Loads one resource with its full body and meta (note text, flashcards, questions).
+     * Cache-first: a saved copy is returned at once (`fromCache = false`, it is not necessarily offline) and
+     * refreshed quietly in the background. With [refresh] = true the server is asked first (a Download button):
+     * the result has `fromCache = true` only when the server could not be reached and the old copy was used.
+     */
+    suspend fun getResource(context: Context, id: String, refresh: Boolean = false): ContentItemResult =
+        withContext(Dispatchers.IO) {
+            if (!UUID_REGEX.matches(id)) return@withContext ContentItemResult.NotFound
+            val cacheFile = cacheFile(context, "item_$id")
+            if (!refresh) {
+                val saved = readCache(cacheFile)?.let { runCatching { JSONObject(it) }.getOrNull() }
+                if (saved != null) {
+                    refreshScope.launch {
+                        try {
+                            fetchItem(id, cacheFile, fastHttp)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            Log.w(TAG, "background refresh failed: ${e.javaClass.simpleName}")
+                        }
+                    }
+                    return@withContext ContentItemResult.Found(rowToResource(saved), false)
+                }
+            }
+            try {
+                val row = fetchItem(id, cacheFile, http) ?: return@withContext ContentItemResult.NotFound
+                ContentItemResult.Found(rowToResource(row), false)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "getResource failed: ${e.javaClass.simpleName}")
+                val cached = readCache(cacheFile)?.let { runCatching { JSONObject(it) }.getOrNull() }
+                if (cached != null) {
+                    ContentItemResult.Found(rowToResource(cached), true)
+                } else {
+                    ContentItemResult.Failure(if (e is IOException) NO_INTERNET else LOAD_FAILED)
+                }
             }
         }
-    }
 
     /**
      * The address of a book file on Appwrite (same URL the website's `/api/content/pdf` proxy reads), or null
@@ -134,12 +164,33 @@ object LearningContentRepository {
 
     // ---------- internals ----------
 
-    private fun fetchRows(scopePath: String, hub: String, full: Boolean): JSONArray {
+    /**
+     * Asks the server for one published item and saves it in [cacheFile]. Returns the row, or null when the
+     * item no longer exists or is no longer published (the saved copy is then deleted).
+     */
+    private fun fetchItem(id: String, cacheFile: File, client: OkHttpClient): JSONObject? {
+        val url = "$supabaseUrl/rest/v1/learning_resources".toHttpUrl().newBuilder()
+            .addQueryParameter("select", "*")
+            .addQueryParameter("id", "eq.$id")
+            .addQueryParameter("published", "eq.true")
+            .addQueryParameter("limit", "1")
+            .build().toString()
+        val rows = JSONArray(get(url, client))
+        if (rows.length() == 0) {
+            runCatching { cacheFile.delete() }
+            return null
+        }
+        val row = rows.getJSONObject(0)
+        writeCache(cacheFile, row.toString())
+        return row
+    }
+
+    private fun fetchRows(scopePath: String, hub: String, full: Boolean, client: OkHttpClient): JSONArray {
         val hubFilter = if (hub == "short-notes") "in.(\"short-notes\",\"references\")" else "eq.$hub"
-        var rows = queryRows(scopeFilter(scopePath), hubFilter, full)
+        var rows = queryRows(scopeFilter(scopePath), hubFilter, full, client)
         val ece = ECE_SCOPE.matchEntire(scopePath)
         if (rows.length() == 0 && ece != null) {
-            rows = queryRows("ilike.*${ece.groupValues[2]}*", hubFilter, full)
+            rows = queryRows("ilike.*${ece.groupValues[2]}*", hubFilter, full, client)
         }
         return rows
     }
@@ -158,7 +209,7 @@ object LearningContentRepository {
         }
     }
 
-    private fun queryRows(scopeFilter: String, hubFilter: String, full: Boolean): JSONArray {
+    private fun queryRows(scopeFilter: String, hubFilter: String, full: Boolean, client: OkHttpClient): JSONArray {
         val url = "$supabaseUrl/rest/v1/learning_resources".toHttpUrl().newBuilder()
             .addQueryParameter("select", if (full) "*" else LIGHT_COLUMNS)
             .addQueryParameter("scope_path", scopeFilter)
@@ -166,11 +217,11 @@ object LearningContentRepository {
             .addQueryParameter("published", "eq.true")
             .addQueryParameter("order", "sort_order.asc")
             .build().toString()
-        return JSONArray(get(url))
+        return JSONArray(get(url, client))
     }
 
     /** GET with the public key. Network trouble throws IOException; any other HTTP error throws IllegalStateException. */
-    private fun get(url: String): String {
+    private fun get(url: String, client: OkHttpClient): String {
         val request = Request.Builder()
             .url(url)
             .addHeader("apikey", anonKey)
@@ -178,7 +229,7 @@ object LearningContentRepository {
             .addHeader("Accept", "application/json")
             .get()
             .build()
-        return http.newCall(request).execute().use { resp ->
+        return client.newCall(request).execute().use { resp ->
             val text = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) throw IllegalStateException("HTTP ${resp.code}")
             text
