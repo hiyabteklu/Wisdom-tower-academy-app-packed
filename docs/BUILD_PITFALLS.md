@@ -137,3 +137,10 @@
   3. Extracted `bulk` values into local `val`s before lambda captures in `HubItemListScreen.kt` to avoid smart-cast issues.
 * **DO NOT:** **For custom circular gauges that need centered text, determinate arcs, and track rings, use standard Compose `Canvas` + `drawArc`. Avoid depending on unstable or newly introduced Material3 progress indicator lambda overloads.**
 
+### 2026-10-12 – Run #299 & #300 failed (`:app:compileReleaseKotlin`)
+
+#### Problem: `androidx.compose.ui.unit.coerceAtMost` import fragility
+* **Cause:** `DownloadGauge.kt` imported `androidx.compose.ui.unit.coerceAtMost`. Depending on the exact Compose UI version packaged by BOM 2024.09.00, `coerceAtMost` for `Dp` is either an extension function or only available on `Comparable<T>` without importing the unit extension, leading to unresolved symbol compilation errors.
+* **Fix:** Removed the `coerceAtMost` import completely and computed `val iconSize = if (size > 22.dp) 22.dp else size` directly with native `Dp` comparisons.
+* **DO NOT:** **Avoid importing `androidx.compose.ui.unit.coerceAtMost` or `coerceAtLeast` when comparing or bounding `Dp` values; use simple `if/else` checks or standard `Comparable` operators.**
+

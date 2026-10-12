@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.coerceAtMost
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.ui.theme.WisdomCyan
@@ -64,6 +63,7 @@ fun DownloadGauge(
     failedColor: Color = Color(0xFFF87171),
     trackColor: Color = WisdomCyan.copy(alpha = 0.2f)
 ) {
+    val iconSize = if (size > 22.dp) 22.dp else size
     Box(
         modifier = modifier.size(size),
         contentAlignment = Alignment.Center
@@ -74,7 +74,7 @@ fun DownloadGauge(
                     imageVector = Icons.Filled.CheckCircle,
                     contentDescription = "Saved offline. Tap to remove",
                     tint = downloadedColor,
-                    modifier = Modifier.size(size.coerceAtMost(22.dp))
+                    modifier = Modifier.size(iconSize)
                 )
             }
 
@@ -83,7 +83,7 @@ fun DownloadGauge(
                     imageVector = Icons.Filled.Refresh,
                     contentDescription = "Download failed. Tap to retry",
                     tint = failedColor,
-                    modifier = Modifier.size(size.coerceAtMost(22.dp))
+                    modifier = Modifier.size(iconSize)
                 )
             }
 
@@ -92,7 +92,7 @@ fun DownloadGauge(
                     imageVector = Icons.Filled.Download,
                     contentDescription = "Download for offline use",
                     tint = color,
-                    modifier = Modifier.size(size.coerceAtMost(22.dp))
+                    modifier = Modifier.size(iconSize)
                 )
             }
 

@@ -55,14 +55,16 @@
     - Verified web applet compilation (`compile_applet`): Build succeeded.
     - Verified TypeScript linting (`lint_applet` / `tsc --noEmit`): Passed cleanly.
 
-  - **RUN #298 CI ROOT CAUSE & FIX:**
+  - **RUN #298, #299 & #300 CI ROOT CAUSES & FIXES:**
     - GitHub Actions Run #298 failed in `:app:compileReleaseKotlin` with `CompilationErrorException`.
     - Cause 1: `BookFileStore.kt` line 168 called `getCachedSize(context, key)` instead of the declared `getCachedFileSize(context, key)`, leading to an unresolved reference error.
     - Cause 2: `DownloadGauge.kt` used `CircularProgressIndicator` with `progress = { p }` and indeterminate `trackColor`, which is incompatible with the standard Compose Material3 API surface in BOM 2024.09.00.
+    - Cause 3 (Run #299 & #300): `DownloadGauge.kt` imported `androidx.compose.ui.unit.coerceAtMost`, which is not an available package-level function in Compose BOM 2024.09.00.
     - Fix 1: Corrected `getCachedSize` call to `getCachedFileSize` in `BookFileStore.kt`.
     - Fix 2: Implemented determinate circular gauge using Compose `Canvas` + `drawArc` with rounded stroke caps (`StrokeCap.Round`) and centered percentage text, matching `FocusRing` in `NativeTimerScreen.kt`. Standardized indeterminate progress to standard `CircularProgressIndicator(modifier, color, strokeWidth)`.
     - Fix 3: Extracted `bulk` values into local `val`s before lambda capture in `HubItemListScreen.kt` to avoid smart-cast issues.
-    - Logged entry in `docs/BUILD_PITFALLS.md`.
+    - Fix 4: Removed `import androidx.compose.ui.unit.coerceAtMost` and computed icon size with native `if (size > 22.dp) 22.dp else size` directly.
+    - Logged entries in `docs/BUILD_PITFALLS.md`.
 
   - **FILES TOUCHED:**
     - `app/src/main/java/com/wisdomtower/academy/ui/study/DownloadGauge.kt` (new shared composable)
