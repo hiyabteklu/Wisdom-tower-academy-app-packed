@@ -18,26 +18,20 @@
   .chip.learning { border-color: rgba(251,191,36,.25); color: #fde68a; }
   .chip.again { border-color: rgba(251,113,133,.25); color: #fecdd3; }
 
-  /* 3D flip: the slot gets the slide-in, .flip turns around the vertical axis, the two faces hide their back side.
-   * F1c (2026-10-12): .slot is the positioned box and .flip fills it with top/left/right/bottom (before, .flip used
-   * height:100% of a flex item, which can be 0 and then the whole card is invisible = a dark screen). The slide-in
-   * no longer starts at opacity 0 (if the animation never ran, the card stayed invisible). */
-  .slot { position: relative; flex: 1 1 auto; min-height: 160px; perspective: 1400px; -webkit-perspective: 1400px; animation: fcIn .22s ease-out; cursor: pointer; }
-  .flip { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; transition: transform .55s cubic-bezier(.2,.8,.2,1); }
-  .flip.flipped { transform: rotateY(180deg); }
+  /* Flip: NO 3D (F1d, 2026-10-12). The F2 version used perspective / preserve-3d / backface-visibility; the owner's
+   * phone then showed a completely dark screen (nothing drawn, not even the chips). Now only ONE face is shown at a
+   * time and a flip is a plain 2D squeeze (scaleX) with the faces swapped at the narrowest point (script below). */
+  .slot { position: relative; flex: 1 1 auto; min-height: 160px; animation: fcIn .22s ease-out; cursor: pointer; }
+  .flip { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+  .flip.turn { animation: fcTurn .3s ease-in-out; }
   .face { position: absolute; top: 0; left: 0; right: 0; bottom: 0; box-sizing: border-box; border-radius: 22px; padding: 18px 20px;
           border: 1px solid rgba(255,255,255,.12); background: linear-gradient(160deg, #131f38, #0e172a 60%, #0a101d);
-          backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; overflow-y: auto; }
-  .face.back { transform: rotateY(180deg); border-color: rgba(34,211,238,.35); }
+          display: flex; flex-direction: column; overflow-y: auto; }
+  .face.back { display: none; border-color: rgba(34,211,238,.35); }
+  .flip.flipped .face.front { display: none; }
+  .flip.flipped .face.back { display: flex; }
   @keyframes fcIn { from { transform: translateX(14px); } to { transform: none; } }
-
-  /* Flat fallback (class "flat" on #root, set by the script when the 3D card has no size): no 3D, the faces swap */
-  #root.flat .slot { perspective: none; -webkit-perspective: none; animation: none; }
-  #root.flat .flip { transform: none !important; transform-style: flat; -webkit-transform-style: flat; transition: none; }
-  #root.flat .face { backface-visibility: visible; -webkit-backface-visibility: visible; }
-  #root.flat .face.back { display: none; transform: none; }
-  #root.flat .flip.flipped .face.front { display: none; }
-  #root.flat .flip.flipped .face.back { display: flex; }
+  @keyframes fcTurn { 0% { transform: scaleX(1); } 50% { transform: scaleX(.04); } 100% { transform: scaleX(1); } }
 
   .lbl { flex: 0 0 auto; margin: 0 0 8px; text-align: center; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 800; }
   .lbl.q { color: #c4b5fd; }
@@ -70,7 +64,7 @@
 <body>
 <div id="root"><p class="msg">Loading deck...</p></div>
 <script>
-/* F1c: a script error must never leave a silent dark screen: show the message on the page (the owner can read it) */
+/* A script error must never leave a silent dark screen: show the message on the page (the owner can read it) */
 window.onerror = function (message) {
   var r = document.getElementById("root");
   if (r) r.innerHTML = '<p class="msg">Could not display this deck. (' + String(message).slice(0, 160) + ")</p>";
@@ -83,11 +77,12 @@ window.onerror = function (message) {
  * Flashcard deck viewer (plan step N3, redesigned in F2, owner report 2026-10-12 problem 7).
  * Port of the website's components/learning/FlashcardViewer.tsx: "Question / Answer · tap to flip", counters,
  * previous / next, swipe left/right, "Deck complete" with "Practice again", empty text "No cards in this deck yet.".
- * F2: real 3D flip (both faces are drawn, the card turns), text centered in the card with a size that follows its
- * length, a "Previous" / "Next" row and a rating row "Again" / "Learning" / "Known" (the owner's wording; the
- * website says "Know"). The stats keys sent to the app are unchanged (know, learning, again, seen, total, accuracy).
- * F1c (2026-10-12, owner report: deck opened after download was just dark): robust card size, visible errors,
- * automatic flat (non 3D) fallback when the 3D card has no size.
+ * F2: text centered in the card with a size that follows its length, a "Previous" / "Next" row and a rating row
+ * "Again" / "Learning" / "Known" (the owner's wording; the website says "Know"). The stats keys sent to the app
+ * are unchanged (know, learning, again, seen, total, accuracy).
+ * F1c: visible errors instead of a silent dark screen.
+ * F1d (2026-10-12, owner: the deck opened after download was STILL dark after F1c, not even "Loading deck..."):
+ * all 3D CSS removed (see the style block). Hypothesis, not proven: the 3D layers blanked the whole WebView.
  * Called from the app: window.setDeck(metaJsonText) with the row's `meta` JSON ({ "cards": [ { front, back } ] }).
  * Progress goes back to the app through window.WTBridge.onProgress(json) (the app saves it to learning_progress).
  */
@@ -129,16 +124,6 @@ window.onerror = function (message) {
     }
   }
 
-  /* If the 3D card ended up with no size (or not drawn), switch to the flat fallback so the card is never invisible */
-  function checkSize() {
-    try {
-      var f = document.querySelector(".face.front");
-      if (!f) return;
-      var r = f.getBoundingClientRect();
-      if (r.height < 40 || r.width < 40) root.classList.add("flat");
-    } catch (e) { /* ignore */ }
-  }
-
   function draw() {
     if (!cards.length) { root.innerHTML = '<p class="msg">No cards in this deck yet.</p>'; return; }
     var s = stats();
@@ -158,7 +143,6 @@ window.onerror = function (message) {
       '<button class="btn" data-act="next"' + (i >= cards.length - 1 ? " disabled" : "") + '>Next \u203A</button></div>' +
       '<div class="rate"><button class="btn again" data-act="again">Again</button><button class="btn learning" data-act="learning">Learning</button>' +
       '<button class="btn know" data-act="know">Known</button></div></div>';
-    window.setTimeout(checkSize, 120);
   }
 
   function goTo(n) {
@@ -176,11 +160,20 @@ window.onerror = function (message) {
     grades = {}; done = false; i = 0; flipped = false; draw(); report();
   }
 
+  /* 2D flip: squeeze the card (CSS animation "fcTurn", 0.3 s) and swap the faces at the narrowest point (0.14 s).
+   * The swap happens even if the animation never runs, so the answer always appears. */
   function flipCard() {
     var f = document.getElementById("flip");
     if (!f) return;
     flipped = !flipped;
-    if (flipped) f.classList.add("flipped"); else f.classList.remove("flipped");
+    f.classList.remove("turn");
+    void f.offsetWidth;
+    f.classList.add("turn");
+    window.setTimeout(function () {
+      var g = document.getElementById("flip");
+      if (!g) return;
+      if (flipped) g.classList.add("flipped"); else g.classList.remove("flipped");
+    }, 140);
   }
 
   root.addEventListener("click", function (e) {
