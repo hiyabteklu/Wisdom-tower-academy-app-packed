@@ -90,3 +90,55 @@ Added 2026-10-12 (found while comparing the app's Privacy text with the website 
 3. After the website page is changed, copy the new text into `ui/drawer/LegalContent.kt` (the file says: change the website first, then copy).
 
 **Not a problem:** the app's Privacy and Terms screens were compared section by section with the two website pages on 2026-10-12 and match them (version 3.2, 28 September 2026).
+
+## 6. One clean font system (T2: Tinos serif font & unified learning size scale)
+
+Added 2026-10-12 (polishing task T2). Owner: "The website uses random font styles and sizes. I want something clean, readable, similar to the Italics of Times New Roman. Not default... Flashcards, explanation, questions, options, Explain with AI etc. all use different things."
+
+**Problem on the live website:**
+- In `FlashcardViewer.tsx`, card faces use `study-prose text-white text-lg sm:text-xl font-bold italic font-serif leading-snug`. In Tailwind, `font-serif` falls back to default system serif (Georgia / Times New Roman / Times depending on browser and OS).
+- In `QuizExamViewer.tsx`, question prompts use `quiz-question-prompt text-sm sm:text-base font-bold`, options use `choice-inline-text text-xs sm:text-sm font-semibold`, solutions use `italic font-serif font-medium solution-text`, and AI explanations use `italic font-serif font-medium explanation-text`.
+- In `AiTutor.tsx` and `ExplainButton.tsx`, font styles and sizes vary between sans and unstyled serif.
+
+**Changes needed in `hiyabteklu/Wisdom-tower-academy`:**
+1. In `src/app/globals.css`:
+   Import Google Fonts **Tinos** (Apache 2.0 license, Times New Roman metric-compatible with high-quality Italics):
+   ```css
+   @import url('https://fonts.googleapis.com/css2?family=Tinos:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+   :root {
+     --wt-content-font-family: 'Tinos', 'Times New Roman', Times, serif;
+     --wt-content-font-style: italic; /* Change to 'normal' to switch all learning text upright */
+     --wt-content-size-question: 17px;
+     --wt-content-line-question: 26px;
+     --wt-content-size-explanation: 17px;
+     --wt-content-line-explanation: 26px;
+     --wt-content-size-option: 16px;
+     --wt-content-line-option: 24px;
+     --wt-content-size-flashcard: 20px;
+     --wt-content-line-flashcard: 28px;
+     --wt-content-size-caption: 13px;
+     --wt-content-line-caption: 18px;
+   }
+   ```
+2. In `tailwind.config.ts`:
+   Extend `fontFamily`:
+   ```ts
+   fontFamily: {
+     display: ["var(--font-outfit)", "sans-serif"],
+     sans: ["var(--font-plus-jakarta-sans)", "sans-serif"],
+     serif: ["Tinos", "Times New Roman", "Times", "serif"],
+     content: ["Tinos", "Times New Roman", "Times", "serif"],
+   }
+   ```
+3. In `src/components/learning/QuizExamViewer.tsx`:
+   - Set `.quiz-question-prompt`: `font-serif italic text-[17px] leading-[26px]`
+   - Set `.choice-inline-text`: `font-serif italic text-[16px] leading-[24px]`
+   - Set `.solution-text` and `.explanation-text`: `font-serif italic text-[17px] leading-[26px]`
+4. In `src/components/learning/FlashcardViewer.tsx`:
+   - Set card front and back texts: `font-serif italic font-bold text-[20px] leading-[28px]`
+5. In `src/components/learning/AiTutor.tsx`:
+   - Set bot response body: `font-serif italic text-[17px] leading-[26px]`
+
+**Note on app vs website:**
+The Android app's native screens and local packed pages (`assets/notes/*.html`) are already updated to the unified Tinos font system with these exact tokens. Until these website changes are deployed on Vercel, any view opened directly on the live website (e.g. desktop web browser or web fallback) will still render system fonts.

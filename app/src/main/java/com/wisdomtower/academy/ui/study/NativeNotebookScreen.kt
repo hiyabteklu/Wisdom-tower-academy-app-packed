@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
+import com.wisdomtower.academy.ui.theme.ContentQuestionStyle
 import kotlinx.coroutines.delay
 
 /**
@@ -449,13 +450,10 @@ fun NativeNotebookScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                             BasicTextField(
                                 value = currentSheet.content,
                                 onValueChange = { updateSheet(content = it) },
-                                textStyle = TextStyle(
+                                textStyle = ContentQuestionStyle.copy(
                                     color = Color(0xFFF1F5F9),
-                                    fontSize = 14.sp,
-                                    fontFamily = FontFamily.Serif,
-                                    fontStyle = FontStyle.Italic,
-                                    fontWeight = FontWeight.Medium,
-                                    lineHeight = 22.sp
+                                    fontSize = 17.sp,
+                                    lineHeight = 26.sp
                                 ),
                                 cursorBrush = SolidColor(Color(0xFF22D3EE)),
                                 modifier = Modifier.fillMaxWidth().heightIn(min = 280.dp)

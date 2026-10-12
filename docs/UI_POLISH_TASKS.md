@@ -56,7 +56,8 @@ If a task seems to need one of these files: STOP, write it under UNSURE in the s
 **Do not:** reset `activeWorkspace` or the bottom tab when opening or closing a tool; change tool contents or looks other than the back control; touch the exam timer logic (report whether the timer keeps running while a tool is open: just state what it does today).
 **Done when (owner tests on the phone):** from inside a book (PDF), a note, flashcards and a running exam: open each of the 7 tools from the drawer; the back arrow is in the same place everywhere and no red close button remains; tap it or press the phone Back: the tool closes and you are on the same page/question as before; from the Home, Packages and Account tabs the same; About/FAQ still close with Back to where you were; second Back press then behaves as before the change.
 
-## T2. One clean font system
+## T2. One clean font system [~]
+**Status:** Implemented [~] (session log `docs/SESSION_2026-10-12_BQ.md`). All four Tinos font files bundled. Central style switch in `Type.kt` and `richtext.css`. Local pages and native notebook updated to unified size tokens. Website changes proposed in `WEBSITE_CHANGES.md` section 6. Ready for phone testing.
 **Owner words:** "The website uses random font styles and sizes. I want something clean, readable, similar to the Italics of Times New Roman. Not default. Download and place them there if you can, or tell me what assets you want. Flashcards, explanation, questions, options, Explain with AI etc. all use different things."
 **Goal.** One content font and one small size scale used by ALL reading/learning text: flashcards, questions, options, explanations, "Explain with AI" answers, notes, tutor answers.
 **Decisions made by the planner (owner can change them after seeing it on the phone):**

@@ -40,10 +40,8 @@
   .lbl.a { color: #67e8f9; }
   /* text sits in the middle of the card; auto margins collapse when the text is longer than the card, so it scrolls */
   .mid { margin: auto 0; text-align: center; }
-  .fc-text { color: #fff; font-family: Georgia, "Times New Roman", serif; font-weight: 700; font-style: italic; }
-  .fc-text.s1 { font-size: 1.6rem; line-height: 1.35; }
-  .fc-text.s2 { font-size: 1.3rem; line-height: 1.4; }
-  .fc-text.s3 { font-size: 1.1rem; line-height: 1.45; }
+  .fc-text { color: #fff; font-family: var(--wt-content-font-family, "WT Tinos", serif); font-weight: 700; font-style: var(--wt-content-font-style, italic); font-size: var(--wt-content-size-flashcard, 20px); line-height: var(--wt-content-line-flashcard, 28px); }
+  .fc-text.s1, .fc-text.s2, .fc-text.s3 { font-size: var(--wt-content-size-flashcard, 20px); line-height: var(--wt-content-line-flashcard, 28px); }
   .fc-text .study-p { margin: .5em 0; }
   .fc-text .study-list { display: inline-block; text-align: left; }
   .hint { text-align: center; font-size: .75rem; color: #94a3b8; margin: 10px 0 0; }

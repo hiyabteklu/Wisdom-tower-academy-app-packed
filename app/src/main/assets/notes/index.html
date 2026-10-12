@@ -12,12 +12,14 @@
   #root { padding: 16px 16px 64px; max-width: 760px; margin: 0 auto; overflow-wrap: anywhere; }
   .msg { text-align: center; color: #94a3b8; padding: 40px 0; }
 
+  #note { font-family: var(--wt-content-font-family, "WT Tinos", serif); font-style: var(--wt-content-font-style, italic); font-size: var(--wt-content-size-question, 17px); line-height: var(--wt-content-line-question, 26px); }
+
   /* Summary (AI), plan step N10: same look as the website's NotesViewer */
   #sumwrap { margin-top: 24px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); }
-  .sumbtn { border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.06); color: #e2e8f0; font: 600 .75rem/1 -apple-system, Roboto, sans-serif; padding: 9px 16px; border-radius: 999px; }
+  .sumbtn { border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.06); color: #e2e8f0; font: 600 .75rem/1 -apple-system, Roboto, sans-serif; padding: 9px 16px; border-radius: 999px; font-style: normal; }
   .sumbtn:disabled { opacity: .5; }
-  .sumbox { margin-top: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03); border-radius: 16px; padding: 14px 16px; color: rgba(255,255,255,.9); font-size: .9rem; line-height: 1.6; }
-  .sumbox .lbl { margin: 0 0 8px; font: 600 .62rem/1 -apple-system, Roboto, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; }
+  .sumbox { margin-top: 12px; border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03); border-radius: 16px; padding: 14px 16px; color: rgba(255,255,255,.9); font-family: var(--wt-content-font-family, "WT Tinos", serif); font-style: var(--wt-content-font-style, italic); font-size: var(--wt-content-size-explanation, 17px); line-height: var(--wt-content-line-explanation, 26px); }
+  .sumbox .lbl { margin: 0 0 8px; font: 600 .62rem/1 -apple-system, Roboto, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; font-style: normal; }
 </style>
 </head>
 <body>

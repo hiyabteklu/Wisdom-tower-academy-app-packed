@@ -4,6 +4,7 @@ import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.R
@@ -23,6 +24,69 @@ val PlusJakartaSansFontFamily = FontFamily(
     Font(R.font.plus_jakarta_sans_semibold, FontWeight.SemiBold),
     Font(R.font.plus_jakarta_sans_bold, FontWeight.Bold),
     Font(R.font.plus_jakarta_sans_extrabold, FontWeight.ExtraBold),
+)
+
+// Bundled offline typography matching Tinos (Google Fonts, Times New Roman metric-compatible serif)
+val TinosFontFamily = FontFamily(
+    Font(R.font.tinos_regular, FontWeight.Normal, FontStyle.Normal),
+    Font(R.font.tinos_italic, FontWeight.Normal, FontStyle.Italic),
+    Font(R.font.tinos_bold, FontWeight.Bold, FontStyle.Normal),
+    Font(R.font.tinos_bold_italic, FontWeight.Bold, FontStyle.Italic),
+)
+
+// Single global switch for content text (T2): change to FontStyle.Normal for upright body text
+val ContentFontStyle: FontStyle = FontStyle.Italic
+
+val ContentFontFamily: FontFamily = TinosFontFamily
+
+// Shared typography tokens for content text across reading & learning screens (T2)
+// 1. Question & Explanation: 17 sp / line 26 sp
+val ContentQuestionStyle = TextStyle(
+    fontFamily = ContentFontFamily,
+    fontStyle = ContentFontStyle,
+    fontWeight = FontWeight.Normal,
+    fontSize = 17.sp,
+    lineHeight = 26.sp,
+    color = WisdomTextPrimary
+)
+
+val ContentExplanationStyle = TextStyle(
+    fontFamily = ContentFontFamily,
+    fontStyle = ContentFontStyle,
+    fontWeight = FontWeight.Normal,
+    fontSize = 17.sp,
+    lineHeight = 26.sp,
+    color = WisdomTextPrimary
+)
+
+// 2. Options: 16 sp / line 24 sp
+val ContentOptionStyle = TextStyle(
+    fontFamily = ContentFontFamily,
+    fontStyle = ContentFontStyle,
+    fontWeight = FontWeight.Normal,
+    fontSize = 16.sp,
+    lineHeight = 24.sp,
+    color = WisdomTextPrimary
+)
+
+// 3. Flashcard face: 20 sp / line 28 sp
+val ContentFlashcardStyle = TextStyle(
+    fontFamily = ContentFontFamily,
+    fontStyle = ContentFontStyle,
+    fontWeight = FontWeight.Normal,
+    fontSize = 20.sp,
+    lineHeight = 28.sp,
+    color = WisdomTextPrimary
+)
+
+// 4. Content Caption: 13 sp / line 18 sp
+val ContentCaptionStyle = TextStyle(
+    fontFamily = ContentFontFamily,
+    fontStyle = ContentFontStyle,
+    fontWeight = FontWeight.Normal,
+    fontSize = 13.sp,
+    lineHeight = 18.sp,
+    color = WisdomMuted
 )
 
 val Typography = Typography(

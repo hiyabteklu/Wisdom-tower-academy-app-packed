@@ -13,11 +13,64 @@
 @font-face { font-family: "WT Outfit"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/outfit_bold.ttf") format("truetype"); }
 @font-face { font-family: "WT Outfit"; font-weight: 800; font-style: normal; font-display: swap; src: url("fonts/outfit_extrabold.ttf") format("truetype"); }
 
-/* Applies to every text element of the pages except math (KaTeX has its own fonts) and code. Headings use Outfit like
- * the native screens. `!important` is needed because the pages set their own `font:` shorthands on body, buttons and classes. */
-body :not(.katex):not(.katex *):not(pre):not(code):not(.md-code) { font-family: "WT Jakarta", -apple-system, Roboto, "Segoe UI", sans-serif !important; }
-body :is(h1, h2, h3, .study-h1, .study-h2, .study-h3):not(.katex *) { font-family: "WT Outfit", "WT Jakarta", -apple-system, Roboto, sans-serif !important; }
+/* T2: One clean content font system (Tinos, Times New Roman metric-compatible) */
+@font-face { font-family: "WT Tinos"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/tinos_regular.ttf") format("truetype"), url("../fonts/tinos_regular.ttf") format("truetype"); }
+@font-face { font-family: "WT Tinos"; font-weight: 400; font-style: italic; font-display: swap; src: url("fonts/tinos_italic.ttf") format("truetype"), url("../fonts/tinos_italic.ttf") format("truetype"); }
+@font-face { font-family: "WT Tinos"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/tinos_bold.ttf") format("truetype"), url("../fonts/tinos_bold.ttf") format("truetype"); }
+@font-face { font-family: "WT Tinos"; font-weight: 700; font-style: italic; font-display: swap; src: url("fonts/tinos_bold_italic.ttf") format("truetype"), url("../fonts/tinos_bold_italic.ttf") format("truetype"); }
+
+:root {
+  --wt-content-font-family: "WT Tinos", "Times New Roman", Times, serif;
+  /* Single CSS variable switch (T2): change to 'normal' for upright text across all local pages */
+  --wt-content-font-style: italic;
+  --wt-content-size-question: 17px;
+  --wt-content-line-question: 26px;
+  --wt-content-size-explanation: 17px;
+  --wt-content-line-explanation: 26px;
+  --wt-content-size-option: 16px;
+  --wt-content-line-option: 24px;
+  --wt-content-size-flashcard: 20px;
+  --wt-content-line-flashcard: 28px;
+  --wt-content-size-caption: 13px;
+  --wt-content-line-caption: 18px;
+}
+
+/* Default base font for pages */
 body { font-family: "WT Jakarta", -apple-system, Roboto, "Segoe UI", sans-serif !important; }
+
+/* Applies to general elements except math, code, headings, and learning content text */
+body :not(.katex):not(.katex *):not(pre):not(code):not(.md-code) {
+  font-family: "WT Jakarta", -apple-system, Roboto, "Segoe UI", sans-serif;
+}
+
+/* Headings use Outfit like native screens; upright */
+body :is(h1, h2, h3, .study-h1, .study-h2, .study-h3):not(.katex *) {
+  font-family: "WT Outfit", "WT Jakarta", -apple-system, Roboto, sans-serif !important;
+  font-style: normal !important;
+}
+
+/* T2: All reading and learning content text uses Tinos Italic with defined tokens */
+.study-p,
+.study-list,
+.study-list li,
+.study-callout,
+.fc-text,
+.prompt,
+.choice .ct,
+.solbox,
+.aibox,
+.bub.b .body,
+#note,
+.content-text {
+  font-family: var(--wt-content-font-family) !important;
+  font-style: var(--wt-content-font-style) !important;
+}
+
+/* Buttons, bars, tabs, chips, badges and labels keep clean upright sans-serif */
+body :is(button, .btn, .chip, .lbl, .eyebrow, .pill, .flag, .timer, .seg, .st, .qn, .choice .cl, .xbtn, .meta, .cpy, .sug, .prompt-btn, .sumbtn, .lockbadge, .tier, .cap, .tile):not(.katex *) {
+  font-family: "WT Jakarta", -apple-system, Roboto, "Segoe UI", sans-serif !important;
+  font-style: normal !important;
+}
 
 .study-h1 { font-size: 1.6rem; line-height: 1.25; color: #fff; margin: 1.4em 0 .6em; font-weight: 800; }
 .study-h2 { font-size: 1.3rem; line-height: 1.3; color: #67e8f9; margin: 1.6em 0 .6em; font-weight: 800; display: flex; gap: .6em; align-items: flex-start; }
