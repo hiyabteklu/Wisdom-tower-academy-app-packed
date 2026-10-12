@@ -108,6 +108,12 @@ private val SCOPE_REMEDIAL = Regex("^/academy/remedial/([^/]+)$")
 private val SCOPE_GRADE = Regex("^/academy/grades/([^/]+)/([^/]+)$")
 private val SCOPE_ECE = Regex("^/academy/special-packages/[^/]+/(sem-[12])/([^/]+)$")
 
+// 2026-10-12 (owner: "if I add content in the website/DB the app still catches it, go native while empty"):
+// COC / UAT / GAT hub pages use the fixed scope path `coc` / `uat` / `gat` (their `[resource]/page.tsx`), and an
+// Entrance Questions year page uses `entranceScope()` = `entrance/<stream>/<subject>/<year>` (data/entrance-questions.ts).
+private val SCOPE_SPECIAL = Regex("^/academy/(coc|uat|gat)$")
+private val SCOPE_ENTRANCE = Regex("^/academy/entrance-questions/([^/]+)/([^/]+)/([0-9]{4})$")
+
 // Same ECE route, but keeping the package slug too (needed for the website's `trackerScopeId`).
 private val TRACK_ECE = Regex("^/academy/special-packages/([^/]+)/(sem-[12])/([^/]+)$")
 
@@ -129,9 +135,9 @@ internal fun entranceYearUrl(basePath: String): String? {
 
 /**
  * The `learning_resources.scope_path` of the course at [basePath] (for example `freshman/physics`,
- * `grade/9/biology`, `remedial/maths`, `ece/sem-2/eceg3082`), or null when the path is not a course page
- * the native screens can read (COC / UAT / GAT, Entrance Questions, package levels): those keep using
- * the website page.
+ * `grade/9/biology`, `remedial/maths`, `ece/sem-2/eceg3082`, `coc`, `entrance/natural/physics/2015`), or null when
+ * the path is not a course page the native screens can read (Exit Exam, package levels): those keep using the
+ * website page (Exit Exam has no database content on the website either: it shows "Content coming soon").
  */
 internal fun contentScopePath(basePath: String): String? {
     var base = cleanBase(basePath)
@@ -143,6 +149,10 @@ internal fun contentScopePath(basePath: String): String? {
     SCOPE_REMEDIAL.matchEntire(base)?.let { return "remedial/${it.groupValues[1]}" }
     SCOPE_GRADE.matchEntire(base)?.let { return "grade/${it.groupValues[1]}/${it.groupValues[2]}" }
     SCOPE_ECE.matchEntire(base)?.let { return "ece/${it.groupValues[1]}/${it.groupValues[2]}" }
+    SCOPE_SPECIAL.matchEntire(base)?.let { return it.groupValues[1] }
+    SCOPE_ENTRANCE.matchEntire(base)?.let {
+        return "entrance/${it.groupValues[1]}/${it.groupValues[2]}/${it.groupValues[3]}"
+    }
     return null
 }
 
@@ -152,7 +162,9 @@ internal fun contentScopePath(basePath: String): String? {
  * `website-reference/src/app/academy/.../[resource]/page.tsx`:
  *  - Freshman: `freshman-<subject>` (no hub in it);
  *  - Remedial: `remedial-<subject>-<hub>`; Grades: `grade-<grade>-<subject>-<hub>`;
- *  - ECE: `special-<package slug>-<sem-1|sem-2>-<course>-<hub>`.
+ *  - ECE: `special-<package slug>-<sem-1|sem-2>-<course>-<hub>`;
+ *  - COC / UAT / GAT: `coc-<hub>` / `uat-<hub>` / `gat-<hub>`;
+ *  - Entrance Questions year: `entrance-<stream>-<subject>-<year>-exams`.
  * Null for any path the native screens do not read (the website page then does the saving).
  */
 internal fun trackerScopeIdFor(basePath: String, hubId: String): String? {
@@ -166,6 +178,10 @@ internal fun trackerScopeIdFor(basePath: String, hubId: String): String? {
     SCOPE_GRADE.matchEntire(base)?.let { return "grade-${it.groupValues[1]}-${it.groupValues[2]}-$hubId" }
     TRACK_ECE.matchEntire(base)?.let {
         return "special-${it.groupValues[1]}-${it.groupValues[2]}-${it.groupValues[3]}-$hubId"
+    }
+    SCOPE_SPECIAL.matchEntire(base)?.let { return "${it.groupValues[1]}-$hubId" }
+    SCOPE_ENTRANCE.matchEntire(base)?.let {
+        return "entrance-${it.groupValues[1]}-${it.groupValues[2]}-${it.groupValues[3]}-exams"
     }
     return null
 }
@@ -203,6 +219,7 @@ internal fun safeHubUrl(basePath: String, hubId: String): String {
  *
  * Entrance Questions year (2026-10-11): the year page is the exams page itself, so this screen opens it
  * straight away (LaunchedEffect) and, as a fallback if that is ever missed, shows a single "Exams" card.
+ * Since 2026-10-12 the year page is NATIVE too (scope `entrance/<stream>/<subject>/<year>`, hub `exams`).
  *
  * Native hubs (2026-10-11, plan N2 + N3 + N4 + N5 + N6): a hub listed in [NATIVE_HUB_IDS] opens [HubItemListScreen]
  * (rows read from Supabase) and then [PdfReaderScreen] (books and life savers), [NotesReaderScreen] (short notes),
@@ -210,6 +227,12 @@ internal fun safeHubUrl(basePath: String, hubId: String): String {
  * so `MainActivity` is not involved. System Back goes viewer -> list -> the six cards (the quiz screen
  * handles Back itself first, to close its own dialogs).
  * The other hubs still open the website page through `onOpenHub`.
+ *
+ * COC / UAT / GAT / Entrance (2026-10-12, owner: "go native while empty"): these courses now read their rows
+ * from Supabase like every other course. While no rows exist the native list shows its normal empty state, and the
+ * first row added on the website (admin) shows up here with no app update, because the scope paths are the
+ * website's own (see [contentScopePath]). Exit Exam is different on the website itself: its hub pages are static
+ * ("Content coming soon", no database read), so the native screen shows that same message in a dialog.
  *
  * Life Savers (2026-10-12, owner request "make it native, identical to Books, 100% PDF"): the hub `life-savers`
  * is now in [NATIVE_HUB_IDS]. It uses the same list, download buttons, PDF reader, last-page memory and offline
@@ -235,7 +258,12 @@ fun StudyWorkspaceScreen(
 ) {
     val entranceUrl = remember(basePath) { entranceYearUrl(basePath) }
     val contentScope = remember(basePath) { contentScopePath(basePath) }
+    val isExitExam = remember(basePath) {
+        val clean = cleanBase(basePath)
+        clean == "/academy/exit-exam" || clean.startsWith("/academy/exit-exam/")
+    }
     var view by remember(basePath) { mutableStateOf<WorkspaceView?>(null) }
+    var exitExamHub by remember(basePath) { mutableStateOf<String?>(null) }
 
     val loggedIn by AuthStateManager.isLoggedIn.collectAsState()
     val uiScope = rememberCoroutineScope()
@@ -250,7 +278,12 @@ fun StudyWorkspaceScreen(
 
     if (entranceUrl != null) {
         LaunchedEffect(entranceUrl) {
-            onOpenHub("exams", entranceUrl)
+            if (contentScope != null) {
+                // The year page is the exams hub: open the native exams list straight away.
+                view = WorkspaceView.HubList("exams")
+            } else {
+                onOpenHub("exams", entranceUrl)
+            }
         }
     }
 
@@ -271,6 +304,11 @@ fun StudyWorkspaceScreen(
     // The quiz screen has its own BackHandler (it closes its dialogs first and then calls onBack below).
     BackHandler(enabled = view != null && view !is WorkspaceView.Quiz) {
         val open = view
+        // Entrance year: the exams list is the whole page, so Back leaves the workspace.
+        if (open is WorkspaceView.HubList && entranceUrl != null) {
+            onBack()
+            return@BackHandler
+        }
         view = when (open) {
             is WorkspaceView.Pdf -> WorkspaceView.HubList(open.hubId)
             is WorkspaceView.Note -> WorkspaceView.HubList("short-notes")
@@ -289,7 +327,7 @@ fun StudyWorkspaceScreen(
                 hubId = shown.hubId,
                 hubName = NATIVE_LEARNING_HUBS.firstOrNull { it.id == shown.hubId }?.name ?: shown.hubId,
                 courseTitle = title,
-                onBack = { view = null },
+                onBack = { if (entranceUrl != null) onBack() else view = null },
                 onOpenItem = { item ->
                     when (item.contentType) {
                         "pdf" -> view = WorkspaceView.Pdf(item, shown.hubId)
@@ -418,6 +456,11 @@ fun StudyWorkspaceScreen(
             // for an Entrance Questions year only the Exams card (the year page itself)
             openGrid("hubs", hubs) { hub ->
                 OpenCard(hub.name, hub.assetImage) {
+                    // Exit Exam: the website hub pages are static "Content coming soon" (no database rows).
+                    if (isExitExam) {
+                        exitExamHub = hub.name
+                        return@OpenCard
+                    }
                     // N9: closed course -> message instead of opening (Entrance Questions are never gated here)
                     val gate = if (entranceUrl == null) access.gate else HubGate.Open
                     when (gate) {
@@ -426,7 +469,7 @@ fun StudyWorkspaceScreen(
                         }
 
                         HubGate.Open -> {
-                            if (entranceUrl == null && contentScope != null && hub.id in NATIVE_HUB_IDS) {
+                            if (contentScope != null && hub.id in NATIVE_HUB_IDS) {
                                 view = WorkspaceView.HubList(hub.id)
                             } else {
                                 onOpenHub(hub.id, entranceUrl ?: safeHubUrl(basePath, hub.id))
@@ -466,6 +509,19 @@ fun StudyWorkspaceScreen(
                     onClose = { gateMessage = null }
                 )
             }
+        }
+
+        val exitHub = exitExamHub
+        if (exitHub != null) {
+            // Website wording of `exit-exam/[resource]/page.tsx` ("Content coming soon" + first sentence).
+            HubGateDialog(
+                badge = "Content coming soon",
+                title = "Content coming soon",
+                hubName = exitHub,
+                message = "Exit Exam ${exitHub.lowercase()} materials will appear here.",
+                buttonText = ContentAccess.COMING_SOON_BUTTON,
+                onClose = { exitExamHub = null }
+            )
         }
     }
 }
