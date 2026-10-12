@@ -101,6 +101,7 @@ private class TutorStreamHolder {
  *  - Answers: streamed from the website route through [AiTutorRepository]; the message list is drawn by the local
  *    page `assets/notes/tutor.html` with the shared KaTeX renderer (math, tables, ==highlights== as in the notes).
  *  - Texts (welcome, prompts, placeholders, error and stop notices, follow-up chips) copied from `AiTutor.tsx`.
+ *  - Message box (U2 change 1): multi-line, grows up to 4 lines, send / stop buttons 56 dp and kept at the bottom.
  * Differences from the website: no avatar picture on the welcome screen and answers; the chat list opens as a full
  * panel instead of a side sheet.
  *
@@ -440,12 +441,12 @@ fun NativeTutorScreen(
                     )
                 }
 
-                // Composer
+                // Composer: the box grows up to 4 lines; the buttons stay at the bottom edge
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedTextField(
@@ -463,26 +464,29 @@ fun NativeTutorScreen(
                         },
                         shape = RoundedCornerShape(16.dp),
                         colors = fieldColors,
-                        singleLine = true,
+                        singleLine = false,
+                        minLines = 1,
+                        maxLines = 4,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                         keyboardActions = KeyboardActions(onSend = { send(null) })
                     )
                     if (busy) {
                         Box(
                             modifier = Modifier
+                                .height(56.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(WisdomAccentAmber.copy(alpha = 0.25f))
                                 .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.4f)), RoundedCornerShape(16.dp))
                                 .clickable { stop() }
-                                .padding(horizontal = 16.dp, vertical = 15.dp),
+                                .padding(horizontal = 18.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("Stop", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFDE68A))
+                            Text("Stop", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFDE68A))
                         }
                     } else {
                         Box(
                             modifier = Modifier
-                                .size(52.dp)
+                                .size(56.dp)
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(WisdomCyan.copy(alpha = if (input.isBlank()) 0.4f else 1f))
                                 .clickable { send(null) },
@@ -492,7 +496,7 @@ fun NativeTutorScreen(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Send question",
                                 tint = Color(0xFF020617),
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
