@@ -27,9 +27,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,13 +57,16 @@ import com.wisdomtower.academy.data.content.ContentItemResult
 import com.wisdomtower.academy.data.content.ContentListResult
 import com.wisdomtower.academy.data.content.LearningContentRepository
 import com.wisdomtower.academy.data.content.LearningResource
+import com.wisdomtower.academy.data.content.SavedContent
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 /** Hubs whose list rows show a count (cards / questions), so their list needs the `meta` JSON too. */
@@ -69,6 +74,9 @@ private val COUNT_HUBS = setOf("flashcards", "question-banks", "exams")
 
 /** Progress value meaning "downloading, size not known" (notes, flashcards, questions have no byte count). */
 private const val SIZE_UNKNOWN = -1f
+
+/** Soft red used for "remove" and failure texts. */
+private val RemoveRed = Color(0xFFFDA4AF)
 
 /**
  * Native list of the items inside one learning hub of one course (plan step N2). Replaces the website's
@@ -87,6 +95,13 @@ private const val SIZE_UNKNOWN = -1f
  * bar appears under the row; when done it turns into a green check and the row says "Saved offline"; a failure
  * says so under the row and a tap on the button tries again. The "downloaded" marks are kept in the preferences
  * file `wt_downloaded_resources` (ids only). A download stops if the student leaves this list.
+ *
+ * F4b (2026-10-12, owner choice "Download all + delete saved items"):
+ *  - "Download all (n)" above the list saves every item of this hub that is not saved yet, one after the other
+ *    ("Downloading 2 of 10..."); an item that fails is marked as failed and the next one goes on;
+ *  - a tap on the green check of an item asks "Remove from this phone?" and deletes only that saved copy;
+ *  - "Remove saved (n)" asks once and deletes every saved item of this hub ([SavedContent]).
+ *    Reading progress is kept; the item can be downloaded again at any time.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -114,22 +129,59 @@ fun HubItemListScreen(
     var busy by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
     var failed by remember { mutableStateOf<Set<String>>(emptySet()) }
 
+    // F4b: "Download all" progress (items done, items in total) and the items waiting for a "Remove" answer
+    var bulk by remember { mutableStateOf<Pair<Int, Int>?>(null) }
+    var confirmRemove by remember { mutableStateOf<List<LearningResource>?>(null) }
+
+    /** Saves one item. The caller has already put the item into [busy]; this removes it again at the end. */
+    suspend fun runDownload(item: LearningResource) {
+        failed = failed - item.id
+        try {
+            downloadItem(context, item) { fraction -> busy = busy + (item.id to fraction) }
+            downloaded = downloaded + item.id
+            downloadPrefs.edit().putStringSet("ids", downloaded.toSet()).apply()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            failed = failed + item.id
+        } finally {
+            busy = busy - item.id
+        }
+    }
+
     fun startDownload(item: LearningResource) {
         if (item.id in busy) return
         busy = busy + (item.id to SIZE_UNKNOWN)
-        failed = failed - item.id
+        downloadScope.launch { runDownload(item) }
+    }
+
+    fun downloadAll(all: List<LearningResource>) {
+        if (bulk != null) return
+        val todo = all.filter { it.id !in downloaded && it.id !in busy }
+        if (todo.isEmpty()) return
+        bulk = 0 to todo.size
         downloadScope.launch {
             try {
-                downloadItem(context, item) { fraction -> busy = busy + (item.id to fraction) }
-                downloaded = downloaded + item.id
-                downloadPrefs.edit().putStringSet("ids", downloaded.toSet()).apply()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                failed = failed + item.id
+                for ((index, item) in todo.withIndex()) {
+                    busy = busy + (item.id to SIZE_UNKNOWN)
+                    runDownload(item)
+                    bulk = (index + 1) to todo.size
+                }
             } finally {
-                busy = busy - item.id
+                bulk = null
             }
+        }
+    }
+
+    fun removeSaved(list: List<LearningResource>) {
+        downloadScope.launch {
+            withContext(Dispatchers.IO) {
+                for (item in list) SavedContent.delete(context, item)
+            }
+            val ids = list.map { it.id }.toSet()
+            downloaded = downloaded - ids
+            downloadPrefs.edit().putStringSet("ids", downloaded.toSet()).apply()
+            failed = failed - ids
         }
     }
 
@@ -212,6 +264,15 @@ fun HubItemListScreen(
                 }
 
                 current is ContentListResult.Success -> {
+                    item(key = "hub_list_tools") {
+                        DownloadTools(
+                            todo = current.items.count { it.id !in downloaded },
+                            saved = current.items.count { it.id in downloaded },
+                            bulk = bulk,
+                            onDownloadAll = { downloadAll(current.items) },
+                            onRemoveAll = { confirmRemove = current.items.filter { it.id in downloaded } }
+                        )
+                    }
                     items(current.items, key = { it.id }) { item ->
                         val isNew = item.id !in seen
                         ItemRow(
@@ -221,7 +282,8 @@ fun HubItemListScreen(
                             isDownloaded = item.id in downloaded,
                             progress = busy[item.id],
                             hasFailed = item.id in failed,
-                            onDownload = { startDownload(item) }
+                            onDownload = { startDownload(item) },
+                            onRemove = { confirmRemove = listOf(item) }
                         ) {
                             seen = seen + item.id
                             seenPrefs.edit().putStringSet("ids", seen.toSet()).apply()
@@ -232,6 +294,44 @@ fun HubItemListScreen(
             }
 
             item(key = "hub_list_bottom") { Spacer(modifier = Modifier.height(32.dp)) }
+        }
+
+        val toRemove = confirmRemove
+        if (toRemove != null && toRemove.isNotEmpty()) {
+            AlertDialog(
+                onDismissRequest = { confirmRemove = null },
+                containerColor = Color(0xFF111B2E),
+                title = {
+                    Text(
+                        text = if (toRemove.size == 1) "Remove from this phone?" else "Remove ${toRemove.size} saved items?",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text(
+                        text = if (toRemove.size == 1) {
+                            "\"${toRemove[0].title}\" will no longer open offline. You can download it again at any time."
+                        } else {
+                            "These items will no longer open offline. You can download them again at any time."
+                        },
+                        color = WisdomMuted
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        removeSaved(toRemove)
+                        confirmRemove = null
+                    }) {
+                        Text(text = "Remove", color = RemoveRed, fontWeight = FontWeight.SemiBold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmRemove = null }) {
+                        Text(text = "Cancel", color = WisdomCyan, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            )
         }
     }
 }
@@ -253,6 +353,63 @@ private suspend fun downloadItem(context: Context, item: LearningResource, onPro
     }
 }
 
+/**
+ * The two buttons above the list: "Download all (n)" (n = items not saved yet) or, while it runs,
+ * "Downloading 2 of 10..."; and "Remove saved (n)" when something of this hub is saved.
+ */
+@Composable
+private fun DownloadTools(
+    todo: Int,
+    saved: Int,
+    bulk: Pair<Int, Int>?,
+    onDownloadAll: () -> Unit,
+    onRemoveAll: () -> Unit
+) {
+    if (bulk == null && todo == 0 && saved == 0) return
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (bulk != null) {
+            ToolPill(
+                text = "Downloading ${minOf(bulk.first + 1, bulk.second)} of ${bulk.second}\u2026",
+                color = WisdomCyan,
+                enabled = false,
+                onClick = {}
+            )
+        } else {
+            if (todo > 0) {
+                ToolPill(text = "Download all ($todo)", color = WisdomCyan, enabled = true, onClick = onDownloadAll)
+            }
+            if (saved > 0) {
+                ToolPill(text = "Remove saved ($saved)", color = RemoveRed, enabled = true, onClick = onRemoveAll)
+            }
+        }
+    }
+}
+
+/** Small rounded text button (same look as the "Retry" button of the message card). */
+@Composable
+private fun ToolPill(text: String, color: Color, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(color.copy(alpha = 0.12f))
+            .border(BorderStroke(1.dp, color.copy(alpha = 0.45f)), RoundedCornerShape(10.dp))
+            .clickable(
+                enabled = enabled,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(color = color.copy(alpha = 0.25f)),
+                onClick = onClick
+            )
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = color)
+    }
+}
+
 @Composable
 private fun ItemRow(
     item: LearningResource,
@@ -262,6 +419,7 @@ private fun ItemRow(
     progress: Float?,
     hasFailed: Boolean,
     onDownload: () -> Unit,
+    onRemove: () -> Unit,
     onClick: () -> Unit
 ) {
     val count = remember(item.id, item.metaJson) { itemCount(item) }
@@ -337,12 +495,16 @@ private fun ItemRow(
                     Text(
                         text = "Download failed. Check your connection and tap the button to try again.",
                         fontSize = 11.sp,
-                        color = Color(0xFFFDA4AF)
+                        color = RemoveRed
                     )
                 }
             }
             Spacer(modifier = Modifier.width(8.dp))
-            DownloadButton(isDownloaded = isDownloaded, progress = progress, onClick = onDownload)
+            DownloadButton(
+                isDownloaded = isDownloaded,
+                progress = progress,
+                onClick = if (isDownloaded) onRemove else onDownload
+            )
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
@@ -353,10 +515,14 @@ private fun ItemRow(
     }
 }
 
-/** Small round button on the item: download arrow, percent or spinner while busy, green check when saved. */
+/**
+ * Small round button on the item: download arrow, percent or spinner while busy, green check when saved.
+ * F4b: the green check can be tapped (it asks before removing the saved copy); [onClick] is the download
+ * for a not saved item and the remove question for a saved one.
+ */
 @Composable
 private fun DownloadButton(isDownloaded: Boolean, progress: Float?, onClick: () -> Unit) {
-    val enabled = !isDownloaded && progress == null
+    val enabled = progress == null
     Box(
         modifier = Modifier
             .size(36.dp)
@@ -377,7 +543,7 @@ private fun DownloadButton(isDownloaded: Boolean, progress: Float?, onClick: () 
         when {
             isDownloaded -> Icon(
                 imageVector = Icons.Filled.CheckCircle,
-                contentDescription = "Saved offline",
+                contentDescription = "Saved offline. Tap to remove",
                 tint = Color(0xFF34D399),
                 modifier = Modifier.size(20.dp)
             )
