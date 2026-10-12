@@ -1235,12 +1235,12 @@ fun MainScreen(
             openToolOverlay(targetUrl, toolTitle)
             return
         }
-        if (targetUrl.contains("/login") || targetUrl.contains("/signin")) {
-            openToolOverlay(targetUrl, "Scholar Sign In")
-            return
-        }
-        if (targetUrl.contains("/signup") || targetUrl.contains("/register")) {
-            openToolOverlay(targetUrl, "Create Scholar Account")
+        // P14-native-login-nav: sign-in and sign-up are native now (Account tab), not the website pop-up
+        if (targetUrl.contains("/login") || targetUrl.contains("/signin") ||
+            targetUrl.contains("/signup") || targetUrl.contains("/register")
+        ) {
+            resetOverlays()
+            selectedIndex = 3
             return
         }
         if (targetUrl.contains("/checkout")) {
@@ -1805,9 +1805,8 @@ fun MainScreen(
                        pathPart.startsWith("/signup") || pathPart.startsWith("/register") ||
                        pathPart == "login" || pathPart == "signin" ||
                        pathPart == "signup" || pathPart == "register") {
-                val effectivePath = if (pathPart.startsWith("/")) pathPart else "/$pathPart"
-                val fullUrl = if (clean.startsWith("http")) clean else "https://www.wisdom-tower-academy.live$effectivePath"
-                navigateTo(fullUrl)
+                // P14-native-login-router: native sign-in lives in the Account tab (overlays were reset above)
+                selectedIndex = 3
             } else if (pathPart == "/account") {
                 selectedIndex = 3
             } else if (pathPart == "/settings") {
