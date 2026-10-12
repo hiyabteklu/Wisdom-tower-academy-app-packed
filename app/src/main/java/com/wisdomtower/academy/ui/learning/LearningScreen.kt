@@ -67,6 +67,7 @@ import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
 import com.wisdomtower.academy.ui.study.NativeCalculatorScreen
 import com.wisdomtower.academy.ui.study.NativeTimerScreen
+import com.wisdomtower.academy.ui.study.NativePlannerScreen
 import com.wisdomtower.academy.ui.study.NativeToolRequests
 import com.wisdomtower.academy.ui.study.NativeTutorScreen
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
@@ -180,6 +181,19 @@ fun LearningScreen(
     }
     if (timerOpen) {
         NativeTimerScreen(onBack = { timerOpen = false }, modifier = modifier)
+        return
+    }
+    // Native study planner (P10): the "Planner" tile and requests from outside show it in place of this screen
+    var plannerOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = plannerOpen) { plannerOpen = false }
+    LaunchedEffect(NativeToolRequests.pendingPlanner) {
+        if (NativeToolRequests.pendingPlanner) {
+            NativeToolRequests.pendingPlanner = false
+            plannerOpen = true
+        }
+    }
+    if (plannerOpen) {
+        NativePlannerScreen(onBack = { plannerOpen = false }, modifier = modifier)
         return
     }
     BackHandler(enabled = tutorOpen) { tutorOpen = false }
@@ -391,7 +405,7 @@ fun LearningScreen(
                                     Box(modifier = Modifier.weight(1f)) {
                                         ToolTileButton(
                                             tile = tile,
-                                            onClick = { if (tile.key == "timer") { timerOpen = true } else { onOpenTool(tile.url) } }
+                                            onClick = { if (tile.key == "timer") { timerOpen = true } else if (tile.key == "planner") { plannerOpen = true } else { onOpenTool(tile.url) } }
                                         )
                                     }
                                 }
