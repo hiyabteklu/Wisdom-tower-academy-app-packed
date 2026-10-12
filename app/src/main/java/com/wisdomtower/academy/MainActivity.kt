@@ -1184,6 +1184,13 @@ fun MainScreen(
             selectedIndex = 1
             return
         }
+        if (targetUrl.contains("/learning") && targetUrl.contains("tool=time")) {
+            com.wisdomtower.academy.ui.study.NativeToolRequests.requestTimer()
+            menuExpanded = false
+            activeStudyUrl = null
+            selectedIndex = 1
+            return
+        }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=")) {
             val toolTitle = when {
                 targetUrl.contains("tool=tutor") -> "AI Tutor"
@@ -1333,7 +1340,7 @@ fun MainScreen(
     }
 
     LaunchedEffect(isTimerRunning, timerRemainingSeconds) {
-        if (isTimerRunning && timerRemainingSeconds > 0) {
+        if (isTimerRunning && timerRemainingSeconds > 0 && !com.wisdomtower.academy.ui.study.NativeFocusTimer.running) {
             delay(1000L)
             timerRemainingSeconds = (timerRemainingSeconds - 1).coerceAtLeast(0)
             if (timerRemainingSeconds == 0) {
@@ -1345,6 +1352,49 @@ fun MainScreen(
         }
     }
 
+    // Native Focus Timer (P9): ticked here so it keeps counting on every screen, the top-bar indicator follows it,
+    // and the "session finished" notification is sent once when it reaches zero (NativeFocusTimer = ui/study).
+    val nativeTimer = com.wisdomtower.academy.ui.study.NativeFocusTimer
+    val completionsAtEnter = remember { nativeTimer.completions }
+    var nativeMirrorOn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { nativeTimer.init(context) }
+    LaunchedEffect(nativeTimer.running) {
+        while (nativeTimer.running) {
+            nativeTimer.tick()
+            delay(250L)
+        }
+    }
+    LaunchedEffect(nativeTimer.running, nativeTimer.seconds, nativeTimer.totalSec) {
+        val secs = nativeTimer.seconds
+        val total = nativeTimer.totalSec
+        if (nativeTimer.running) {
+            nativeMirrorOn = true
+            isTimerRunning = true
+            isTimerPaused = false
+            timerRemainingSeconds = secs
+            timerTotalSeconds = total
+            isTimerDismissed = false
+        } else if (secs in 1 until total) {
+            nativeMirrorOn = true
+            isTimerRunning = false
+            isTimerPaused = true
+            timerRemainingSeconds = secs
+            timerTotalSeconds = total
+            isTimerDismissed = false
+        } else if (nativeMirrorOn) {
+            nativeMirrorOn = false
+            isTimerRunning = false
+            isTimerPaused = false
+            timerRemainingSeconds = 0
+        }
+    }
+    LaunchedEffect(nativeTimer.completions) {
+        if (nativeTimer.completions > completionsAtEnter) {
+            AcademyNotificationManager.notifyStudyTimerCompleted(context)
+            Toast.makeText(context, AcademyNotificationManager.TIMER_REWARDING_MESSAGES.random(), Toast.LENGTH_LONG).show()
+        }
+    }
+
     var lastResumeRefreshAt by remember { mutableLongStateOf(0L) }
     var showOnboarding by remember { mutableStateOf(!hasCompletedOnboarding(context)) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -1352,6 +1402,7 @@ fun MainScreen(
 
     val stopStudyTimerWithEndFlow: () -> Unit = {
         val wasActive = isTimerRunning || isTimerPaused || timerRemainingSeconds > 0
+        com.wisdomtower.academy.ui.study.NativeFocusTimer.reset()
         isTimerRunning = false
         isTimerPaused = false
         timerRemainingSeconds = 0
@@ -2267,6 +2318,7 @@ fun MainScreen(
                                 @JavascriptInterface
                                 fun syncStudyTimer(isRunning: Boolean, secondsLeft: Int, totalSeconds: Int, title: String?) {
                                     mainHandler.post {
+                                        if (com.wisdomtower.academy.ui.study.NativeFocusTimer.isActive()) return@post
                                         val wasRunning = isTimerRunning
                                         isTimerRunning = isRunning
                                         if (isRunning) {
@@ -2907,6 +2959,13 @@ fun MainScreen(
                                     }
                                     if (u.contains("/learning") && u.contains("tool=calc")) {
                                         com.wisdomtower.academy.ui.study.NativeToolRequests.requestCalculator()
+                                        menuExpanded = false
+                                        activeStudyUrl = null
+                                        selectedIndex = 1
+                                        return true
+                                    }
+                                    if (u.contains("/learning") && u.contains("tool=time")) {
+                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestTimer()
                                         menuExpanded = false
                                         activeStudyUrl = null
                                         selectedIndex = 1
@@ -3745,7 +3804,7 @@ fun MainScreen(
                                 label = "Timer",
                                 onClick = {
                                     menuExpanded = false
-                                    openToolOverlay("https://www.wisdom-tower-academy.live/learning?tool=timer&overlay=1", "Study Timer")
+                                    navigateTo("https://www.wisdom-tower-academy.live/learning?tool=timer")
                                 }
                             )
 
@@ -3854,7 +3913,9 @@ fun MainScreen(
                 isRunning = isTimerRunning,
                 isPaused = isTimerPaused,
                 onTogglePlayPause = {
-                    if (isTimerRunning) {
+                    if (com.wisdomtower.academy.ui.study.NativeFocusTimer.isActive()) {
+                        com.wisdomtower.academy.ui.study.NativeFocusTimer.togglePlayPause()
+                    } else if (isTimerRunning) {
                         isTimerRunning = false
                         isTimerPaused = true
                         val js = "(function(){try{" +
@@ -3877,7 +3938,7 @@ fun MainScreen(
                 onStop = stopStudyTimerWithEndFlow,
                 onOpenLearning = {
                     showTimerControlDialog = false
-                    openToolOverlay("https://www.wisdom-tower-academy.live/learning?tool=timer", "Study Timer")
+                    navigateTo("https://www.wisdom-tower-academy.live/learning?tool=timer")
                 },
                 onDismiss = { showTimerControlDialog = false }
             )
