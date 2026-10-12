@@ -5,6 +5,7 @@
  * **bold**, *italic*, `code`, ==highlight==, [[key term]], math $..$, $$..$$, \(..\), \[..\].
  * Needs katex/katex.min.js loaded BEFORE this file (without it formulas show as plain code text).
  * Use: WTRich.render(text) -> HTML of blocks; WTRich.renderInline(text) -> HTML of one line.
+ * F3 (2026-10-12): at the end of this file, a small confetti + vibration effect for the quiz page (see there).
  */
 (function () {
   var MATH_RE_SRC = "\\$\\$([\\s\\S]+?)\\$\\$|\\\\\\[([\\s\\S]+?)\\\\\\]|(?<!\\\\)\\$(?!\\s)([^$\\n]+?)(?<!\\s)\\$|\\\\\\(([\\s\\S]+?)\\\\\\)";
@@ -180,4 +181,93 @@
   }
 
   window.WTRich = { render: render, renderInline: renderInline };
+})();
+
+/*
+ * F3 (owner report 2026-10-12, problem 6: no confetti on a correct answer in question banks).
+ * The quiz page (quiz.html) redraws everything on each tap, so this module watches the tap from the outside:
+ * after a tap on an answer button (data-act="pick") and the page's own redraw, a correct answer in "Right Away"
+ * mode is the case where the page shows a green `.choice.right` and NO red `.choice.wrong`. Then a short confetti
+ * burst starts at the finger and the phone vibrates briefly; a wrong answer only gives a short vibration (the
+ * page itself shakes the choice). Exams and "After Finish" never show green before submit, so nothing happens there.
+ * The effect draws on its own canvas (not inside #root, so a redraw cannot erase it) and does nothing on pages
+ * that have no answer buttons (notes, flashcards). Wrapped in try/catch: it can never break a page.
+ */
+(function () {
+  var canvas = null, ctx = null, parts = [], running = false, lastX = 0, lastY = 0, dpr = 1;
+  var COLORS = ["#22d3ee", "#34d399", "#fbbf24", "#f472b6", "#a78bfa", "#fb923c"];
+
+  function ensure() {
+    if (canvas) return true;
+    if (!document.body) return false;
+    canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:200";
+    document.body.appendChild(canvas);
+    ctx = canvas.getContext("2d");
+    return !!ctx;
+  }
+
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    var w = Math.round(window.innerWidth * dpr), h = Math.round(window.innerHeight * dpr);
+    if (canvas.width !== w) canvas.width = w;
+    if (canvas.height !== h) canvas.height = h;
+  }
+
+  function frame() {
+    var alive = [], i, p;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (i = 0; i < parts.length; i++) {
+      p = parts[i];
+      p.vy += 0.35; p.vx *= 0.99; p.vy *= 0.99;
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.age++;
+      if (p.age >= p.life || p.y > window.innerHeight + 20) continue;
+      ctx.save();
+      ctx.globalAlpha = p.age > p.life - 20 ? Math.max(0, (p.life - p.age) / 20) : 1;
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+      alive.push(p);
+    }
+    parts = alive;
+    if (parts.length) { window.requestAnimationFrame(frame); }
+    else { running = false; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height); }
+  }
+
+  function burst(x, y) {
+    if (!ensure()) return;
+    resize();
+    var n = 70, i, a, s;
+    for (i = 0; i < n; i++) {
+      a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4;
+      s = 6 + Math.random() * 8;
+      parts.push({ x: x, y: y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, rot: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.4,
+                   w: 6 + Math.random() * 5, h: 3 + Math.random() * 4, color: COLORS[i % COLORS.length], age: 0, life: 70 + Math.random() * 40 });
+    }
+    if (!running) { running = true; window.requestAnimationFrame(frame); }
+  }
+
+  function vibrate(pattern) {
+    try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) { /* not supported: ignore */ }
+  }
+
+  document.addEventListener("click", function (e) {
+    try {
+      lastX = e.clientX; lastY = e.clientY;
+      var t = e.target;
+      var btn = t && t.closest ? t.closest('button[data-act="pick"]') : null;
+      if (!btn) return;
+      var x = lastX, y = lastY;
+      window.setTimeout(function () {
+        try {
+          if (document.querySelector(".choice.wrong")) { vibrate(60); return; }
+          if (document.querySelector(".choice.right")) { burst(x, y); vibrate([20, 30, 20]); }
+        } catch (err) { /* never break the page */ }
+      }, 30);
+    } catch (err) { /* never break the page */ }
+  });
 })();
