@@ -1,5 +1,7 @@
 package com.wisdomtower.academy.ui.study
 
+import android.annotation.SuppressLint
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
@@ -12,30 +14,30 @@ import kotlinx.coroutines.delay
 
 /**
  * F1 (owner report 2026-10-12, problem 3: vertical scroll freezes in notes, flashcards, question banks, exams),
- * reworked in F1b (2026-10-12, the owner reported the freeze again after F1).
+ * reworked in F1b and F1c (2026-10-12, the owner reported it again after F1 and F1b).
  *
- * HYPOTHESIS (not proven): `MainActivity` keeps the big website WebView full-screen and VISIBLE underneath every
- * native screen (it never changes its visibility). All WebViews of an app share ONE browser process, so the busy
- * website page (animations, timers, React updates) keeps rendering at full speed behind the local notes / quiz /
- * flashcard pages: touches arrive but the page is too busy to scroll. Only the pages that are WebViews freeze;
- * the PDF reader (drawn natively) is not affected, which fits the owner's report.
+ * F1b: `MainActivity` keeps the big website WebView full-screen and VISIBLE underneath every native screen. While a
+ * native content screen is shown, every other WebView that is VISIBLE is set INVISIBLE (the browser stops drawing it
+ * and throttles its timers) and `onPause()` is called; the same WebViews are set VISIBLE again when the screen is
+ * left. `pauseTimers()` is NOT used (it is global and would stop the local pages too). Hypothesis, not proven.
  *
- * F1 only called `WebView.onPause()`, which per the Android documentation does NOT pause JavaScript, so the website
- * kept running. F1b makes the hidden website WebViews really INVISIBLE (the browser then stops rendering them and
- * throttles their timers) while a native content screen is shown, and sets them back to VISIBLE when the screen is
- * left. Only the WebViews that were VISIBLE when this screen opened are touched, and only those are restored.
- * It never touches the app's own local pages (address contains `android_asset/notes/`). `pauseTimers()` is NOT used
- * because it works for ALL WebViews of the app and would stop the local pages too (exam timer, math rendering).
- * No change in `MainActivity.kt` is needed.
+ * F1c (owner test after F1b: "scroll works only if the finger stays down for a moment before moving; a quick
+ * swipe does nothing"): a quick swipe is lost, a slow one works. The page scripts have no blocking touch handler,
+ * so the likely place is the Android side. Every local page WebView (address contains `android_asset/notes/`:
+ * notes, flashcards, question banks, exams) now gets, once, from here (so the three screen files stay unchanged):
+ *  - a touch listener that, on the first finger-down, asks every parent not to intercept the gesture
+ *    (`requestDisallowInterceptTouchEvent(true)`); it never consumes a touch itself;
+ *  - no over-scroll effect, and the WebView's own pinch/double-tap zoom is switched off (the zoom gesture detector
+ *    waits to tell a pinch from a scroll; the pages are made for reading at one size).
+ * NOT proven to be the cause; see `docs/SESSION_2026-10-12_AR.md` for what to try next.
  */
 private const val OWN_PAGES = "android_asset/notes/"
 
-private fun otherWebViews(root: View): List<WebView> {
+private fun allWebViews(root: View): List<WebView> {
     val found = ArrayList<WebView>()
     fun walk(v: View) {
         if (v is WebView) {
-            val address = v.url
-            if (address != null && !address.contains(OWN_PAGES)) found.add(v)
+            found.add(v)
             return
         }
         if (v is ViewGroup) {
@@ -46,15 +48,33 @@ private fun otherWebViews(root: View): List<WebView> {
     return found
 }
 
+private fun isOwnPage(wv: WebView): Boolean = wv.url?.contains(OWN_PAGES) == true
+
+@SuppressLint("ClickableViewAccessibility")
+private fun fixLocalPageTouch(wv: WebView) {
+    wv.overScrollMode = View.OVER_SCROLL_NEVER
+    wv.settings.setSupportZoom(false)
+    wv.settings.builtInZoomControls = false
+    wv.setOnTouchListener { v, event ->
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            v.parent?.requestDisallowInterceptTouchEvent(true)
+        }
+        false
+    }
+}
+
 @Composable
 internal fun PauseShellWhileShown() {
     val view = LocalView.current
     // The WebViews this screen hid (and so must show again when it is left).
     val hidden = remember { ArrayList<WebView>() }
+    // The local page WebViews that already got the touch fix (weak, so a destroyed WebView is not kept alive).
+    val fixed = remember { java.util.Collections.newSetFromMap(java.util.WeakHashMap<WebView, Boolean>()) }
 
     DisposableEffect(view) {
-        for (wv in otherWebViews(view.rootView)) {
+        for (wv in allWebViews(view.rootView)) {
             try {
+                if (wv.url == null || isOwnPage(wv)) continue
                 if (wv.visibility == View.VISIBLE) {
                     wv.visibility = View.INVISIBLE
                     hidden.add(wv)
@@ -75,8 +95,21 @@ internal fun PauseShellWhileShown() {
         }
     }
 
-    // `MainActivity` calls onResume() on its WebView when the app comes back from the background: pause again.
+    // Local page WebViews are created later (when a note, deck or quiz is opened): fix each one once, soon after.
     LaunchedEffect(view) {
+        while (true) {
+            for (wv in allWebViews(view.rootView)) {
+                try {
+                    if (isOwnPage(wv) && fixed.add(wv)) fixLocalPageTouch(wv)
+                } catch (_: Exception) {
+                }
+            }
+            delay(300L)
+        }
+    }
+
+    // `MainActivity` calls onResume() on its WebView when the app comes back from the background: pause again.
+    LaunchedEffect(view, hidden) {
         while (true) {
             delay(1500L)
             for (wv in hidden) {
