@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit
  * Appwrite file address from [LearningContentRepository.appwriteViewUrl] is public (role "Any" can read,
  * the website's own `/api/content/pdf` proxy reads the same address).
  *
+ * F4b (2026-10-12): [delete] removes a saved book (used by "Remove saved" in the hub list).
+ *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
 object BookFileStore {
@@ -22,6 +24,17 @@ object BookFileStore {
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
+
+    /** Same file-name rule for [ensureFile] and [delete]. */
+    private fun safeName(key: String): String = key.replace(Regex("[^A-Za-z0-9._-]"), "_").take(100)
+
+    /** Removes the saved PDF (and an unfinished download) of [key] from the phone. Never throws. */
+    fun delete(context: Context, key: String) {
+        val dir = File(context.filesDir, "books")
+        val safe = safeName(key)
+        runCatching { File(dir, "$safe.pdf").delete() }
+        runCatching { File(dir, "$safe.part").delete() }
+    }
 
     /**
      * Returns the local file for [key], downloading [url] first when it is not on the phone yet.
@@ -35,7 +48,7 @@ object BookFileStore {
         onProgress: (Float) -> Unit
     ): File = withContext(Dispatchers.IO) {
         val dir = File(context.filesDir, "books").apply { mkdirs() }
-        val safe = key.replace(Regex("[^A-Za-z0-9._-]"), "_").take(100)
+        val safe = safeName(key)
         val target = File(dir, "$safe.pdf")
         if (target.exists() && target.length() > 0L) return@withContext target
 
