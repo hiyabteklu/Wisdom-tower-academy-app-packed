@@ -49,10 +49,27 @@ fun OpenCard(
     image: Any?,
     onClick: () -> Unit
 ) {
+    OpenCard(
+        title = title,
+        image = image,
+        subtitle = null,
+        modifier = Modifier,
+        onClick = onClick
+    )
+}
+
+@Composable
+fun OpenCard(
+    title: String,
+    image: Any?,
+    subtitle: String?,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     val context = LocalContext.current
 
     WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
         onClick = onClick
     ) {
@@ -86,10 +103,22 @@ fun OpenCard(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    minLines = 2,
+                    minLines = if (subtitle.isNullOrBlank()) 2 else 1,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = WisdomCyan,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 

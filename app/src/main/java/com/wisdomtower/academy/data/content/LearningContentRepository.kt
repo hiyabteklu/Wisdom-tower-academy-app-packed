@@ -162,6 +162,64 @@ object LearningContentRepository {
         return "$endpoint/storage/buckets/$bucket/files/$fileId/view?project=$project"
     }
 
+    /**
+     * T4 (2026-10-12): Returns the item count for each hub of one course/subject ([scopePath]).
+     * Only queries `select=hub` (very lightweight). Result is cached locally so subsequent visits
+     * and offline mode show real counts instantly.
+     */
+    suspend fun getHubCounts(context: Context, scopePath: String): Map<String, Int> =
+        withContext(Dispatchers.IO) {
+            val cacheFile = cacheFile(context, "counts_$scopePath")
+            val cachedMap = readCache(cacheFile)?.let { raw ->
+                runCatching {
+                    val json = JSONObject(raw)
+                    val map = mutableMapOf<String, Int>()
+                    val keys = json.keys()
+                    while (keys.hasNext()) {
+                        val k = keys.next()
+                        map[k] = json.optInt(k, 0)
+                    }
+                    map
+                }.getOrNull()
+            }
+
+            try {
+                val hubFilter = "in.(\"books\",\"short-notes\",\"references\",\"flashcards\",\"question-banks\",\"exams\",\"life-savers\")"
+                val url = "$supabaseUrl/rest/v1/learning_resources".toHttpUrl().newBuilder()
+                    .addQueryParameter("select", "hub")
+                    .addQueryParameter("scope_path", scopeFilter(scopePath))
+                    .addQueryParameter("hub", hubFilter)
+                    .addQueryParameter("published", "eq.true")
+                    .build().toString()
+                var rows = JSONArray(get(url, fastHttp))
+                val ece = ECE_SCOPE.matchEntire(scopePath)
+                if (rows.length() == 0 && ece != null) {
+                    val fallbackUrl = "$supabaseUrl/rest/v1/learning_resources".toHttpUrl().newBuilder()
+                        .addQueryParameter("select", "hub")
+                        .addQueryParameter("scope_path", "ilike.*${ece.groupValues[2]}*")
+                        .addQueryParameter("hub", hubFilter)
+                        .addQueryParameter("published", "eq.true")
+                        .build().toString()
+                    rows = JSONArray(get(fallbackUrl, fastHttp))
+                }
+                val counts = mutableMapOf<String, Int>()
+                for (i in 0 until rows.length()) {
+                    val obj = rows.optJSONObject(i) ?: continue
+                    val rawHub = obj.optString("hub")
+                    val h = if (rawHub == "references") "short-notes" else rawHub
+                    counts[h] = (counts[h] ?: 0) + 1
+                }
+                val json = JSONObject()
+                counts.forEach { (k, v) -> json.put(k, v) }
+                writeCache(cacheFile, json.toString())
+                counts
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                cachedMap ?: emptyMap()
+            }
+        }
+
     // ---------- internals ----------
 
     /**

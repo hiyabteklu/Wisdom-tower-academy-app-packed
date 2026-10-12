@@ -129,6 +129,10 @@ fun HubItemListScreen(
     var busy by remember { mutableStateOf<Map<String, Float>>(emptyMap()) }
     var failed by remember { mutableStateOf<Set<String>>(emptySet()) }
 
+    // T4 (2026-10-12): Real book file sizes (memory map keyed by resource id)
+    var fileSizeMap by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
+    val probeScope = rememberCoroutineScope()
+
     // F4b: "Download all" progress (items done, items in total) and the items waiting for a "Remove" answer
     var bulk by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var confirmRemove by remember { mutableStateOf<List<LearningResource>?>(null) }
@@ -264,6 +268,35 @@ fun HubItemListScreen(
                 }
 
                 current is ContentListResult.Success -> {
+                    // T4: If this is the books hub, load cached file sizes instantly and probe missing ones quietly
+                    LaunchedEffect(current.items, hubId) {
+                        if (hubId == "books") {
+                            // 1) Quick read of local cache / saved files (no network)
+                            val quickSizes = mutableMapOf<String, Long>()
+                            for (item in current.items) {
+                                BookFileStore.getCachedFileSize(context, item.id)?.let {
+                                    quickSizes[item.id] = it
+                                }
+                            }
+                            if (quickSizes.isNotEmpty()) {
+                                fileSizeMap = fileSizeMap + quickSizes
+                            }
+
+                            // 2) Probe remaining un-downloaded books with lightweight HEAD / Range request
+                            for (item in current.items) {
+                                if (item.id !in fileSizeMap && item.id !in quickSizes) {
+                                    val url = LearningContentRepository.appwriteViewUrl(item.storagePath)
+                                    if (url != null) {
+                                        val probed = BookFileStore.probeFileSize(context, item.id, url)
+                                        if (probed != null && probed > 0L) {
+                                            fileSizeMap = fileSizeMap + (item.id to probed)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     item(key = "hub_list_tools") {
                         DownloadTools(
                             todo = current.items.count { it.id !in downloaded },
@@ -280,6 +313,7 @@ fun HubItemListScreen(
                             hubId = hubId,
                             isNew = isNew,
                             isDownloaded = item.id in downloaded,
+                            knownSize = if (hubId == "books") fileSizeMap[item.id] else null,
                             progress = busy[item.id],
                             hasFailed = item.id in failed,
                             onDownload = { startDownload(item) },
@@ -416,6 +450,7 @@ private fun ItemRow(
     hubId: String,
     isNew: Boolean,
     isDownloaded: Boolean,
+    knownSize: Long?,
     progress: Float?,
     hasFailed: Boolean,
     onDownload: () -> Unit,
@@ -428,8 +463,14 @@ private fun ItemRow(
         hubId == "flashcards" -> "$count ${if (count == 1) "card" else "cards"}"
         else -> "$count ${if (count == 1) "question" else "questions"}"
     }
+    val sizeText = when {
+        hubId != "books" -> null
+        knownSize != null && knownSize > 0L -> BookFileStore.formatBytes(knownSize)
+        else -> null
+    }
     val subline = listOfNotNull(
         item.chapter?.let { "Chapter $it" },
+        sizeText,
         countText,
         if (isDownloaded) "Saved offline" else null
     ).joinToString(" \u00B7 ")

@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.data.auth.AuthStateManager
@@ -265,6 +266,14 @@ fun StudyWorkspaceScreen(
     var view by remember(basePath) { mutableStateOf<WorkspaceView?>(null) }
     var exitExamHub by remember(basePath) { mutableStateOf<String?>(null) }
 
+    val context = LocalContext.current
+    var hubCounts by remember(contentScope) { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    LaunchedEffect(contentScope) {
+        if (contentScope != null) {
+            hubCounts = LearningContentRepository.getHubCounts(context, contentScope)
+        }
+    }
+
     val loggedIn by AuthStateManager.isLoggedIn.collectAsState()
     val uiScope = rememberCoroutineScope()
     var access by remember(basePath, loggedIn) {
@@ -436,32 +445,48 @@ fun StudyWorkspaceScreen(
             // The 6 hub cards (Books, Short Notes, Flashcards, Question Banks, Exams, Life Savers);
             // for an Entrance Questions year only the Exams card (the year page itself)
             openGrid("hubs", hubs) { hub ->
-                OpenCard(hub.name, hub.assetImage) {
-                    // Exit Exam: the website hub pages are static "Content coming soon" (no database rows).
-                    if (isExitExam) {
-                        exitExamHub = hub.name
-                        return@OpenCard
-                    }
-                    // N9: closed course -> message instead of opening (Entrance Questions are never gated here)
-                    val gate = if (entranceUrl == null) access.gate else HubGate.Open
-                    when (gate) {
-                        HubGate.ComingSoon, HubGate.PackageRequired -> {
-                            gateMessage = GateMessage(gate, hub.name)
+                val count = hubCounts[hub.id]
+                val subtitle = when {
+                    count == null || count <= 0 -> null
+                    hub.id == "books" -> "$count ${if (count == 1) "book" else "books"}"
+                    hub.id == "short-notes" -> "$count ${if (count == 1) "note" else "notes"}"
+                    hub.id == "flashcards" -> "$count ${if (count == 1) "deck" else "decks"}"
+                    hub.id == "question-banks" -> "$count ${if (count == 1) "bank" else "banks"}"
+                    hub.id == "exams" -> "$count ${if (count == 1) "exam" else "exams"}"
+                    hub.id == "life-savers" -> "$count ${if (count == 1) "item" else "items"}"
+                    else -> "$count items"
+                }
+                OpenCard(
+                    title = hub.name,
+                    image = hub.assetImage,
+                    subtitle = subtitle,
+                    onClick = {
+                        // Exit Exam: the website hub pages are static "Content coming soon" (no database rows).
+                        if (isExitExam) {
+                            exitExamHub = hub.name
+                            return@OpenCard
                         }
+                        // N9: closed course -> message instead of opening (Entrance Questions are never gated here)
+                        val gate = if (entranceUrl == null) access.gate else HubGate.Open
+                        when (gate) {
+                            HubGate.ComingSoon, HubGate.PackageRequired -> {
+                                gateMessage = GateMessage(gate, hub.name)
+                            }
 
-                        HubGate.Open -> {
-                            if (contentScope != null && hub.id in NATIVE_HUB_IDS) {
-                                view = WorkspaceView.HubList(hub.id)
-                            } else {
-                                onOpenHub(hub.id, entranceUrl ?: safeHubUrl(basePath, hub.id))
+                            HubGate.Open -> {
+                                if (contentScope != null && hub.id in NATIVE_HUB_IDS) {
+                                    view = WorkspaceView.HubList(hub.id)
+                                } else {
+                                    onOpenHub(hub.id, entranceUrl ?: safeHubUrl(basePath, hub.id))
+                                }
                             }
                         }
+                        if (entranceUrl == null) {
+                            // Re-check in the background so the next tap uses a fresh answer (cached 30 s).
+                            uiScope.launch { access = ContentAccess.resolve(basePath, loggedIn) }
+                        }
                     }
-                    if (entranceUrl == null) {
-                        // Re-check in the background so the next tap uses a fresh answer (cached 30 s).
-                        uiScope.launch { access = ContentAccess.resolve(basePath, loggedIn) }
-                    }
-                }
+                )
             }
 
             item(key = "bottom_space") {
