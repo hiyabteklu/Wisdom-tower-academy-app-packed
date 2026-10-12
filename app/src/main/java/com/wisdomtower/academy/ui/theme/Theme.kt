@@ -8,7 +8,10 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 
 private val DarkColorScheme =
   darkColorScheme(
@@ -22,6 +25,14 @@ private val DarkColorScheme =
 
 private val LightColorScheme = DarkColorScheme // Force dark navy theme for both modes
 
+/**
+ * Owner report 2026-10-12 (problem 5): many native texts are 10.5 to 12 sp and look tiny. One app-wide lift of
+ * all `sp` text by 12 percent, on top of the phone's own font-size setting, but never above a total of 1.5
+ * (a student who already chose a very large system font gets no extra growth). Layout sizes in `dp` are not
+ * touched. If one screen clips its text because of this, fix that screen's fixed height, do not remove the lift.
+ */
+private const val APP_FONT_LIFT = 1.12f
+private const val APP_FONT_SCALE_CAP = 1.5f
 
 @Composable
 fun MyApplicationTheme(
@@ -41,5 +52,13 @@ fun MyApplicationTheme(
       else -> LightColorScheme
     }
 
-  MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
+  val systemDensity = LocalDensity.current
+  val liftedDensity = Density(
+    density = systemDensity.density,
+    fontScale = minOf(systemDensity.fontScale * APP_FONT_LIFT, maxOf(systemDensity.fontScale, APP_FONT_SCALE_CAP))
+  )
+
+  CompositionLocalProvider(LocalDensity provides liftedDensity) {
+    MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
+  }
 }
