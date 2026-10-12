@@ -55,6 +55,7 @@ import com.wisdomtower.academy.ui.learning.LearningScreen
 import com.wisdomtower.academy.ui.packages.PackagesScreen
 import com.wisdomtower.academy.ui.packages.PackageDetailScreen
 import com.wisdomtower.academy.ui.study.StudyWorkspaceScreen
+import com.wisdomtower.academy.ui.study.contentScopePath
 import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.settings.SettingsScreen
@@ -1813,7 +1814,17 @@ fun MainScreen(
                 selectedIndex = 4
             } else {
                 val fullUrl = if (targetPathOrUrl.startsWith("http")) targetPathOrUrl else "https://www.wisdom-tower-academy.live$targetPathOrUrl"
-                if (fullUrl.contains("/books") || fullUrl.contains("/short-notes") || fullUrl.contains("/flashcards") || fullUrl.contains("/question-banks") || fullUrl.contains("/exams") || fullUrl.contains("/life-savers")) {
+                // P13-native-hub-routing: a course hub link opens the native hub list, not the website page
+                val hubPathClean = pathPart.substringBefore('?').substringBefore('#').trimEnd('/')
+                val hubLast = hubPathClean.substringAfterLast('/')
+                if (hubLast in setOf("books", "life-savers", "short-notes", "flashcards", "question-banks", "exams") &&
+                    contentScopePath(hubPathClean) != null
+                ) {
+                    val slug = hubPathClean.substringBeforeLast('/').substringAfterLast('/')
+                    val courseTitle = slug.split('-').filter { it.isNotEmpty() }
+                        .joinToString(" ") { part -> part.replaceFirstChar { it.uppercase() } }
+                    activeWorkspace = Triple(courseTitle, "Academy", hubPathClean)
+                } else if (fullUrl.contains("/books") || fullUrl.contains("/short-notes") || fullUrl.contains("/flashcards") || fullUrl.contains("/question-banks") || fullUrl.contains("/exams") || fullUrl.contains("/life-savers")) {
                     activeStudyUrl = fullUrl
                     navigateTo(fullUrl, 1)
                 } else {
