@@ -69,7 +69,8 @@ If a task seems to need one of these files: STOP, write it under UNSURE in the s
 **Do not:** add more than these four font files; change theme colors; change `.env.example` or any Gradle file (font resources need no build change).
 **Done when:** the owner sees the same font and consistent sizes on flashcards, questions, options, explanations, Explain with AI and notes in the app, with a list of any screen still pending a website change.
 
-## T3. Clean reading mode (U3)
+## T3. Clean reading mode (U3) [~]
+**Status:** Implemented [~] (session log `docs/SESSION_2026-10-12_BR.md`). Full audit table in log. Single-line carousel pills in exam runner. Slim headers in PDF, notes, flashcards, exams. Essential controls preserved. Ready for phone testing.
 **Owner words:** "Reading modes should be clean, most of the screen for content. For example the chapter tag in the image is everywhere; we do not want it like that. We want a clean reading mode." (The owner's screenshot is not available to the planner: find the chapter tag in the code.)
 **Goal.** In the PDF reader, notes, flashcards, quiz and exam screens, nothing repeats on every screen or scrolls with the student except what is essential. The chapter tag/title appears at most once (at the start of the content), not pinned.
 **Steps.** 1. Audit each screen (`PdfReaderScreen.kt`, `NotesReaderScreen.kt`, `FlashcardsScreen.kt`, `QuizExamScreen.kt`, `StudyWorkspaceScreen.kt` headers, local pages) and put a table in the session log: every bar, header, tag, title = ESSENTIAL or REDUNDANT, with the reason. 2. Remove the REDUNDANT ones. 3. Keep, always reachable: back, exam timer, submit, close, page/position indicator, the hamburger/tools entry. Use at most one slim bar per screen; the chapter name may live inside that bar as one short line.

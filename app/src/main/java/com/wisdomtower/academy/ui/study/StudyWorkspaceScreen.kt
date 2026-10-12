@@ -396,26 +396,7 @@ fun StudyWorkspaceScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF111B2E).copy(alpha = 0.8f))
-                                .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
-                                    onClick = onBack
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                        ScreenBackButton(onBack)
 
                         Spacer(modifier = Modifier.width(12.dp))
 
