@@ -30,8 +30,15 @@ import kotlinx.coroutines.delay
  *  - no over-scroll effect, and the WebView's own pinch/double-tap zoom is switched off (the zoom gesture detector
  *    waits to tell a pinch from a scroll; the pages are made for reading at one size).
  * NOT proven to be the cause; see `docs/SESSION_2026-10-12_AR.md` for what to try next.
+ *
+ * F1e (2026-10-12, owner: flashcards stay completely dark, also after the page was rewritten without 3D in F1d):
+ * as soon as the flashcards page is on screen, the website WebViews hidden by F1b are made VISIBLE and resumed
+ * again and are no longer hidden or paused for the rest of this screen (a flashcard deck does not need the quiet
+ * background: it has no long scrolling text). The touch fix of F1c still applies to it. Hypothesis, not proven:
+ * hiding the website WebView stops the deck WebView from being drawn on this phone.
  */
 private const val OWN_PAGES = "android_asset/notes/"
+private const val DECK_PAGE = "flashcards.html"
 
 private fun allWebViews(root: View): List<WebView> {
     val found = ArrayList<WebView>()
@@ -70,6 +77,8 @@ internal fun PauseShellWhileShown() {
     val hidden = remember { ArrayList<WebView>() }
     // The local page WebViews that already got the touch fix (weak, so a destroyed WebView is not kept alive).
     val fixed = remember { java.util.Collections.newSetFromMap(java.util.WeakHashMap<WebView, Boolean>()) }
+    // F1e: true once the flashcards page was seen; from then on nothing is hidden or paused any more.
+    val released = remember { BooleanArray(1) }
 
     DisposableEffect(view) {
         for (wv in allWebViews(view.rootView)) {
@@ -98,11 +107,26 @@ internal fun PauseShellWhileShown() {
     // Local page WebViews are created later (when a note, deck or quiz is opened): fix each one once, soon after.
     LaunchedEffect(view) {
         while (true) {
+            var deckOpen = false
             for (wv in allWebViews(view.rootView)) {
                 try {
-                    if (isOwnPage(wv) && fixed.add(wv)) fixLocalPageTouch(wv)
+                    if (isOwnPage(wv)) {
+                        if (wv.url?.contains(DECK_PAGE) == true) deckOpen = true
+                        if (fixed.add(wv)) fixLocalPageTouch(wv)
+                    }
                 } catch (_: Exception) {
                 }
+            }
+            if (deckOpen && !released[0]) {
+                released[0] = true
+                for (wv in hidden) {
+                    try {
+                        wv.visibility = View.VISIBLE
+                        wv.onResume()
+                    } catch (_: Exception) {
+                    }
+                }
+                hidden.clear()
             }
             delay(300L)
         }
@@ -112,6 +136,7 @@ internal fun PauseShellWhileShown() {
     LaunchedEffect(view, hidden) {
         while (true) {
             delay(1500L)
+            if (released[0]) continue
             for (wv in hidden) {
                 try {
                     wv.onPause()
