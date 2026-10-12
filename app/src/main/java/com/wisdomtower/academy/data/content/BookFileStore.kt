@@ -165,7 +165,7 @@ object BookFileStore {
             if (!resp.isSuccessful) throw IllegalStateException("HTTP ${resp.code}")
             val body = resp.body ?: throw IllegalStateException("Empty answer")
             val bodyLen = body.contentLength()
-            val total = if (bodyLen > 0L) bodyLen else (getCachedSize(context, key) ?: -1L)
+            val total = if (bodyLen > 0L) bodyLen else (getCachedFileSize(context, key) ?: -1L)
             body.byteStream().use { input ->
                 part.outputStream().use { out ->
                     val buffer = ByteArray(64 * 1024)

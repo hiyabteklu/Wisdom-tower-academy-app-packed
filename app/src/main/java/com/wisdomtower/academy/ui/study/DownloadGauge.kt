@@ -1,6 +1,8 @@
 package com.wisdomtower.academy.ui.study
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -12,7 +14,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -93,13 +99,37 @@ fun DownloadGauge(
                 if (progress != null && progress >= 0f) {
                     val p = progress.coerceIn(0f, 1f)
                     val pct = (p * 100).toInt()
-                    CircularProgressIndicator(
-                        progress = { p },
-                        modifier = Modifier.size(size),
-                        color = color,
-                        strokeWidth = strokeWidth,
-                        trackColor = trackColor
-                    )
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val strokePx = strokeWidth.toPx()
+                        val halfStroke = strokePx / 2f
+                        val arcSize = Size(
+                            this.size.width - strokePx,
+                            this.size.height - strokePx
+                        )
+                        val topLeft = Offset(halfStroke, halfStroke)
+                        // Background track circle
+                        drawArc(
+                            color = trackColor,
+                            startAngle = -90f,
+                            sweepAngle = 360f,
+                            useCenter = false,
+                            topLeft = topLeft,
+                            size = arcSize,
+                            style = Stroke(width = strokePx)
+                        )
+                        // Determinate progress arc
+                        if (p > 0f) {
+                            drawArc(
+                                color = color,
+                                startAngle = -90f,
+                                sweepAngle = 360f * p,
+                                useCenter = false,
+                                topLeft = topLeft,
+                                size = arcSize,
+                                style = Stroke(width = strokePx, cap = StrokeCap.Round)
+                            )
+                        }
+                    }
                     if (size >= 18.dp) {
                         Text(
                             text = "$pct%",
@@ -114,8 +144,7 @@ fun DownloadGauge(
                     CircularProgressIndicator(
                         modifier = Modifier.size(size),
                         color = color,
-                        strokeWidth = strokeWidth,
-                        trackColor = trackColor
+                        strokeWidth = strokeWidth
                     )
                 }
             }

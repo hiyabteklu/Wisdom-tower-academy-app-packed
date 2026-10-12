@@ -411,16 +411,19 @@ private fun DownloadTools(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (bulk != null) {
+        val currentBulk = bulk
+        if (currentBulk != null) {
+            val done = currentBulk.first
+            val total = currentBulk.second
             ToolPill(
-                text = "Downloading ${minOf(bulk.first + 1, bulk.second)} of ${bulk.second}\u2026",
+                text = "Downloading ${minOf(done + 1, total)} of $total\u2026",
                 color = WisdomCyan,
                 enabled = false,
                 onClick = {},
                 leadingIcon = {
                     DownloadGauge(
                         state = DownloadState.DOWNLOADING,
-                        progress = if (bulk.second > 0) bulk.first.toFloat() / bulk.second.toFloat() else null,
+                        progress = if (total > 0) done.toFloat() / total.toFloat() else null,
                         size = 14.dp,
                         strokeWidth = 2.dp
                     )

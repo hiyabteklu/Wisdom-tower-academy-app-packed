@@ -122,3 +122,18 @@
   4. Explicitly imported `java.util.Locale` in `BookFileStore.kt` and normalized catch blocks to standard `catch (e: Exception)`.
 * **DO NOT:** **Never invoke `@Composable` functions (including `LaunchedEffect`, `DisposableEffect`, or composables) directly inside `LazyColumn` or `LazyRow` builder scopes. Only the item lambdas (`item { ... }` / `items { ... }`) have `@Composable` scope. Background side-effects belong at the screen composable scope before or after layout declarations.**
 
+### 2026-10-12 – Run #298 failed (`:app:compileReleaseKotlin`)
+
+#### Problem 1: Unresolved reference `getCachedSize` in `BookFileStore.kt` (line 168)
+* **Cause:** `BookFileStore.kt` defined the method as `fun getCachedFileSize(context: Context, key: String): Long?`, but inside `ensureFile` (line 168), it called `getCachedSize(context, key)`, omitting `File` from the function name.
+* **Fix:** Changed `getCachedSize(context, key)` to `getCachedFileSize(context, key)`. Grepped `app/src` to ensure 0 remaining references to `getCachedSize`.
+* **DO NOT:** **Always verify that helper method names match their exact declarations. Grep the file for function declarations before invoking internal helpers.**
+
+#### Problem 2: Parameter mismatch and lambda overload fragility with `CircularProgressIndicator`
+* **Cause:** `DownloadGauge.kt` passed `progress = { p }` and indeterminate `trackColor = trackColor` to `CircularProgressIndicator`. The lambda `() -> Float` overload in Compose Material3 is either absent or requires experimental APIs in BOM 2024.09.00, and indeterminate `CircularProgressIndicator` lacks a `trackColor` parameter in older M3 versions.
+* **Fix:**
+  1. Replaced the determinate gauge rendering with a robust `Canvas` + `drawArc` implementation (background track + progress arc with `StrokeCap.Round`), mirroring `FocusRing` in `NativeTimerScreen.kt`.
+  2. For indeterminate progress, called `CircularProgressIndicator(modifier = Modifier.size(size), color = color, strokeWidth = strokeWidth)` with standard arguments.
+  3. Extracted `bulk` values into local `val`s before lambda captures in `HubItemListScreen.kt` to avoid smart-cast issues.
+* **DO NOT:** **For custom circular gauges that need centered text, determinate arcs, and track rings, use standard Compose `Canvas` + `drawArc`. Avoid depending on unstable or newly introduced Material3 progress indicator lambda overloads.**
+
