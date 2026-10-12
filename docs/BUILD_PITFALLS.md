@@ -103,3 +103,10 @@
 * **Cause:** the new task wrote `java.io.File(outDir, name)` and `java.net.URI(...)`. Inside a Gradle Kotlin build script the bare name `java` is the project's `java` extension (accessor), not the root package, so `java.io` / `java.net` do not resolve. The other 4 errors (`TRY_CALL`, `Cannot infer type for 'T'/'R'` on `.use { }`) were knock-on errors of the same two lines. The build stopped at "Configure project :app" in 12 s, so NONE of the Kotlin code since `f95656c6` (N6 parts 1 and 2: `NotesReaderScreen`, notes page) was compiled by that run.
 * **Fix:** `import java.io.File` and `import java.net.URI` at the top of the script and `File(...)` / `URI(...)` in the task (commit `8f38297c`). `import java.util.Base64` already worked because imports are resolved before the script body.
 * **DO NOT:** **Rule (i): never write a fully qualified `java.*` name inside a `*.gradle.kts` file; import it. Also: a red build that stops at "Configure project" means the app code was not compiled at all, so the next green/red run is the first test of everything committed since the last good build.**
+
+### 2026-10-12 – Run #291 failed (`:app:compileReleaseKotlin`)
+
+#### Problem: `No value passed for parameter 'onClick'` / `Argument type mismatch` in `QuizExamScreen.kt` (line 208)
+* **Cause:** `ScreenBackButton` is defined as `internal fun ScreenBackButton(onClick: () -> Unit, modifier: Modifier = Modifier)`. In Kotlin, trailing lambda syntax (`Foo { ... }`) only binds to the *last* parameter of the function. Because the last parameter was `modifier: Modifier = Modifier`, calling `ScreenBackButton { ... }` passed the lambda to `modifier` instead of `onClick`, leaving `onClick` without a value and causing a type mismatch on `modifier`.
+* **Fix:** Called `ScreenBackButton(onClick = { ... })` explicitly with named parameter syntax so `onClick` receives the lambda cleanly.
+* **DO NOT:** **Never use trailing lambda syntax on a composable or function where the lambda is NOT the last parameter, especially when trailing parameters have defaults (`modifier: Modifier = Modifier`). Always pass `onClick = { ... }` explicitly.**

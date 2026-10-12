@@ -205,16 +205,18 @@ fun QuizExamScreen(
                     .padding(horizontal = 12.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ScreenBackButton { 
-                    val web = webRef[0]
-                    if (web == null) {
-                        onBack()
-                    } else {
-                        web.evaluateJavascript("(window.wtBack ? window.wtBack() : false)") { reply ->
-                            if (reply != "true") onBack()
+                ScreenBackButton(
+                    onClick = { 
+                        val web = webRef[0]
+                        if (web == null) {
+                            onBack()
+                        } else {
+                            web.evaluateJavascript("(window.wtBack ? window.wtBack() : false)") { reply ->
+                                if (reply != "true") onBack()
+                            }
                         }
                     }
-                }
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = title,
