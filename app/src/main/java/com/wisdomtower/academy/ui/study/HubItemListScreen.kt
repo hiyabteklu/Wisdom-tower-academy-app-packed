@@ -140,7 +140,13 @@ fun HubItemListScreen(
     suspend fun runDownload(item: LearningResource) {
         failed = failed - item.id
         try {
-            downloadItem(context, item) { fraction -> busy = busy + (item.id to fraction) }
+            downloadItem(context, item) { fraction ->
+                val newPct = (fraction.coerceIn(0f, 1f) * 100).toInt()
+                val oldPct = ((busy[item.id] ?: -1f).coerceIn(0f, 1f) * 100).toInt()
+                if (newPct != oldPct || busy[item.id] == null) {
+                    busy = busy + (item.id to fraction)
+                }
+            }
             downloaded = downloaded + item.id
             downloadPrefs.edit().putStringSet("ids", downloaded.toSet()).apply()
         } catch (e: CancellationException) {
@@ -410,7 +416,15 @@ private fun DownloadTools(
                 text = "Downloading ${minOf(bulk.first + 1, bulk.second)} of ${bulk.second}\u2026",
                 color = WisdomCyan,
                 enabled = false,
-                onClick = {}
+                onClick = {},
+                leadingIcon = {
+                    DownloadGauge(
+                        state = DownloadState.DOWNLOADING,
+                        progress = if (bulk.second > 0) bulk.first.toFloat() / bulk.second.toFloat() else null,
+                        size = 14.dp,
+                        strokeWidth = 2.dp
+                    )
+                }
             )
         } else {
             if (todo > 0) {
@@ -425,7 +439,13 @@ private fun DownloadTools(
 
 /** Small rounded text button (same look as the "Retry" button of the message card). */
 @Composable
-private fun ToolPill(text: String, color: Color, enabled: Boolean, onClick: () -> Unit) {
+private fun ToolPill(
+    text: String,
+    color: Color,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    leadingIcon: (@Composable () -> Unit)? = null
+) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(10.dp))
@@ -440,7 +460,13 @@ private fun ToolPill(text: String, color: Color, enabled: Boolean, onClick: () -
             .padding(horizontal = 14.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = color)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            leadingIcon?.invoke()
+            Text(text = text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = color)
+        }
     }
 }
 
@@ -544,6 +570,7 @@ private fun ItemRow(
             DownloadButton(
                 isDownloaded = isDownloaded,
                 progress = progress,
+                failed = hasFailed,
                 onClick = if (isDownloaded) onRemove else onDownload
             )
             Icon(
@@ -557,22 +584,30 @@ private fun ItemRow(
 }
 
 /**
- * Small round button on the item: download arrow, percent or spinner while busy, green check when saved.
+ * Small round button on the item: download arrow, circular gauge while busy, green check when saved,
+ * red retry icon when failed.
  * F4b: the green check can be tapped (it asks before removing the saved copy); [onClick] is the download
  * for a not saved item and the remove question for a saved one.
  */
 @Composable
-private fun DownloadButton(isDownloaded: Boolean, progress: Float?, onClick: () -> Unit) {
+private fun DownloadButton(
+    isDownloaded: Boolean,
+    progress: Float?,
+    failed: Boolean = false,
+    onClick: () -> Unit
+) {
     val enabled = progress == null
+    val border = when {
+        isDownloaded -> BorderStroke(1.dp, Color(0xFF34D399).copy(alpha = 0.6f))
+        failed -> BorderStroke(1.dp, Color(0xFFF87171).copy(alpha = 0.6f))
+        else -> BorderStroke(1.dp, WisdomBorderWhite)
+    }
     Box(
         modifier = Modifier
             .size(36.dp)
             .clip(CircleShape)
             .background(Color(0xFF111B2E).copy(alpha = 0.8f))
-            .border(
-                BorderStroke(1.dp, if (isDownloaded) Color(0xFF34D399).copy(alpha = 0.6f) else WisdomBorderWhite),
-                CircleShape
-            )
+            .border(border, CircleShape)
             .clickable(
                 enabled = enabled,
                 interactionSource = remember { MutableInteractionSource() },
@@ -581,34 +616,13 @@ private fun DownloadButton(isDownloaded: Boolean, progress: Float?, onClick: () 
             ),
         contentAlignment = Alignment.Center
     ) {
-        when {
-            isDownloaded -> Icon(
-                imageVector = Icons.Filled.CheckCircle,
-                contentDescription = "Saved offline. Tap to remove",
-                tint = Color(0xFF34D399),
-                modifier = Modifier.size(20.dp)
-            )
-
-            progress == null -> Icon(
-                imageVector = Icons.Filled.Download,
-                contentDescription = "Download for offline use",
-                tint = WisdomCyan,
-                modifier = Modifier.size(20.dp)
-            )
-
-            progress >= 0f -> Text(
-                text = "${(progress.coerceIn(0f, 1f) * 100).toInt()}%",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = WisdomCyan
-            )
-
-            else -> CircularProgressIndicator(
-                modifier = Modifier.size(18.dp),
-                color = WisdomCyan,
-                strokeWidth = 2.dp
-            )
-        }
+        DownloadGauge(
+            isDownloaded = isDownloaded,
+            progress = progress,
+            failed = failed,
+            size = 22.dp,
+            strokeWidth = 2.dp
+        )
     }
 }
 

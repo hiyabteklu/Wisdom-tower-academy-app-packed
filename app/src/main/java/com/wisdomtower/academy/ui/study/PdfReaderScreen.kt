@@ -30,7 +30,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -190,11 +189,18 @@ fun PdfReaderScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     val p = progress
-                    if (p != null) {
-                        LinearProgressIndicator(progress = { p }, color = WisdomCyan, modifier = Modifier.fillMaxWidth())
-                    } else {
-                        CircularProgressIndicator(color = WisdomCyan)
-                    }
+                    DownloadGauge(
+                        state = DownloadState.DOWNLOADING,
+                        progress = p,
+                        size = 36.dp,
+                        strokeWidth = 3.dp
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = if (p != null) "Downloading book\u2026 ${(p.coerceIn(0f, 1f) * 100).toInt()}%" else "Loading book\u2026",
+                        fontSize = 13.sp,
+                        color = WisdomMuted
+                    )
                 }
             }
         }

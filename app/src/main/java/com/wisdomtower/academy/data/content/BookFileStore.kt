@@ -164,21 +164,25 @@ object BookFileStore {
         http.newCall(request).execute().use { resp ->
             if (!resp.isSuccessful) throw IllegalStateException("HTTP ${resp.code}")
             val body = resp.body ?: throw IllegalStateException("Empty answer")
-            val total = body.contentLength()
+            val bodyLen = body.contentLength()
+            val total = if (bodyLen > 0L) bodyLen else (getCachedSize(context, key) ?: -1L)
             body.byteStream().use { input ->
                 part.outputStream().use { out ->
                     val buffer = ByteArray(64 * 1024)
                     var done = 0L
-                    var lastReported = 0L
+                    var lastReportedPct = -1
                     while (true) {
                         ensureActive()
                         val read = input.read(buffer)
                         if (read < 0) break
                         out.write(buffer, 0, read)
                         done += read
-                        if (total > 0L && done - lastReported > 256 * 1024) {
-                            lastReported = done
-                            onProgress(done.toFloat() / total.toFloat())
+                        if (total > 0L) {
+                            val pct = (done * 100 / total).toInt().coerceIn(0, 100)
+                            if (pct != lastReportedPct) {
+                                lastReportedPct = pct
+                                onProgress(pct / 100f)
+                            }
                         }
                     }
                 }
