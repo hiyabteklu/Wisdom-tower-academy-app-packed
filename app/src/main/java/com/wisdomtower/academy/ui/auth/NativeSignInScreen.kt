@@ -88,6 +88,10 @@ import kotlinx.coroutines.launch
  * [SupabaseAuthClient]; storing the session and telling the WebView is done by the caller
  * through [onSuccess] (S2c / S2d in STATUS.md).
  *
+ * "Forgot password?" now opens the native [ForgotPasswordScreen] inside this screen (N13, session
+ * log BB), so the caller needs no change. [onForgotPassword] is kept only so existing callers still
+ * compile; it is no longer called.
+ *
  * STATUS: written, NOT yet compiled or tested on a device.
  */
 enum class AuthMode { SIGN_IN, SIGN_UP }
@@ -142,6 +146,7 @@ fun NativeSignInScreen(
     var agreedToTerms by remember { mutableStateOf(true) }
     var loading by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf<AuthNotice?>(null) }
+    var showReset by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val focus = LocalFocusManager.current
@@ -222,6 +227,24 @@ fun NativeSignInScreen(
                 }
             }
         }
+    }
+
+    // Native password reset (N13): shown instead of the form until the student goes back.
+    if (showReset) {
+        ForgotPasswordScreen(
+            initialEmail = identifier.trim().takeIf { SupabaseAuthClient.looksLikeEmail(it) }.orEmpty(),
+            onBackToSignIn = { showReset = false },
+            onPasswordChanged = { changedEmail ->
+                if (changedEmail.isNotEmpty()) identifier = changedEmail
+                password = ""
+                mode = AuthMode.SIGN_IN
+                notice = AuthNotice("Your password has been successfully changed.")
+                showReset = false
+            },
+            modifier = modifier,
+            onClose = onClose
+        )
+        return
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -447,7 +470,7 @@ fun NativeSignInScreen(
                                     color = Slate400,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.clickable { onForgotPassword() }
+                                    modifier = Modifier.clickable { showReset = true }
                                 )
                             }
                         } else null
@@ -656,8 +679,9 @@ private fun ModeTab(
     }
 }
 
+/** `internal` (was private) so [ForgotPasswordScreen] in the same package reuses the same field look. */
 @Composable
-private fun AuthField(
+internal fun AuthField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
