@@ -1170,6 +1170,13 @@ fun MainScreen(
         softNavFallbackRunnable = null
 
         val targetUrl = url.trim()
+        if (targetUrl.contains("/learning") && targetUrl.contains("tool=tutor")) {
+            com.wisdomtower.academy.ui.study.NativeToolRequests.requestTutor()
+            menuExpanded = false
+            activeStudyUrl = null
+            selectedIndex = 1
+            return
+        }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=")) {
             val toolTitle = when {
                 targetUrl.contains("tool=tutor") -> "AI Tutor"
@@ -2884,6 +2891,13 @@ fun MainScreen(
                                         navigateTo("https://www.wisdom-tower-academy.live/learning", 1)
                                         return true
                                     }
+                                    if (u.contains("/learning") && u.contains("tool=tutor")) {
+                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestTutor()
+                                        menuExpanded = false
+                                        activeStudyUrl = null
+                                        selectedIndex = 1
+                                        return true
+                                    }
                                     if (u.contains("/learning") && u.contains("tool=")) {
                                         val toolTitle = when {
                                             u.contains("tool=tutor") -> "AI Tutor"
@@ -3690,7 +3704,7 @@ fun MainScreen(
                                 label = "AI Tutor",
                                 onClick = {
                                     menuExpanded = false
-                                    openToolOverlay("https://www.wisdom-tower-academy.live/learning?tool=tutor&overlay=1", "AI Tutor")
+                                    navigateTo("https://www.wisdom-tower-academy.live/learning?tool=tutor")
                                 }
                             )
 
