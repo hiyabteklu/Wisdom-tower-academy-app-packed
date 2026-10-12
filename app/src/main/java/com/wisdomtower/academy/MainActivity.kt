@@ -1191,6 +1191,13 @@ fun MainScreen(
             selectedIndex = 1
             return
         }
+        if (targetUrl.contains("/learning") && targetUrl.contains("tool=plan")) {
+            com.wisdomtower.academy.ui.study.NativeToolRequests.requestPlanner()
+            menuExpanded = false
+            activeStudyUrl = null
+            selectedIndex = 1
+            return
+        }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=")) {
             val toolTitle = when {
                 targetUrl.contains("tool=tutor") -> "AI Tutor"
@@ -2971,6 +2978,13 @@ fun MainScreen(
                                         selectedIndex = 1
                                         return true
                                     }
+                                    if (u.contains("/learning") && u.contains("tool=plan")) {
+                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestPlanner()
+                                        menuExpanded = false
+                                        activeStudyUrl = null
+                                        selectedIndex = 1
+                                        return true
+                                    }
                                     if (u.contains("/learning") && u.contains("tool=")) {
                                         val toolTitle = when {
                                             u.contains("tool=tutor") -> "AI Tutor"
@@ -3813,7 +3827,7 @@ fun MainScreen(
                                 label = "Planner",
                                 onClick = {
                                     menuExpanded = false
-                                    openToolOverlay("https://www.wisdom-tower-academy.live/learning?tool=planner&overlay=1", "Study Planner")
+                                    navigateTo("https://www.wisdom-tower-academy.live/learning?tool=planner")
                                 }
                             )
 
