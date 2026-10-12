@@ -95,6 +95,19 @@ tasks.register<Copy>("copyBrandAssets") {
 }
 tasks.named("preBuild").configure { dependsOn("copyBrandAssets") }
 
+// Gives the local web pages (notes, flashcards, quizzes in src/main/assets/notes/) the SAME fonts as the native
+// screens (Outfit and Plus Jakarta Sans, already packed in src/main/res/font for Compose). The chat tools cannot
+// commit binary files, so every build copies the .ttf files next to the pages: assets/notes/fonts/*.ttf, which
+// `richtext.css` loads with @font-face (owner problem 5, 2026-10-12). If the folder is missing nothing is
+// copied and the build still succeeds (the pages then fall back to the system font).
+tasks.register<Copy>("copyWebFonts") {
+  from(layout.projectDirectory.dir("src/main/res/font")) {
+    include("plus_jakarta_sans_*.ttf", "outfit_*.ttf")
+  }
+  into(layout.projectDirectory.dir("src/main/assets/notes/fonts"))
+}
+tasks.named("preBuild").configure { dependsOn("copyWebFonts") }
+
 // Packs the images the website added (Grade 9-12 subject photos, Entrance Questions pictures, Remedial covers) from the
 // synced website-reference snapshot, so they stay packed in the app and follow every "Sync website reference".
 // Result: src/main/assets/images/web/grade-{9..12}/*, images/web/entrance/{natural,social,entrance-questions}.jpeg,
