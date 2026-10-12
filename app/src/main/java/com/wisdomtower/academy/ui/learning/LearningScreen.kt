@@ -65,6 +65,7 @@ import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
+import com.wisdomtower.academy.ui.study.NativeCalculatorScreen
 import com.wisdomtower.academy.ui.study.NativeToolRequests
 import com.wisdomtower.academy.ui.study.NativeTutorScreen
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
@@ -154,6 +155,19 @@ fun LearningScreen(
 ) {
     // Native AI tutor (N10): the "AI Tutor" tile shows it in place of this screen; Back returns here.
     var tutorOpen by remember { mutableStateOf(false) }
+    // Native calculator (P8): the "Calculator" tile and requests from outside show it in place of this screen
+    var calculatorOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = calculatorOpen) { calculatorOpen = false }
+    LaunchedEffect(NativeToolRequests.pendingCalculator) {
+        if (NativeToolRequests.pendingCalculator) {
+            NativeToolRequests.pendingCalculator = false
+            calculatorOpen = true
+        }
+    }
+    if (calculatorOpen) {
+        NativeCalculatorScreen(onBack = { calculatorOpen = false }, modifier = modifier)
+        return
+    }
     BackHandler(enabled = tutorOpen) { tutorOpen = false }
     // Requests from outside this screen (drawer, website links): open the native tutor as well (P7)
     LaunchedEffect(NativeToolRequests.pendingTutor) {
@@ -381,6 +395,8 @@ fun LearningScreen(
                                             onClick = {
                                                 if (tile.key == "courses") {
                                                     onNavigateToUrl("/packages")
+                                                } else if (tile.key == "calculator") {
+                                                    calculatorOpen = true
                                                 } else if (tile.key == "tutor") {
                                                     tutorOpen = true
                                                 } else {

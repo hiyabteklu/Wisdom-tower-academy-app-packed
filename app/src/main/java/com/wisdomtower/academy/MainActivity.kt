@@ -1177,6 +1177,13 @@ fun MainScreen(
             selectedIndex = 1
             return
         }
+        if (targetUrl.contains("/learning") && targetUrl.contains("tool=calc")) {
+            com.wisdomtower.academy.ui.study.NativeToolRequests.requestCalculator()
+            menuExpanded = false
+            activeStudyUrl = null
+            selectedIndex = 1
+            return
+        }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=")) {
             val toolTitle = when {
                 targetUrl.contains("tool=tutor") -> "AI Tutor"
@@ -2898,6 +2905,13 @@ fun MainScreen(
                                         selectedIndex = 1
                                         return true
                                     }
+                                    if (u.contains("/learning") && u.contains("tool=calc")) {
+                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestCalculator()
+                                        menuExpanded = false
+                                        activeStudyUrl = null
+                                        selectedIndex = 1
+                                        return true
+                                    }
                                     if (u.contains("/learning") && u.contains("tool=")) {
                                         val toolTitle = when {
                                             u.contains("tool=tutor") -> "AI Tutor"
@@ -3713,7 +3727,7 @@ fun MainScreen(
                                 label = "Calculator",
                                 onClick = {
                                     menuExpanded = false
-                                    openToolOverlay("https://www.wisdom-tower-academy.live/learning?tool=calculator&overlay=1", "Scientific Calculator")
+                                    navigateTo("https://www.wisdom-tower-academy.live/learning?tool=calculator")
                                 }
                             )
 
