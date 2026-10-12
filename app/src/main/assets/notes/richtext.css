@@ -1,4 +1,24 @@
 /* Shared styles of the local rich-text renderer (notes, flashcards, quizzes). Port of the website's RichContent look. */
+
+/* App font (owner problem 5, 2026-10-12): the same Plus Jakarta Sans as the native screens. The .ttf files are copied
+ * into assets/notes/fonts/ by the Gradle task copyWebFonts at build time. If a file is missing the browser falls back
+ * to the system font, nothing breaks. */
+@font-face { font-family: "WT Jakarta"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/plus_jakarta_sans_regular.ttf") format("truetype"); }
+@font-face { font-family: "WT Jakarta"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/plus_jakarta_sans_medium.ttf") format("truetype"); }
+@font-face { font-family: "WT Jakarta"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/plus_jakarta_sans_semibold.ttf") format("truetype"); }
+@font-face { font-family: "WT Jakarta"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/plus_jakarta_sans_bold.ttf") format("truetype"); }
+@font-face { font-family: "WT Jakarta"; font-weight: 800; font-style: normal; font-display: swap; src: url("fonts/plus_jakarta_sans_extrabold.ttf") format("truetype"); }
+@font-face { font-family: "WT Outfit"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/outfit_regular.ttf") format("truetype"); }
+@font-face { font-family: "WT Outfit"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/outfit_semibold.ttf") format("truetype"); }
+@font-face { font-family: "WT Outfit"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/outfit_bold.ttf") format("truetype"); }
+@font-face { font-family: "WT Outfit"; font-weight: 800; font-style: normal; font-display: swap; src: url("fonts/outfit_extrabold.ttf") format("truetype"); }
+
+/* Applies to every text element of the pages except math (KaTeX has its own fonts) and code. Headings use Outfit like
+ * the native screens. `!important` is needed because the pages set their own `font:` shorthands on body, buttons and classes. */
+body :not(.katex):not(.katex *):not(pre):not(code):not(.md-code) { font-family: "WT Jakarta", -apple-system, Roboto, "Segoe UI", sans-serif !important; }
+body :is(h1, h2, h3, .study-h1, .study-h2, .study-h3):not(.katex *) { font-family: "WT Outfit", "WT Jakarta", -apple-system, Roboto, sans-serif !important; }
+body { font-family: "WT Jakarta", -apple-system, Roboto, "Segoe UI", sans-serif !important; }
+
 .study-h1 { font-size: 1.6rem; line-height: 1.25; color: #fff; margin: 1.4em 0 .6em; font-weight: 800; }
 .study-h2 { font-size: 1.3rem; line-height: 1.3; color: #67e8f9; margin: 1.6em 0 .6em; font-weight: 800; display: flex; gap: .6em; align-items: flex-start; }
 .study-h2-bar { flex: 0 0 4px; align-self: stretch; border-radius: 2px; background: linear-gradient(#22d3ee, #38bdf8); }
