@@ -66,6 +66,7 @@ import com.wisdomtower.academy.ui.drawer.PrivacyScreen
 import com.wisdomtower.academy.ui.drawer.TermsScreen
 import com.wisdomtower.academy.ui.theme.WisdomNavy
 import com.wisdomtower.academy.data.auth.AuthStateManager
+import com.wisdomtower.academy.ui.notifications.NotificationsScreen
 import com.wisdomtower.academy.data.repository.AcademyRepository
 import com.wisdomtower.academy.data.repository.NotificationRepository
 import androidx.compose.runtime.collectAsState
@@ -780,6 +781,7 @@ class MainActivity : ComponentActivity() {
         splash.setKeepOnScreenCondition { keepSplash }
         super.onCreate(savedInstanceState)
         AuthStateManager.init(this)
+        NotificationRepository.init(this) // P15-native-notifications
         NotificationRepository.refreshNotifications()
         AcademyRepository.refreshCatalog()
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
@@ -989,6 +991,7 @@ fun MainScreen(
     var activeStudyUrl by remember { mutableStateOf<String?>(null) }
     var activeGuideSlug by remember { mutableStateOf<String?>(null) }
     var activeDrawerScreen by remember { mutableStateOf<String?>(null) }
+    var showNotifications by remember { mutableStateOf(false) } // P15-native-notifications
     var webView: WebView? by remember { mutableStateOf(null) }
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -1089,6 +1092,7 @@ fun MainScreen(
         activeStudyUrl = null
         activeGuideSlug = null
         activeDrawerScreen = null
+        showNotifications = false // P15-native-notifications
         closeToolOverlay()
         menuExpanded = false
     }
@@ -1628,6 +1632,10 @@ fun MainScreen(
             activeGuideSlug = null
             return@BackHandler
         }
+        if (showNotifications) { // P15-native-notifications
+            showNotifications = false
+            return@BackHandler
+        }
         if (activeDrawerScreen != null) {
             activeDrawerScreen = null
             return@BackHandler
@@ -2033,12 +2041,9 @@ fun MainScreen(
                                 onClick = {
                                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                     requestNotificationPermission()
-                                    NotificationRepository.markAllRead()
-                                    // S12-P2: show the page (tab 1 + activeStudyUrl makes the WebView visible)
-                                    val notifUrl = "https://www.wisdom-tower-academy.live/notifications"
+                                    // P15-native-notifications: native screen; items are marked read when tapped
                                     resetOverlays()
-                                    activeStudyUrl = notifUrl
-                                    navigateTo(notifUrl, 1)
+                                    showNotifications = true
                                 },
                                 modifier = Modifier.size(44.dp)
                             ) {
@@ -3238,6 +3243,22 @@ fun MainScreen(
                             .fillMaxSize()
                             .background(WisdomNavy)
                             .zIndex(15f)
+                    )
+                }
+
+                // P15-native-notifications: native notifications screen (bell)
+                if (showNotifications) {
+                    NotificationsScreen(
+                        onBack = { showNotifications = false },
+                        onOpenUrl = handleGlobalNav,
+                        onSignIn = {
+                            resetOverlays()
+                            selectedIndex = 3
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(WisdomNavy)
+                            .zIndex(17f)
                     )
                 }
 
