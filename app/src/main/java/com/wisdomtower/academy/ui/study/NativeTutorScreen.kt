@@ -34,10 +34,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -102,6 +104,8 @@ private class TutorStreamHolder {
  *    page `assets/notes/tutor.html` with the shared KaTeX renderer (math, tables, ==highlights== as in the notes).
  *  - Texts (welcome, prompts, placeholders, error and stop notices, follow-up chips) copied from `AiTutor.tsx`.
  *  - Message box (U2 change 1): multi-line, grows up to 4 lines, send / stop buttons 56 dp and kept at the bottom.
+ *  - Toolbar (U2 change 2): bigger touch targets and text; the trash button asks "Clear this chat?" first (that
+ *    dialog text is NEW, not from the website).
  * Differences from the website: no avatar picture on the welcome screen and answers; the chat list opens as a full
  * panel instead of a side sheet.
  *
@@ -122,6 +126,7 @@ fun NativeTutorScreen(
     var sessions by remember { mutableStateOf(initial.first) }
     var activeId by remember { mutableStateOf(initial.second) }
     var showHistory by remember { mutableStateOf(false) }
+    var showClearConfirm by remember { mutableStateOf(false) }
     var input by remember { mutableStateOf("") }
     var isThinking by remember { mutableStateOf(false) }
     var isStreaming by remember { mutableStateOf(false) }
@@ -381,7 +386,7 @@ fun NativeTutorScreen(
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
         Column(modifier = Modifier.fillMaxSize().imePadding()) {
-            // Toolbar: back, Chats, title, New, clear
+            // Toolbar: back, Chats, title, New, clear (asks first)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -393,7 +398,7 @@ fun NativeTutorScreen(
                 HeaderPill(text = "Chats  ${sessions.size}", accent = showHistory) { showHistory = !showHistory }
                 Text(
                     text = if (activeSession.title != "New chat") activeSession.title else "AI Tutor",
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFFCBD5E1),
                     maxLines = 1,
@@ -403,18 +408,18 @@ fun NativeTutorScreen(
                 HeaderPill(text = "+ New", accent = true) { newChat() }
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(Color.White.copy(alpha = 0.06f))
-                        .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(10.dp))
-                        .clickable { clearChat() },
+                        .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
+                        .clickable { showClearConfirm = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Clear chat",
                         tint = WisdomMuted,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -503,6 +508,30 @@ fun NativeTutorScreen(
                 }
             }
         }
+
+        if (showClearConfirm) {
+            AlertDialog(
+                onDismissRequest = { showClearConfirm = false },
+                containerColor = Color(0xFF0E172A),
+                titleContentColor = Color.White,
+                textContentColor = Color(0xFFCBD5E1),
+                title = { Text("Clear this chat?", fontWeight = FontWeight.Bold) },
+                text = { Text("All messages in this chat will be removed.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showClearConfirm = false
+                        clearChat()
+                    }) {
+                        Text("Clear", color = Color(0xFFFDA4AF), fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showClearConfirm = false }) {
+                        Text("Cancel", color = Color(0xFFA5F3FC))
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -573,11 +602,11 @@ private fun HeaderPill(text: String, accent: Boolean, onClick: () -> Unit) {
                 RoundedCornerShape(12.dp)
             )
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 11.dp)
     ) {
         Text(
             text = text,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = if (accent) Color(0xFFA5F3FC) else Color.White,
             maxLines = 1
