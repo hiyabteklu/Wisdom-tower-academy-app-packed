@@ -66,6 +66,7 @@ import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
 import com.wisdomtower.academy.ui.study.NativeCalculatorScreen
+import com.wisdomtower.academy.ui.study.NativeTimerScreen
 import com.wisdomtower.academy.ui.study.NativeToolRequests
 import com.wisdomtower.academy.ui.study.NativeTutorScreen
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
@@ -166,6 +167,19 @@ fun LearningScreen(
     }
     if (calculatorOpen) {
         NativeCalculatorScreen(onBack = { calculatorOpen = false }, modifier = modifier)
+        return
+    }
+    // Native focus timer (P9): the "Timer" tile and requests from outside show it in place of this screen
+    var timerOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = timerOpen) { timerOpen = false }
+    LaunchedEffect(NativeToolRequests.pendingTimer) {
+        if (NativeToolRequests.pendingTimer) {
+            NativeToolRequests.pendingTimer = false
+            timerOpen = true
+        }
+    }
+    if (timerOpen) {
+        NativeTimerScreen(onBack = { timerOpen = false }, modifier = modifier)
         return
     }
     BackHandler(enabled = tutorOpen) { tutorOpen = false }
@@ -377,7 +391,7 @@ fun LearningScreen(
                                     Box(modifier = Modifier.weight(1f)) {
                                         ToolTileButton(
                                             tile = tile,
-                                            onClick = { onOpenTool(tile.url) }
+                                            onClick = { if (tile.key == "timer") { timerOpen = true } else { onOpenTool(tile.url) } }
                                         )
                                     }
                                 }
