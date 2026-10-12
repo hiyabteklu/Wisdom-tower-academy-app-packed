@@ -7,21 +7,23 @@
 <link rel="stylesheet" href="richtext.css">
 <style>
   :root { color-scheme: dark; }
-  html, body { margin: 0; padding: 0; height: 100%; background: #0a101d; overflow: hidden; }
+  /* F1g (2026-10-12): NORMAL FLOW like notes/index.html and quiz.html. The F2 version used html/body height:100% +
+   * overflow:hidden + a full-height flex column; on the owner's phone the deck stayed completely dark. The card now has
+   * its own explicit height (56vh, at least 300px), so it can never collapse to nothing. */
+  html, body { margin: 0; padding: 0; background: #0a101d; }
   body { color: #cbd5e1; font: 16px/1.6 -apple-system, Roboto, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
-  #root { height: 100%; box-sizing: border-box; display: flex; flex-direction: column; padding: 12px 14px 0; max-width: 640px; margin: 0 auto; overflow-wrap: anywhere; }
-  .msg { text-align: center; color: #94a3b8; padding: 40px 0; font-size: .95rem; margin: auto 0; }
+  #root { box-sizing: border-box; padding: 12px 14px 24px; max-width: 640px; margin: 0 auto; overflow-wrap: anywhere; }
+  .msg { text-align: center; color: #94a3b8; padding: 40px 0; font-size: .95rem; margin: 0; }
 
-  .chips { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 8px; font-size: .8rem; margin-bottom: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; font-size: .8rem; margin-bottom: 12px; }
   .chip { border: 1px solid rgba(255,255,255,.1); border-radius: 8px; padding: 4px 10px; color: #94a3b8; }
   .chip.know { border-color: rgba(52,211,153,.25); color: #a7f3d0; }
   .chip.learning { border-color: rgba(251,191,36,.25); color: #fde68a; }
   .chip.again { border-color: rgba(251,113,133,.25); color: #fecdd3; }
 
-  /* Flip: NO 3D (F1d, 2026-10-12). The F2 version used perspective / preserve-3d / backface-visibility; the owner's
-   * phone then showed a completely dark screen (nothing drawn, not even the chips). Now only ONE face is shown at a
-   * time and a flip is a plain 2D squeeze (scaleX) with the faces swapped at the narrowest point (script below). */
-  .slot { position: relative; flex: 1 1 auto; min-height: 160px; animation: fcIn .22s ease-out; cursor: pointer; }
+  /* Flip: no 3D (F1d). Only ONE face is shown at a time; a flip is a 2D squeeze (scaleX) with the faces swapped at the
+   * narrowest point (script below). */
+  .slot { position: relative; height: 56vh; min-height: 300px; animation: fcIn .22s ease-out; cursor: pointer; }
   .flip { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
   .flip.turn { animation: fcTurn .3s ease-in-out; }
   .face { position: absolute; top: 0; left: 0; right: 0; bottom: 0; box-sizing: border-box; border-radius: 22px; padding: 18px 20px;
@@ -44,9 +46,9 @@
   .fc-text.s3 { font-size: 1.1rem; line-height: 1.45; }
   .fc-text .study-p { margin: .5em 0; }
   .fc-text .study-list { display: inline-block; text-align: left; }
-  .hint { flex: 0 0 auto; text-align: center; font-size: .75rem; color: #94a3b8; margin: 10px 0 0; }
+  .hint { text-align: center; font-size: .75rem; color: #94a3b8; margin: 10px 0 0; }
 
-  .bar { flex: 0 0 auto; padding: 10px 0 calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+  .bar { padding: 10px 0 calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
   .nav, .rate { display: flex; gap: 8px; }
   .nav .btn, .rate .btn { flex: 1 1 0; }
   .btn { font: 600 .95rem/1 -apple-system, Roboto, sans-serif; padding: 14px 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.04); color: #e2e8f0; }
@@ -56,7 +58,7 @@
   .btn.learning { border-color: rgba(251,191,36,.45); color: #fde68a; }
   .btn.know { background: #10b981; border-color: #10b981; color: #0a101d; font-weight: 800; }
   .btn.violet { background: #8b5cf6; border-color: #8b5cf6; color: #fff; font-weight: 800; padding: 14px 22px; }
-  .done { margin: auto 0; border: 1px solid rgba(255,255,255,.12); background: #0e172a; border-radius: 20px; padding: 28px 24px; text-align: center; }
+  .done { margin: 24px 0; border: 1px solid rgba(255,255,255,.12); background: #0e172a; border-radius: 20px; padding: 28px 24px; text-align: center; }
   .done .big { margin: 0 0 6px; font-size: 1.4rem; font-weight: 800; color: #fff; }
   .done .sub { margin: 0 0 18px; font-size: .95rem; color: #94a3b8; }
 </style>
@@ -80,9 +82,7 @@ window.onerror = function (message) {
  * F2: text centered in the card with a size that follows its length, a "Previous" / "Next" row and a rating row
  * "Again" / "Learning" / "Known" (the owner's wording; the website says "Know"). The stats keys sent to the app
  * are unchanged (know, learning, again, seen, total, accuracy).
- * F1c: visible errors instead of a silent dark screen.
- * F1d (2026-10-12, owner: the deck opened after download was STILL dark after F1c, not even "Loading deck..."):
- * all 3D CSS removed (see the style block). Hypothesis, not proven: the 3D layers blanked the whole WebView.
+ * F1c: visible errors instead of a silent dark screen. F1d: no 3D CSS. F1g: normal page flow, fixed card height.
  * Called from the app: window.setDeck(metaJsonText) with the row's `meta` JSON ({ "cards": [ { front, back } ] }).
  * Progress goes back to the app through window.WTBridge.onProgress(json) (the app saves it to learning_progress).
  */
