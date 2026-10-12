@@ -3,21 +3,21 @@
 /* App font (owner problem 5, 2026-10-12): the same Plus Jakarta Sans as the native screens. The .ttf files are copied
  * into assets/notes/fonts/ by the Gradle task copyWebFonts at build time. If a file is missing the browser falls back
  * to the system font, nothing breaks. */
-@font-face { font-family: "WT Jakarta"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/plus_jakarta_sans_regular.ttf") format("truetype"); }
-@font-face { font-family: "WT Jakarta"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/plus_jakarta_sans_medium.ttf") format("truetype"); }
-@font-face { font-family: "WT Jakarta"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/plus_jakarta_sans_semibold.ttf") format("truetype"); }
-@font-face { font-family: "WT Jakarta"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/plus_jakarta_sans_bold.ttf") format("truetype"); }
-@font-face { font-family: "WT Jakarta"; font-weight: 800; font-style: normal; font-display: swap; src: url("fonts/plus_jakarta_sans_extrabold.ttf") format("truetype"); }
-@font-face { font-family: "WT Outfit"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/outfit_regular.ttf") format("truetype"); }
-@font-face { font-family: "WT Outfit"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/outfit_semibold.ttf") format("truetype"); }
-@font-face { font-family: "WT Outfit"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/outfit_bold.ttf") format("truetype"); }
-@font-face { font-family: "WT Outfit"; font-weight: 800; font-style: normal; font-display: swap; src: url("fonts/outfit_extrabold.ttf") format("truetype"); }
+@font-face { font-family: "WT Jakarta"; font-weight: 400; font-style: normal; font-display: block; src: url("fonts/plus_jakarta_sans_regular.ttf") format("truetype"); }
+@font-face { font-family: "WT Jakarta"; font-weight: 500; font-style: normal; font-display: block; src: url("fonts/plus_jakarta_sans_medium.ttf") format("truetype"); }
+@font-face { font-family: "WT Jakarta"; font-weight: 600; font-style: normal; font-display: block; src: url("fonts/plus_jakarta_sans_semibold.ttf") format("truetype"); }
+@font-face { font-family: "WT Jakarta"; font-weight: 700; font-style: normal; font-display: block; src: url("fonts/plus_jakarta_sans_bold.ttf") format("truetype"); }
+@font-face { font-family: "WT Jakarta"; font-weight: 800; font-style: normal; font-display: block; src: url("fonts/plus_jakarta_sans_extrabold.ttf") format("truetype"); }
+@font-face { font-family: "WT Outfit"; font-weight: 400; font-style: normal; font-display: block; src: url("fonts/outfit_regular.ttf") format("truetype"); }
+@font-face { font-family: "WT Outfit"; font-weight: 600; font-style: normal; font-display: block; src: url("fonts/outfit_semibold.ttf") format("truetype"); }
+@font-face { font-family: "WT Outfit"; font-weight: 700; font-style: normal; font-display: block; src: url("fonts/outfit_bold.ttf") format("truetype"); }
+@font-face { font-family: "WT Outfit"; font-weight: 800; font-style: normal; font-display: block; src: url("fonts/outfit_extrabold.ttf") format("truetype"); }
 
 /* T2: One clean content font system (Tinos, Times New Roman metric-compatible) */
-@font-face { font-family: "WT Tinos"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/tinos_regular.ttf") format("truetype"), url("../fonts/tinos_regular.ttf") format("truetype"); }
-@font-face { font-family: "WT Tinos"; font-weight: 400; font-style: italic; font-display: swap; src: url("fonts/tinos_italic.ttf") format("truetype"), url("../fonts/tinos_italic.ttf") format("truetype"); }
-@font-face { font-family: "WT Tinos"; font-weight: 700; font-style: normal; font-display: swap; src: url("fonts/tinos_bold.ttf") format("truetype"), url("../fonts/tinos_bold.ttf") format("truetype"); }
-@font-face { font-family: "WT Tinos"; font-weight: 700; font-style: italic; font-display: swap; src: url("fonts/tinos_bold_italic.ttf") format("truetype"), url("../fonts/tinos_bold_italic.ttf") format("truetype"); }
+@font-face { font-family: "WT Tinos"; font-weight: 400; font-style: normal; font-display: block; src: url("fonts/tinos_regular.ttf") format("truetype"), url("../fonts/tinos_regular.ttf") format("truetype"); }
+@font-face { font-family: "WT Tinos"; font-weight: 400; font-style: italic; font-display: block; src: url("fonts/tinos_italic.ttf") format("truetype"), url("../fonts/tinos_italic.ttf") format("truetype"); }
+@font-face { font-family: "WT Tinos"; font-weight: 700; font-style: normal; font-display: block; src: url("fonts/tinos_bold.ttf") format("truetype"), url("../fonts/tinos_bold.ttf") format("truetype"); }
+@font-face { font-family: "WT Tinos"; font-weight: 700; font-style: italic; font-display: block; src: url("fonts/tinos_bold_italic.ttf") format("truetype"), url("../fonts/tinos_bold_italic.ttf") format("truetype"); }
 
 :root {
   --wt-content-font-family: "WT Tinos", "Times New Roman", Times, serif;
@@ -47,6 +47,8 @@ body :not(.katex):not(.katex *):not(pre):not(code):not(.md-code) {
 body :is(h1, h2, h3, .study-h1, .study-h2, .study-h3):not(.katex *) {
   font-family: "WT Outfit", "WT Jakarta", -apple-system, Roboto, sans-serif !important;
   font-style: normal !important;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* T2: All reading and learning content text uses Tinos Italic with defined tokens */

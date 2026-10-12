@@ -113,10 +113,19 @@ fun NotesReaderScreen(
     var result by remember(resourceId) { mutableStateOf<ContentItemResult?>(null) }
     val webRef = remember { arrayOfNulls<WebView>(1) }
     val progress = remember(resourceId) { NoteProgress() }
+    var pageReady by remember(resourceId) { mutableStateOf(false) }
 
     LaunchedEffect(resourceId, attempt) {
         result = null
         result = LearningContentRepository.getResource(context, resourceId)
+    }
+
+    LaunchedEffect(resourceId, result) {
+        if (result is ContentItemResult.Found) {
+            // Safety timeout: ensure note is revealed even if WebView JS bridge drops callback
+            delay(1200L)
+            pageReady = true
+        }
     }
 
     // Reading time: starts when the note is shown, added every 30 seconds (the website does the same)
@@ -170,6 +179,11 @@ fun NotesReaderScreen(
                     // A bad progress message must never break the reader.
                 }
                 Unit
+            },
+            onReady = {
+                screenScope.launch(Dispatchers.Main) {
+                    pageReady = true
+                }
             }
         )
     }
@@ -197,16 +211,36 @@ fun NotesReaderScreen(
             }
 
             when (val r = result) {
-                null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = WisdomCyan)
+                null -> {
+                    var showSpinner by remember { mutableStateOf(false) }
+                    LaunchedEffect(resourceId) {
+                        delay(150L)
+                        showSpinner = true
+                    }
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        if (showSpinner) {
+                            CircularProgressIndicator(color = WisdomCyan)
+                        }
+                    }
                 }
 
-                is ContentItemResult.Found -> NoteWebView(
-                    body = r.item.bodyMd.orEmpty(),
-                    bridge = bridge,
-                    webRef = webRef,
-                    modifier = Modifier.fillMaxSize()
-                )
+                is ContentItemResult.Found -> {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        NoteWebView(
+                            body = r.item.bodyMd.orEmpty(),
+                            bridge = bridge,
+                            webRef = webRef,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        if (!pageReady) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xFF0A101D))
+                            )
+                        }
+                    }
+                }
 
                 is ContentItemResult.NotFound -> NoteMessage(
                     message = "Unable to load materials right now. Please try again.",
@@ -222,7 +256,8 @@ fun NotesReaderScreen(
 /** Receives the messages of `notes/index.html` (`window.WTBridge.*(json)`), on a WebView thread. */
 private class NotesBridge(
     private val onSummarize: (String) -> Unit,
-    private val onProgress: (String) -> Unit
+    private val onProgress: (String) -> Unit,
+    private val onReady: () -> Unit
 ) {
     @JavascriptInterface
     fun onSummarize(json: String) {
@@ -232,6 +267,11 @@ private class NotesBridge(
     @JavascriptInterface
     fun onProgress(json: String) {
         onProgress.invoke(json)
+    }
+
+    @JavascriptInterface
+    fun onReady() {
+        onReady.invoke()
     }
 }
 
