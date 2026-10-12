@@ -1198,6 +1198,20 @@ fun MainScreen(
             selectedIndex = 1
             return
         }
+        if (targetUrl.contains("/learning") && targetUrl.contains("tool=note")) {
+            com.wisdomtower.academy.ui.study.NativeToolRequests.requestNotebook()
+            menuExpanded = false
+            activeStudyUrl = null
+            selectedIndex = 1
+            return
+        }
+        if (targetUrl.contains("/learning") && (targetUrl.contains("tool=goal") || targetUrl.contains("tool=target"))) {
+            com.wisdomtower.academy.ui.study.NativeToolRequests.requestTargets()
+            menuExpanded = false
+            activeStudyUrl = null
+            selectedIndex = 1
+            return
+        }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=")) {
             val toolTitle = when {
                 targetUrl.contains("tool=tutor") -> "AI Tutor"
@@ -2985,6 +2999,20 @@ fun MainScreen(
                                         selectedIndex = 1
                                         return true
                                     }
+                                    if (u.contains("/learning") && u.contains("tool=note")) {
+                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestNotebook()
+                                        menuExpanded = false
+                                        activeStudyUrl = null
+                                        selectedIndex = 1
+                                        return true
+                                    }
+                                    if (u.contains("/learning") && (u.contains("tool=goal") || u.contains("tool=target"))) {
+                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestTargets()
+                                        menuExpanded = false
+                                        activeStudyUrl = null
+                                        selectedIndex = 1
+                                        return true
+                                    }
                                     if (u.contains("/learning") && u.contains("tool=")) {
                                         val toolTitle = when {
                                             u.contains("tool=tutor") -> "AI Tutor"
@@ -3809,7 +3837,7 @@ fun MainScreen(
                                 label = "Notebook",
                                 onClick = {
                                     menuExpanded = false
-                                    openToolOverlay("https://www.wisdom-tower-academy.live/learning?tool=notes&overlay=1", "Study Notebook")
+                                    navigateTo("https://www.wisdom-tower-academy.live/learning?tool=notes")
                                 }
                             )
 
