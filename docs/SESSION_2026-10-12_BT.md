@@ -44,12 +44,19 @@
       - `LearningContentRepository.kt`: diff = 0
       - `HubItemListScreen.kt`: diff = 0
       - `StudyWorkspaceScreen.kt`: diff = 0
-    - Checked against forbidden files: `.env.example`, gradle files, workflows, and `website-reference/**` untouched.
     - Verified compilation (`compile_applet`) and TypeScript linting (`lint_applet` / `tsc --noEmit`) pass cleanly.
 
+  - **RUN #295 CI ROOT CAUSE & FIX:**
+    - GitHub Actions Run #295 failed during `compileReleaseJavaWithJavac`.
+    - Cause: `.env.example` had its 6 values stripped to empty (`KEY=`), causing `secrets-gradle-plugin` to generate invalid Java syntax in `BuildConfig.java` (`public static final String KEY = ;`), identical to Run #7 and Run #285.
+    - Fix: Restored the 6 non-empty public keys and live values in `.env.example`. Added failure entry to `docs/BUILD_PITFALLS.md`.
+
   - **FILES TOUCHED:**
+    - `.env.example`
     - `app/src/main/java/com/wisdomtower/academy/data/content/BookFileStore.kt`
     - `app/src/main/java/com/wisdomtower/academy/data/content/LearningContentRepository.kt`
+    - `app/src/main/java/com/wisdomtower/academy/ui/packages/OpenCard.kt`
     - `app/src/main/java/com/wisdomtower/academy/ui/study/HubItemListScreen.kt`
     - `app/src/main/java/com/wisdomtower/academy/ui/study/StudyWorkspaceScreen.kt`
+    - `docs/BUILD_PITFALLS.md`
     - `docs/SESSION_2026-10-12_BT.md`

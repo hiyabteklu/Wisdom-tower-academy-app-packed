@@ -110,3 +110,10 @@
 * **Cause:** `ScreenBackButton` is defined as `internal fun ScreenBackButton(onClick: () -> Unit, modifier: Modifier = Modifier)`. In Kotlin, trailing lambda syntax (`Foo { ... }`) only binds to the *last* parameter of the function. Because the last parameter was `modifier: Modifier = Modifier`, calling `ScreenBackButton { ... }` passed the lambda to `modifier` instead of `onClick`, leaving `onClick` without a value and causing a type mismatch on `modifier`.
 * **Fix:** Called `ScreenBackButton(onClick = { ... })` explicitly with named parameter syntax so `onClick` receives the lambda cleanly.
 * **DO NOT:** **Never use trailing lambda syntax on a composable or function where the lambda is NOT the last parameter, especially when trailing parameters have defaults (`modifier: Modifier = Modifier`). Always pass `onClick = { ... }` explicitly.**
+
+### 2026-10-12 – Run #295 failed (`compileReleaseJavaWithJavac`)
+
+#### Problem: Empty values in `.env.example` breaking `BuildConfig.java` syntax
+* **Cause:** Commit `ccbc7799e194572b2fa6c8921c2fa6e4182e069d` inadvertently stripped the values of the 6 public keys in `.env.example`, leaving them empty (`NEXT_PUBLIC_APPWRITE_BUCKET_ID=`, etc.). The `secrets-gradle-plugin` transforms every entry in `.env.example` into a `BuildConfig` field. Empty entries generate invalid Java syntax (`public static final String NEXT_PUBLIC_APPWRITE_BUCKET_ID = ;`), causing `compileReleaseJavaWithJavac` to fail with syntax errors (identical to Run #7 and Run #285).
+* **Fix:** Restored the 6 public non-empty keys and live values in `.env.example`.
+* **DO NOT:** **Rule (h) & Rule 12: Never empty out `.env.example` keys or push empty values. `.env.example` must strictly preserve the 6 public, non-empty live keys (`NEXT_PUBLIC_*`).**
