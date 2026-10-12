@@ -1,5 +1,6 @@
 package com.wisdomtower.academy.ui.study
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -89,59 +90,52 @@ fun NativeTargetsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val priorityOptions = listOf("high" to "High Priority", "medium" to "Medium Priority", "low" to "Low Priority")
     val priorityLabel = priorityOptions.firstOrNull { it.first == newPriority }?.second ?: "High Priority"
 
+    BackHandler(enabled = true) { onBack() }
+
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            // Header
-            Column(
+        Column(modifier = Modifier.fillMaxSize().imePadding()) {
+            // Shared top toolbar: back arrow + title (48dp touch target, top-left)
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFF0C1626).copy(alpha = 0.85f))
-                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(24.dp))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                ScreenBackButton(onBack)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
-                            Text("Targets", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-                        Text(
-                            "Track and complete your daily study milestones.",
-                            fontSize = 12.sp,
-                            color = Color(0xFF94A3B8),
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                    Row(
-                        modifier = Modifier
-                            .padding(start = 8.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(Color(0xFFF43F5E).copy(alpha = 0.20f))
-                            .border(BorderStroke(1.dp, Color(0xFFF43F5E).copy(alpha = 0.30f)), RoundedCornerShape(50))
-                            .clickable { onBack() }
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close targets", tint = Color(0xFFFDA4AF), modifier = Modifier.size(14.dp))
-                        Text("Close", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFDA4AF))
+                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
+                    Column {
+                        Text("Targets", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Track and complete your daily study milestones.", fontSize = 11.sp, color = Color(0xFF94A3B8))
                     }
                 }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Header progress summary
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFF0C1626).copy(alpha = 0.85f))
+                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(24.dp))
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("$done of ${goals.size} Done", fontSize = 12.sp, color = Color(0xFF94A3B8))
                     Box(
@@ -326,4 +320,5 @@ fun NativeTargetsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             }
         }
     }
+}
 }

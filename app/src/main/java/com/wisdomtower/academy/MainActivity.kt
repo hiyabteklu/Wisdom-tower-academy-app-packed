@@ -1645,6 +1645,11 @@ fun MainScreen(
             closeToolOverlay()
             return@BackHandler
         }
+        // T1: Drawer screens (About, Contact, FAQ, etc.) close before the active workspace
+        if (activeDrawerScreen != null) {
+            activeDrawerScreen = null
+            return@BackHandler
+        }
         if (activeWorkspace != null) {
             activeWorkspace = null
             return@BackHandler
@@ -1663,10 +1668,6 @@ fun MainScreen(
         }
         if (showNotifications) { // P15-native-notifications
             showNotifications = false
-            return@BackHandler
-        }
-        if (activeDrawerScreen != null) {
-            activeDrawerScreen = null
             return@BackHandler
         }
         if (showOnboarding) return@BackHandler
@@ -3281,6 +3282,7 @@ fun MainScreen(
                 // Native Drawer Screens (About, Contact, FAQ, Privacy, Terms)
                 // U1 Option A: raised to zIndex 25f so they open above StudyWorkspaceScreen (18f)
                 if (activeDrawerScreen != null) {
+                    BackHandler(enabled = true) { activeDrawerScreen = null }
                     when (activeDrawerScreen) {
                         "about" -> AboutScreen(
                             onBack = { activeDrawerScreen = null },
@@ -3321,8 +3323,10 @@ fun MainScreen(
                 }
 
                 // Native Global Study Tools Overlays (U1 Option A: accessible from any screen at zIndex 120f)
+                // T1: tool overlay and drawer screens have local BackHandler
                 val currentTool = activeStudyTool
                 if (currentTool != null) {
+                    BackHandler(enabled = true) { activeStudyTool = null }
                     when (currentTool) {
                         "tutor" -> NativeTutorScreen(
                             onBack = { activeStudyTool = null },

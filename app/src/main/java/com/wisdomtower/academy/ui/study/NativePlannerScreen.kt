@@ -1,6 +1,7 @@
 package com.wisdomtower.academy.ui.study
 
 import android.app.TimePickerDialog
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -242,25 +243,28 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         editingId = null
     }
 
+    BackHandler(enabled = true) { onBack() }
+
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 10.dp, vertical = 12.dp)
+                .padding(horizontal = 10.dp, vertical = 8.dp)
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color(0xFF0A1122))
                 .border(BorderStroke(1.dp, Color(0xFF22D3EE).copy(alpha = 0.30f)), RoundedCornerShape(24.dp))
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // 1. Header
+            // 1. Header with ScreenBackButton (48dp touch target, top-left)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                ScreenBackButton(onBack)
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         Icon(Icons.Filled.CalendarMonth, contentDescription = null, tint = Color(0xFF22D3EE), modifier = Modifier.size(20.dp))
@@ -281,20 +285,6 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         color = Color(0xFFCBD5E1),
                         modifier = Modifier.padding(top = 2.dp)
                     )
-                }
-                Row(
-                    modifier = Modifier
-                        .padding(start = 8.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFF43F5E).copy(alpha = 0.20f))
-                        .border(BorderStroke(1.dp, Color(0xFFF43F5E).copy(alpha = 0.30f)), RoundedCornerShape(12.dp))
-                        .clickable { onBack() }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close planner", tint = Color(0xFFFDA4AF), modifier = Modifier.size(16.dp))
-                    Text("Close", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFDA4AF))
                 }
             }
 

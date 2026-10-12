@@ -1,5 +1,6 @@
 package com.wisdomtower.academy.ui.study
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -116,49 +117,45 @@ fun NativeStatusScreen(
     val summary = remember(rows, track) { rows?.let { computeStatus(it, track) } }
     val name = studentName?.takeIf { it.isNotBlank() } ?: "Scholar"
 
+    BackHandler(enabled = true) { onBack() }
+
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            // 1. Header: "Your status", Standing, track selector, summary
-            StPanel(borderColor = StSky.copy(alpha = 0.20f)) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Shared top toolbar: back arrow + title (48dp touch target, top-left)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ScreenBackButton(onBack)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(StSky.copy(alpha = 0.15f))
+                        .border(BorderStroke(1.dp, StSky.copy(alpha = 0.30f)), RoundedCornerShape(50))
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(StSky.copy(alpha = 0.15f))
-                            .border(BorderStroke(1.dp, StSky.copy(alpha = 0.30f)), RoundedCornerShape(50))
-                            .padding(horizontal = 14.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(Icons.Filled.School, contentDescription = null, tint = StSky, modifier = Modifier.size(16.dp))
-                        Text("YOUR STATUS", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF7DD3FC), letterSpacing = 0.8.sp)
-                    }
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(Color(0xFFF43F5E).copy(alpha = 0.20f))
-                            .border(BorderStroke(1.dp, Color(0xFFF43F5E).copy(alpha = 0.30f)), RoundedCornerShape(50))
-                            .clickable { onBack() }
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close status", tint = Color(0xFFFDA4AF), modifier = Modifier.size(14.dp))
-                        Text("Close", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFDA4AF))
-                    }
+                    Icon(Icons.Filled.School, contentDescription = null, tint = StSky, modifier = Modifier.size(16.dp))
+                    Text("YOUR STATUS", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF7DD3FC), letterSpacing = 0.8.sp)
                 }
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // 1. Header: Standing, track selector, summary
+                StPanel(borderColor = StSky.copy(alpha = 0.20f)) {
 
                 if (summary != null) {
                     Row(
@@ -453,6 +450,7 @@ fun NativeStatusScreen(
             }
         }
     }
+}
 }
 
 @Composable

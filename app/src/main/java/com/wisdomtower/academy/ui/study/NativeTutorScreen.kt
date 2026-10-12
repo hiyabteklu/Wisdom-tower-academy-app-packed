@@ -375,6 +375,7 @@ fun NativeTutorScreen(
     }
 
     BackHandler(enabled = showHistory) { showHistory = false }
+    BackHandler(enabled = !showHistory) { onBack() }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = WisdomCyan,
@@ -393,7 +394,7 @@ fun NativeTutorScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {

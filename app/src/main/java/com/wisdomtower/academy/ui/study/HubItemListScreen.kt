@@ -621,12 +621,12 @@ private fun MessageCard(title: String?, message: String, onRetry: (() -> Unit)?)
 
 /** The round back button used at the top of the study screens (same look as the package and workspace pages). */
 @Composable
-internal fun ScreenBackButton(onClick: () -> Unit) {
+internal fun ScreenBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
-            .size(36.dp)
+        modifier = modifier
+            .size(48.dp)
             .clip(CircleShape)
-            .background(Color(0xFF111B2E).copy(alpha = 0.8f))
+            .background(Color(0xFF111B2E).copy(alpha = 0.85f))
             .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -639,7 +639,7 @@ internal fun ScreenBackButton(onClick: () -> Unit) {
             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
             contentDescription = "Back",
             tint = Color.White,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }

@@ -1,6 +1,7 @@
 package com.wisdomtower.academy.ui.study
 
 import android.content.ClipData
+import androidx.activity.compose.BackHandler
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
@@ -168,52 +169,64 @@ fun NativeNotebookScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         copied = true
     }
 
+    BackHandler(enabled = true) { onBack() }
+
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Header
-            Column(
+        Column(modifier = Modifier.fillMaxSize().imePadding()) {
+            // Shared top toolbar: back arrow + title (48dp touch target, top-left)
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFF0C1626).copy(alpha = 0.85f))
-                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(24.dp))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(Icons.Filled.Folder, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
-                        Text("Notebook", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                    Text(
-                        "Study notes, formulas, and chapter summaries.",
-                        fontSize = 12.sp,
-                        color = Color(0xFF94A3B8),
-                        modifier = Modifier.padding(top = 2.dp)
-                    )
-                }
+                ScreenBackButton(onBack)
                 Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
-                    NbButton("New Folder", Icons.Filled.Add, Color.White.copy(alpha = 0.06f), Color(0xFFE2E8F0), Color.White.copy(alpha = 0.08f)) {
-                        newFolderName = ""
-                        newFolderOpen = true
+                    Icon(Icons.Filled.Folder, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
+                    Column {
+                        Text("Notebook", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Study notes, formulas, and chapter summaries.", fontSize = 11.sp, color = Color(0xFF94A3B8))
                     }
-                    NbButton("Add Sheet", Icons.Filled.Add, Color.White, Color(0xFF020617), Color.White) { addSheet() }
-                    NbButton("Close", Icons.Filled.Close, Color(0xFFF43F5E).copy(alpha = 0.20f), Color(0xFFFDA4AF), Color(0xFFF43F5E).copy(alpha = 0.30f)) { onBack() }
                 }
             }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Header action buttons
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFF0C1626).copy(alpha = 0.85f))
+                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(24.dp))
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        NbButton("New Folder", Icons.Filled.Add, Color.White.copy(alpha = 0.06f), Color(0xFFE2E8F0), Color.White.copy(alpha = 0.08f)) {
+                            newFolderName = ""
+                            newFolderOpen = true
+                        }
+                        NbButton("Add Sheet", Icons.Filled.Add, Color.White, Color(0xFF020617), Color.White) { addSheet() }
+                    }
+                }
 
             if (folders.isEmpty()) {
                 Box(
@@ -591,6 +604,7 @@ fun NativeNotebookScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             }
         }
     }
+}
 }
 
 @Composable

@@ -1,5 +1,6 @@
 package com.wisdomtower.academy.ui.study
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -130,55 +131,45 @@ fun NativeTimerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         nudge = null
     }
 
+    BackHandler(enabled = true) { onBack() }
+
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Shared top toolbar: back arrow + title (48dp touch target, top-left)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ScreenBackButton(onBack)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Filled.Timer, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
+                    Text("Focus Pomodoro Station", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+            }
+
             Column(
                 modifier = Modifier
-                    .widthIn(max = 720.dp)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Page header: icon, "Focus Pomodoro Station", red Close button (as on the website)
-                Row(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF0C1626).copy(alpha = 0.90f))
-                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(16.dp))
-                        .padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .widthIn(max = 720.dp)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(Icons.Filled.Timer, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(20.dp))
-                        Text("Focus Pomodoro Station", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF43F5E).copy(alpha = 0.20f))
-                            .border(BorderStroke(1.dp, Color(0xFFF43F5E).copy(alpha = 0.30f)), RoundedCornerShape(12.dp))
-                            .clickable { onBack() }
-                            .padding(horizontal = 12.dp, vertical = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close timer", tint = Color(0xFFFDA4AF), modifier = Modifier.size(16.dp))
-                        Text("Close", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFDA4AF))
-                    }
-                }
 
                 // Card with the timer itself
                 Column(
@@ -356,6 +347,7 @@ fun NativeTimerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             }
         }
     }
+}
 
     val shownNudge = nudge
     if (shownNudge != null) {
