@@ -67,6 +67,7 @@ import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
 import com.wisdomtower.academy.ui.study.NativeCalculatorScreen
 import com.wisdomtower.academy.ui.study.NativeNotebookScreen
+import com.wisdomtower.academy.ui.study.NativeStatusScreen
 import com.wisdomtower.academy.ui.study.NativeTargetsScreen
 import com.wisdomtower.academy.ui.study.NativeTimerScreen
 import com.wisdomtower.academy.ui.study.NativePlannerScreen
@@ -97,10 +98,12 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
  *
  * Study Tools Dock (8 tiles):
  * - Timer, Planner, Targets, Notebook, Calculator, AI Tutor, Your status, Courses
- * - Seven tiles now open NATIVE screens inside this tab: Timer ([NativeTimerScreen]), Planner ([NativePlannerScreen]),
+ * - All tiles now open NATIVE screens inside this tab: Timer ([NativeTimerScreen]), Planner ([NativePlannerScreen]),
  *   Targets ([NativeTargetsScreen], P11 step), Notebook ([NativeNotebookScreen], P11 step), Calculator, AI Tutor
- *   ([NativeTutorScreen]) and Courses (the packages tab). Only "Your status" still goes through `onOpenTool` to the
- *   website pop-up.
+ *   ([NativeTutorScreen]), Your status ([NativeStatusScreen], F7 part 5, real data only) and Courses (the packages tab).
+ *   The website pop-up path (`onOpenTool`) is now only a fallback for tiles without a native screen (none at the moment).
+ *   NOT yet done for "Your status": the entry points outside this screen (the side-menu row and website links with
+ *   `tool=analytics`) still open the website pop-up; they need a patch of `MainActivity.kt` like P11.
  *
  * Curriculum Section:
  * - Header: Curriculum with "All Courses (X)", X = number of courses shown
@@ -224,6 +227,22 @@ fun LearningScreen(
     }
     if (targetsOpen) {
         NativeTargetsScreen(onBack = { targetsOpen = false }, modifier = modifier)
+        return
+    }
+    // Native "Your status" (F7 part 5): the "Your status" tile shows it in place of this screen; Back returns here.
+    // Requests from outside (side menu, website links) are not wired yet.
+    var statusOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = statusOpen) { statusOpen = false }
+    if (statusOpen) {
+        NativeStatusScreen(
+            onBack = { statusOpen = false },
+            isLoggedIn = isLoggedIn,
+            studentName = userProfile?.fullName ?: userName,
+            educationLevel = userProfile?.educationLevel,
+            stream = userProfile?.stream,
+            dailyGoalMinutes = userProfile?.dailyStudyGoalMinutes?.takeIf { it > 0 } ?: 45,
+            modifier = modifier
+        )
         return
     }
     BackHandler(enabled = tutorOpen) { tutorOpen = false }
@@ -469,6 +488,8 @@ fun LearningScreen(
                                                     calculatorOpen = true
                                                 } else if (tile.key == "tutor") {
                                                     tutorOpen = true
+                                                } else if (tile.key == "analytics") {
+                                                    statusOpen = true
                                                 } else {
                                                     onOpenTool(tile.url)
                                                 }
