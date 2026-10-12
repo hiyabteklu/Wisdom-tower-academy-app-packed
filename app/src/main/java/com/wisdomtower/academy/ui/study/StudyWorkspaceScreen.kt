@@ -60,17 +60,19 @@ private const val SITE_ORIGIN = "https://www.wisdom-tower-academy.live"
 
 /**
  * Hubs that open in a NATIVE screen (list from Supabase + native viewer) instead of the website page.
- * "books" (native PDF reader, plan steps N2 + N4), "short-notes" (local KaTeX page, step N6),
+ * "books" and "life-savers" (native PDF reader, plan steps N2 + N4; Life Savers rows are PDFs exactly like
+ * books: admin hub `life-savers`, content type `pdf`, file in Appwrite), "short-notes" (local KaTeX page, step N6),
  * "flashcards" (local deck page, step N3) and "question-banks" + "exams" (local quiz page, step N5).
  * To switch a hub back to the website page (for example if the native screen misbehaves on a phone),
  * remove its id from this set: nothing else changes.
  */
-private val NATIVE_HUB_IDS = setOf("books", "short-notes", "flashcards", "question-banks", "exams")
+private val NATIVE_HUB_IDS = setOf("books", "life-savers", "short-notes", "flashcards", "question-banks", "exams")
 
 /** Which native screen is open on top of the six hub cards (null = the cards themselves). */
 private sealed interface WorkspaceView {
     data class HubList(val hubId: String) : WorkspaceView
-    data class Pdf(val item: LearningResource) : WorkspaceView
+    /** [hubId] is the hub the PDF was opened from (`books` or `life-savers`), so Back returns to that list. */
+    data class Pdf(val item: LearningResource, val hubId: String) : WorkspaceView
     data class Note(val item: LearningResource) : WorkspaceView
     data class Cards(val item: LearningResource) : WorkspaceView
     /** [hubId] is the hub the item was opened from (`question-banks` or `exams`), used for the tracker scope id. */
@@ -203,11 +205,15 @@ internal fun safeHubUrl(basePath: String, hubId: String): String {
  * straight away (LaunchedEffect) and, as a fallback if that is ever missed, shows a single "Exams" card.
  *
  * Native hubs (2026-10-11, plan N2 + N3 + N4 + N5 + N6): a hub listed in [NATIVE_HUB_IDS] opens [HubItemListScreen]
- * (rows read from Supabase) and then [PdfReaderScreen] (books), [NotesReaderScreen] (short notes),
+ * (rows read from Supabase) and then [PdfReaderScreen] (books and life savers), [NotesReaderScreen] (short notes),
  * [FlashcardsScreen] (flashcard decks) or [QuizExamScreen] (question banks and exams), all inside this screen,
  * so `MainActivity` is not involved. System Back goes viewer -> list -> the six cards (the quiz screen
  * handles Back itself first, to close its own dialogs).
  * The other hubs still open the website page through `onOpenHub`.
+ *
+ * Life Savers (2026-10-12, owner request "make it native, identical to Books, 100% PDF"): the hub `life-savers`
+ * is now in [NATIVE_HUB_IDS]. It uses the same list, download buttons, PDF reader, last-page memory and offline
+ * saving as Books, because the repository reads any hub by id and the viewer is chosen by the row's content type.
  *
  * Access check (2026-10-11, plan N9): tapping a hub card first asks [ContentAccess] (admin locks in
  * `content_locks` + ownership; free mode = every signed-in student owns everything). A closed course shows the
@@ -250,8 +256,9 @@ fun StudyWorkspaceScreen(
 
     // The quiz screen has its own BackHandler (it closes its dialogs first and then calls onBack below).
     BackHandler(enabled = view != null && view !is WorkspaceView.Quiz) {
-        view = when (view) {
-            is WorkspaceView.Pdf -> WorkspaceView.HubList("books")
+        val open = view
+        view = when (open) {
+            is WorkspaceView.Pdf -> WorkspaceView.HubList(open.hubId)
             is WorkspaceView.Note -> WorkspaceView.HubList("short-notes")
             is WorkspaceView.Cards -> WorkspaceView.HubList("flashcards")
             else -> null
@@ -271,7 +278,7 @@ fun StudyWorkspaceScreen(
                 onBack = { view = null },
                 onOpenItem = { item ->
                     when (item.contentType) {
-                        "pdf" -> view = WorkspaceView.Pdf(item)
+                        "pdf" -> view = WorkspaceView.Pdf(item, shown.hubId)
                         "markdown" -> view = WorkspaceView.Note(item)
                         "flashcard_deck" -> view = WorkspaceView.Cards(item)
                         "quiz" -> view = WorkspaceView.Quiz(item, false, shown.hubId)
@@ -285,7 +292,7 @@ fun StudyWorkspaceScreen(
                 title = shown.item.title,
                 url = LearningContentRepository.appwriteViewUrl(shown.item.storagePath),
                 cacheKey = shown.item.id,
-                onBack = { view = WorkspaceView.HubList("books") },
+                onBack = { view = WorkspaceView.HubList(shown.hubId) },
                 modifier = modifier,
                 resourceId = shown.item.id
             )
