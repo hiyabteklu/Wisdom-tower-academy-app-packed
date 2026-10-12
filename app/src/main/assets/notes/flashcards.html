@@ -18,15 +18,26 @@
   .chip.learning { border-color: rgba(251,191,36,.25); color: #fde68a; }
   .chip.again { border-color: rgba(251,113,133,.25); color: #fecdd3; }
 
-  /* 3D flip: the slot gets the slide-in, .flip turns around the vertical axis, the two faces hide their back side */
-  .slot { flex: 1 1 auto; min-height: 0; perspective: 1400px; -webkit-perspective: 1400px; animation: fcIn .22s ease-out; cursor: pointer; }
-  .flip { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; transition: transform .55s cubic-bezier(.2,.8,.2,1); }
+  /* 3D flip: the slot gets the slide-in, .flip turns around the vertical axis, the two faces hide their back side.
+   * F1c (2026-10-12): .slot is the positioned box and .flip fills it with top/left/right/bottom (before, .flip used
+   * height:100% of a flex item, which can be 0 and then the whole card is invisible = a dark screen). The slide-in
+   * no longer starts at opacity 0 (if the animation never ran, the card stayed invisible). */
+  .slot { position: relative; flex: 1 1 auto; min-height: 160px; perspective: 1400px; -webkit-perspective: 1400px; animation: fcIn .22s ease-out; cursor: pointer; }
+  .flip { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; transition: transform .55s cubic-bezier(.2,.8,.2,1); }
   .flip.flipped { transform: rotateY(180deg); }
   .face { position: absolute; top: 0; left: 0; right: 0; bottom: 0; box-sizing: border-box; border-radius: 22px; padding: 18px 20px;
           border: 1px solid rgba(255,255,255,.12); background: linear-gradient(160deg, #131f38, #0e172a 60%, #0a101d);
           backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; overflow-y: auto; }
   .face.back { transform: rotateY(180deg); border-color: rgba(34,211,238,.35); }
-  @keyframes fcIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+  @keyframes fcIn { from { transform: translateX(14px); } to { transform: none; } }
+
+  /* Flat fallback (class "flat" on #root, set by the script when the 3D card has no size): no 3D, the faces swap */
+  #root.flat .slot { perspective: none; -webkit-perspective: none; animation: none; }
+  #root.flat .flip { transform: none !important; transform-style: flat; -webkit-transform-style: flat; transition: none; }
+  #root.flat .face { backface-visibility: visible; -webkit-backface-visibility: visible; }
+  #root.flat .face.back { display: none; transform: none; }
+  #root.flat .flip.flipped .face.front { display: none; }
+  #root.flat .flip.flipped .face.back { display: flex; }
 
   .lbl { flex: 0 0 auto; margin: 0 0 8px; text-align: center; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 800; }
   .lbl.q { color: #c4b5fd; }
@@ -57,7 +68,14 @@
 </style>
 </head>
 <body>
-<div id="root"></div>
+<div id="root"><p class="msg">Loading deck...</p></div>
+<script>
+/* F1c: a script error must never leave a silent dark screen: show the message on the page (the owner can read it) */
+window.onerror = function (message) {
+  var r = document.getElementById("root");
+  if (r) r.innerHTML = '<p class="msg">Could not display this deck. (' + String(message).slice(0, 160) + ")</p>";
+};
+</script>
 <script src="katex/katex.min.js"></script>
 <script src="richtext.js"></script>
 <script>
@@ -68,6 +86,8 @@
  * F2: real 3D flip (both faces are drawn, the card turns), text centered in the card with a size that follows its
  * length, a "Previous" / "Next" row and a rating row "Again" / "Learning" / "Known" (the owner's wording; the
  * website says "Know"). The stats keys sent to the app are unchanged (know, learning, again, seen, total, accuracy).
+ * F1c (2026-10-12, owner report: deck opened after download was just dark): robust card size, visible errors,
+ * automatic flat (non 3D) fallback when the 3D card has no size.
  * Called from the app: window.setDeck(metaJsonText) with the row's `meta` JSON ({ "cards": [ { front, back } ] }).
  * Progress goes back to the app through window.WTBridge.onProgress(json) (the app saves it to learning_progress).
  */
@@ -109,6 +129,16 @@
     }
   }
 
+  /* If the 3D card ended up with no size (or not drawn), switch to the flat fallback so the card is never invisible */
+  function checkSize() {
+    try {
+      var f = document.querySelector(".face.front");
+      if (!f) return;
+      var r = f.getBoundingClientRect();
+      if (r.height < 40 || r.width < 40) root.classList.add("flat");
+    } catch (e) { /* ignore */ }
+  }
+
   function draw() {
     if (!cards.length) { root.innerHTML = '<p class="msg">No cards in this deck yet.</p>'; return; }
     var s = stats();
@@ -128,6 +158,7 @@
       '<button class="btn" data-act="next"' + (i >= cards.length - 1 ? " disabled" : "") + '>Next \u203A</button></div>' +
       '<div class="rate"><button class="btn again" data-act="again">Again</button><button class="btn learning" data-act="learning">Learning</button>' +
       '<button class="btn know" data-act="know">Known</button></div></div>';
+    window.setTimeout(checkSize, 120);
   }
 
   function goTo(n) {
@@ -178,13 +209,13 @@
   window.setDeck = function (metaText) {
     try {
       var meta = JSON.parse(metaText || "{}");
-      var list = Array.isArray(meta.cards) ? meta.cards : [];
+      var list = Array.isArray(meta && meta.cards) ? meta.cards : [];
       cards = list.map(function (c) { return { front: c && c.front, back: c && c.back }; });
       i = 0; flipped = false; grades = {}; done = false;
       draw();
       if (cards.length) report();
     } catch (e) {
-      root.innerHTML = '<p class="msg">Could not display this deck.</p>';
+      root.innerHTML = '<p class="msg">Could not display this deck. (' + String(e && e.message || e).slice(0, 160) + ")</p>";
     }
   };
 })();
