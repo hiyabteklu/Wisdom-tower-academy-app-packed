@@ -38,6 +38,7 @@ import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +65,7 @@ import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
+import com.wisdomtower.academy.ui.study.NativeToolRequests
 import com.wisdomtower.academy.ui.study.NativeTutorScreen
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
@@ -153,6 +155,13 @@ fun LearningScreen(
     // Native AI tutor (N10): the "AI Tutor" tile shows it in place of this screen; Back returns here.
     var tutorOpen by remember { mutableStateOf(false) }
     BackHandler(enabled = tutorOpen) { tutorOpen = false }
+    // Requests from outside this screen (drawer, website links): open the native tutor as well (P7)
+    LaunchedEffect(NativeToolRequests.pendingTutor) {
+        if (NativeToolRequests.pendingTutor) {
+            NativeToolRequests.pendingTutor = false
+            tutorOpen = true
+        }
+    }
     if (tutorOpen) {
         NativeTutorScreen(onBack = { tutorOpen = false }, modifier = modifier)
         return
