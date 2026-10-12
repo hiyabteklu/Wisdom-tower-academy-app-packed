@@ -66,6 +66,8 @@ import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
 import com.wisdomtower.academy.ui.study.NativeCalculatorScreen
+import com.wisdomtower.academy.ui.study.NativeNotebookScreen
+import com.wisdomtower.academy.ui.study.NativeTargetsScreen
 import com.wisdomtower.academy.ui.study.NativeTimerScreen
 import com.wisdomtower.academy.ui.study.NativePlannerScreen
 import com.wisdomtower.academy.ui.study.NativeToolRequests
@@ -95,8 +97,10 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
  *
  * Study Tools Dock (8 tiles):
  * - Timer, Planner, Targets, Notebook, Calculator, AI Tutor, Your status, Courses
- * - The "AI Tutor" tile opens the NATIVE tutor ([NativeTutorScreen], plan step N10) inside this tab; the other
- *   tools still go through `onOpenTool` to the website pop-ups.
+ * - Seven tiles now open NATIVE screens inside this tab: Timer ([NativeTimerScreen]), Planner ([NativePlannerScreen]),
+ *   Targets ([NativeTargetsScreen], P11 step), Notebook ([NativeNotebookScreen], P11 step), Calculator, AI Tutor
+ *   ([NativeTutorScreen]) and Courses (the packages tab). Only "Your status" still goes through `onOpenTool` to the
+ *   website pop-up.
  *
  * Curriculum Section:
  * - Header: Curriculum with "All Courses (X)", X = number of courses shown
@@ -194,6 +198,32 @@ fun LearningScreen(
     }
     if (plannerOpen) {
         NativePlannerScreen(onBack = { plannerOpen = false }, modifier = modifier)
+        return
+    }
+    // Native notebook (F7 part 4): the "Notebook" tile and requests from outside (patch P11) show it in place of this screen
+    var notebookOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = notebookOpen) { notebookOpen = false }
+    LaunchedEffect(NativeToolRequests.pendingNotebook) {
+        if (NativeToolRequests.pendingNotebook) {
+            NativeToolRequests.pendingNotebook = false
+            notebookOpen = true
+        }
+    }
+    if (notebookOpen) {
+        NativeNotebookScreen(onBack = { notebookOpen = false }, modifier = modifier)
+        return
+    }
+    // Native targets (F7 part 4): the "Targets" tile and requests from outside (patch P11) show it in place of this screen
+    var targetsOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = targetsOpen) { targetsOpen = false }
+    LaunchedEffect(NativeToolRequests.pendingTargets) {
+        if (NativeToolRequests.pendingTargets) {
+            NativeToolRequests.pendingTargets = false
+            targetsOpen = true
+        }
+    }
+    if (targetsOpen) {
+        NativeTargetsScreen(onBack = { targetsOpen = false }, modifier = modifier)
         return
     }
     BackHandler(enabled = tutorOpen) { tutorOpen = false }
@@ -405,7 +435,19 @@ fun LearningScreen(
                                     Box(modifier = Modifier.weight(1f)) {
                                         ToolTileButton(
                                             tile = tile,
-                                            onClick = { if (tile.key == "timer") { timerOpen = true } else if (tile.key == "planner") { plannerOpen = true } else { onOpenTool(tile.url) } }
+                                            onClick = {
+                                                if (tile.key == "timer") {
+                                                    timerOpen = true
+                                                } else if (tile.key == "planner") {
+                                                    plannerOpen = true
+                                                } else if (tile.key == "goals") {
+                                                    targetsOpen = true
+                                                } else if (tile.key == "notes") {
+                                                    notebookOpen = true
+                                                } else {
+                                                    onOpenTool(tile.url)
+                                                }
+                                            }
                                         )
                                     }
                                 }
