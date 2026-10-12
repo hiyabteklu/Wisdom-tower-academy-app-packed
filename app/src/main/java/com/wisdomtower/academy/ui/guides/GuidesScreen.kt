@@ -895,16 +895,18 @@ private fun UniversitiesFullSection(
     var selectedRegion by remember { mutableStateOf(ALL_REGIONS) }
     var featuredOnly by remember { mutableStateOf(false) }
     var showNbCard by remember { mutableStateOf(false) }
+    var detailedOnly by remember { mutableStateOf(false) }
 
     val regions = listOf(
         ALL_REGIONS, "Addis Ababa", "Amhara", "Oromia", "Tigray", "SNNPR",
         "Somali", "Afar", "Benishangul Gumuz", "Gambela", "Dire Dawa"
     )
 
-    val filteredList = remember(searchQuery, selectedRegion, featuredOnly, universities) {
+    val filteredList = remember(searchQuery, selectedRegion, featuredOnly, detailedOnly, universities) {
         val q = searchQuery.trim().lowercase()
         universities.filter { u ->
             if (featuredOnly && !u.featured) return@filter false
+            if (detailedOnly && !u.detailed) return@filter false
             if (selectedRegion != ALL_REGIONS && u.region != selectedRegion) return@filter false
             if (q.isEmpty()) return@filter true
             u.name.lowercase().contains(q) ||
@@ -976,7 +978,12 @@ private fun UniversitiesFullSection(
             }
         }
 
-        FactBadge(label = "${universities.size} Institutions")
+        val detailedCount = remember(universities) { universities.count { it.detailed } }
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            item(key = "count_institutions") { FactBadge(label = "${universities.size} Institutions") }
+            item(key = "count_detailed") { FactBadge(label = "$detailedCount In-Depth Guides") }
+            item(key = "count_regions") { FactBadge(label = "All Ethiopian Regions") }
+        }
 
         GuideSearchField(
             value = searchQuery,
@@ -988,6 +995,11 @@ private fun UniversitiesFullSection(
             item(key = "featured_chip") {
                 FilterChip(label = "Featured", selected = featuredOnly, accent = WisdomAccentAmber) {
                     featuredOnly = !featuredOnly
+                }
+            }
+            item(key = "detailed_chip") {
+                FilterChip(label = "Detailed Guides", selected = detailedOnly, accent = WisdomAccentViolet) {
+                    detailedOnly = !detailedOnly
                 }
             }
             items(regions) { reg ->

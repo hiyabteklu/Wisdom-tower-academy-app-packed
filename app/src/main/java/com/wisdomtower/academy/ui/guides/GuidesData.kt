@@ -67,7 +67,8 @@ data class UniversityDetail(
     val tips: List<String>,
     val studentFit: String,
     val featured: Boolean = false,
-    val knownFor: List<String> = emptyList()
+    val knownFor: List<String> = emptyList(),
+    val detailed: Boolean = false
 )
 
 data class DepartmentCategoryDetail(
@@ -165,7 +166,8 @@ object GuidesRepository {
                             tips = tips,
                             studentFit = u.optString("studentFit"),
                             featured = u.optBoolean("featured", false),
-                            knownFor = known
+                            knownFor = known,
+                            detailed = u.optBoolean("detailed", false)
                         )
                     )
                 }
