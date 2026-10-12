@@ -14,11 +14,13 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -106,8 +108,9 @@ private class TutorStreamHolder {
  *  - Message box (U2 change 1): multi-line, grows up to 4 lines, send / stop buttons 56 dp and kept at the bottom.
  *  - Toolbar (U2 change 2): bigger touch targets and text; the trash button asks "Clear this chat?" first (that
  *    dialog text is NEW, not from the website).
- * Differences from the website: no avatar picture on the welcome screen and answers; the chat list opens as a full
- * panel instead of a side sheet.
+ *  - Chats list (U2 change 5): opens as a side panel from the right over the chat (dimmed area closes it); the chat
+ *    page stays alive underneath, so nothing reloads when the list is opened or closed.
+ * Differences from the website: no avatar picture on the welcome screen and answers.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -424,89 +427,108 @@ fun NativeTutorScreen(
                 }
             }
 
-            if (showHistory) {
-                HistoryPanel(
-                    sessions = sessions,
-                    activeId = activeId,
-                    onClose = { showHistory = false },
-                    onNew = { newChat() },
-                    onSelect = { selectSession(it) },
-                    onDelete = { deleteSession(it) },
-                    onClearAll = { clearAll() },
-                    modifier = Modifier.weight(1f)
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                TutorWebView(
+                    bridge = bridge,
+                    webRef = webRef,
+                    onReady = { pageReady = true },
+                    onGone = { pageReady = false },
+                    modifier = Modifier.fillMaxSize()
                 )
-            } else {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    TutorWebView(
-                        bridge = bridge,
-                        webRef = webRef,
-                        onReady = { pageReady = true },
-                        onGone = { pageReady = false },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
+            }
 
-                // Composer: the box grows up to 4 lines; the buttons stay at the bottom edge
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedTextField(
-                        value = input,
-                        onValueChange = { input = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = {
-                            Text(
-                                text = if (busy) "AI Tutor is responding (click Stop to cancel)..." else "Ask a concept, formula, or problem…",
-                                fontSize = 12.sp,
-                                color = WisdomMuted,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = fieldColors,
-                        singleLine = false,
-                        minLines = 1,
-                        maxLines = 4,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                        keyboardActions = KeyboardActions(onSend = { send(null) })
-                    )
-                    if (busy) {
-                        Box(
-                            modifier = Modifier
-                                .height(56.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(WisdomAccentAmber.copy(alpha = 0.25f))
-                                .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.4f)), RoundedCornerShape(16.dp))
-                                .clickable { stop() }
-                                .padding(horizontal = 18.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Stop", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFDE68A))
-                        }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(WisdomCyan.copy(alpha = if (input.isBlank()) 0.4f else 1f))
-                                .clickable { send(null) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Send question",
-                                tint = Color(0xFF020617),
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
+            // Composer: the box grows up to 4 lines; the buttons stay at the bottom edge
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = {
+                        Text(
+                            text = if (busy) "AI Tutor is responding (click Stop to cancel)..." else "Ask a concept, formula, or problem…",
+                            fontSize = 12.sp,
+                            color = WisdomMuted,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = fieldColors,
+                    singleLine = false,
+                    minLines = 1,
+                    maxLines = 4,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                    keyboardActions = KeyboardActions(onSend = { send(null) })
+                )
+                if (busy) {
+                    Box(
+                        modifier = Modifier
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(WisdomAccentAmber.copy(alpha = 0.25f))
+                            .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.4f)), RoundedCornerShape(16.dp))
+                            .clickable { stop() }
+                            .padding(horizontal = 18.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Stop", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFDE68A))
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(WisdomCyan.copy(alpha = if (input.isBlank()) 0.4f else 1f))
+                            .clickable { send(null) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Send question",
+                            tint = Color(0xFF020617),
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
             }
+        }
+
+        // Chats side panel (U2 change 5): dimmed area closes it, the panel sits on the right over the chat
+        if (showHistory) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.55f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { showHistory = false }
+            )
+            HistoryPanel(
+                sessions = sessions,
+                activeId = activeId,
+                onClose = { showHistory = false },
+                onNew = { newChat() },
+                onSelect = { selectSession(it) },
+                onDelete = { deleteSession(it) },
+                onClearAll = { clearAll() },
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.88f)
+                    .background(Color(0xFF0E172A))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { }
+                    .padding(top = 8.dp)
+            )
         }
 
         if (showClearConfirm) {
