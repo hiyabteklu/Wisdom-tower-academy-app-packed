@@ -31,11 +31,11 @@ import kotlinx.coroutines.delay
  *    waits to tell a pinch from a scroll; the pages are made for reading at one size).
  * NOT proven to be the cause; see `docs/SESSION_2026-10-12_AR.md` for what to try next.
  *
- * F1e (2026-10-12, owner: flashcards stay completely dark, also after the page was rewritten without 3D in F1d):
- * as soon as the flashcards page is on screen, the website WebViews hidden by F1b are made VISIBLE and resumed
- * again and are no longer hidden or paused for the rest of this screen (a flashcard deck does not need the quiet
- * background: it has no long scrolling text). The touch fix of F1c still applies to it. Hypothesis, not proven:
- * hiding the website WebView stops the deck WebView from being drawn on this phone.
+ * F1e (2026-10-12, owner: flashcards stay completely dark): as soon as the flashcards page is on screen, the
+ * website WebViews hidden by F1b are made VISIBLE and resumed again and are no longer hidden or paused for the rest
+ * of this screen (a flashcard deck does not need the quiet background). F1f: right after that the deck WebView is
+ * invalidated and re-laid-out (a WebView that was created while a sibling WebView was being hidden may keep an
+ * empty first frame). Hypothesis, not proven: hiding the website WebView stops the deck WebView from being drawn.
  */
 private const val OWN_PAGES = "android_asset/notes/"
 private const val DECK_PAGE = "flashcards.html"
@@ -107,17 +107,17 @@ internal fun PauseShellWhileShown() {
     // Local page WebViews are created later (when a note, deck or quiz is opened): fix each one once, soon after.
     LaunchedEffect(view) {
         while (true) {
-            var deckOpen = false
+            var deck: WebView? = null
             for (wv in allWebViews(view.rootView)) {
                 try {
                     if (isOwnPage(wv)) {
-                        if (wv.url?.contains(DECK_PAGE) == true) deckOpen = true
+                        if (wv.url?.contains(DECK_PAGE) == true) deck = wv
                         if (fixed.add(wv)) fixLocalPageTouch(wv)
                     }
                 } catch (_: Exception) {
                 }
             }
-            if (deckOpen && !released[0]) {
+            if (deck != null && !released[0]) {
                 released[0] = true
                 for (wv in hidden) {
                     try {
@@ -127,6 +127,14 @@ internal fun PauseShellWhileShown() {
                     }
                 }
                 hidden.clear()
+                // F1f: make the deck WebView draw again after the website WebView changed state.
+                try {
+                    deck.onResume()
+                    deck.visibility = View.VISIBLE
+                    deck.requestLayout()
+                    deck.invalidate()
+                } catch (_: Exception) {
+                }
             }
             delay(300L)
         }
