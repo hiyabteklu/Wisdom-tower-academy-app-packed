@@ -15,6 +15,7 @@
 | P8 | `patch_native_calculator_entries.py` | native calculator entries | APPLIED (PR #5 merged 2026-10-12) |
 | P9 | `patch_native_timer_entries.py` | native Focus Timer entries and shell ticking | APPLIED (PR #6 merged 2026-10-12) |
 | P10 | `patch_native_planner_entries.py` | native Study Planner entries | APPLIED (PR #7 merged 2026-10-12) |
+| P16 | `patch_u1_global_tool_overlays.py` | U1 Option A: global drawer and study tool overlays at zIndex 120f; drawer screens at zIndex 25f | APPLIED locally in MainActivity.kt |
 
 Helper scripts (not patches): `generate_catalog_snapshot.py`, `generate_icons.py`, `pack_mainactivity.py`, `restore_mainactivity.py` (run by the build, keeps a valid `MainActivity.kt` on disk).
 
@@ -116,3 +117,12 @@ Script `scripts/patch_guides_universities_filters.py`. Adds to the native Univer
 ## P7 to P10. Native tutor, calculator, timer and planner entries  — APPLIED in `main` (PR #4 to #7, merged 2026-10-12)
 
 `patch_native_tutor_entries.py` (P7), `patch_native_calculator_entries.py` (P8), `patch_native_timer_entries.py` (P9), `patch_native_planner_entries.py` (P10). Details are in `docs/SESSION_2026-10-12_*.md` (AJ, AK). P9 requires P7 and P8; P10 requires P7 to P9 (all merged). CI results of these builds were not visible to the agents.
+
+## P16. U1 Option A: Global drawer and study tools accessibility — APPLIED in `MainActivity.kt`
+
+Script: `scripts/patch_u1_global_tool_overlays.py`.
+Fixes the U1 bug where the AI Tutor and drawer study tools failed to open while inside a course, package, or reading content (PDF reader, Notes reader, Flashcards, Quiz / Exam).
+- Study tools (`NativeTutorScreen`, `NativeCalculatorScreen`, `NativeTimerScreen`, `NativePlannerScreen`, `NativeNotebookScreen`, `NativeTargetsScreen`, `NativeStatusScreen`) are rendered at `zIndex(120f)` as global overlays in `MainActivity.kt` directly over the active workspace, passing `courseContext = activeWorkspace?.first` to the AI Tutor.
+- Tapping Back (or device back button) clears `activeStudyTool = null` and leaves the student on the exact book/course/quiz page without losing progress.
+- Drawer screens (`AboutScreen`, `ContactScreen`, `FaqScreen`, `PrivacyScreen`, `TermsScreen`) are elevated from `zIndex(16f)` to `zIndex(25f)` so they sit above `StudyWorkspaceScreen` (`18f`).
+

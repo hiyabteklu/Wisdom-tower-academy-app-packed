@@ -56,6 +56,13 @@ import com.wisdomtower.academy.ui.packages.PackagesScreen
 import com.wisdomtower.academy.ui.packages.PackageDetailScreen
 import com.wisdomtower.academy.ui.study.StudyWorkspaceScreen
 import com.wisdomtower.academy.ui.study.contentScopePath
+import com.wisdomtower.academy.ui.study.NativeTutorScreen
+import com.wisdomtower.academy.ui.study.NativeCalculatorScreen
+import com.wisdomtower.academy.ui.study.NativeTimerScreen
+import com.wisdomtower.academy.ui.study.NativePlannerScreen
+import com.wisdomtower.academy.ui.study.NativeNotebookScreen
+import com.wisdomtower.academy.ui.study.NativeTargetsScreen
+import com.wisdomtower.academy.ui.study.NativeStatusScreen
 import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.settings.SettingsScreen
@@ -991,6 +998,7 @@ fun MainScreen(
     var activeStudyUrl by remember { mutableStateOf<String?>(null) }
     var activeGuideSlug by remember { mutableStateOf<String?>(null) }
     var activeDrawerScreen by remember { mutableStateOf<String?>(null) }
+    var activeStudyTool by remember { mutableStateOf<String?>(null) }
     var showNotifications by remember { mutableStateOf(false) } // P15-native-notifications
     var webView: WebView? by remember { mutableStateOf(null) }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -1000,6 +1008,35 @@ fun MainScreen(
     val isLoggedIn by AuthStateManager.isLoggedIn.collectAsState()
     val catalogPackages by AcademyRepository.packages.collectAsState()
     val unreadNotifCount by NotificationRepository.unreadCount.collectAsState()
+
+    if (com.wisdomtower.academy.ui.study.NativeToolRequests.pendingTutor) {
+        com.wisdomtower.academy.ui.study.NativeToolRequests.pendingTutor = false
+        activeStudyTool = "tutor"
+    }
+    if (com.wisdomtower.academy.ui.study.NativeToolRequests.pendingCalculator) {
+        com.wisdomtower.academy.ui.study.NativeToolRequests.pendingCalculator = false
+        activeStudyTool = "calculator"
+    }
+    if (com.wisdomtower.academy.ui.study.NativeToolRequests.pendingTimer) {
+        com.wisdomtower.academy.ui.study.NativeToolRequests.pendingTimer = false
+        activeStudyTool = "timer"
+    }
+    if (com.wisdomtower.academy.ui.study.NativeToolRequests.pendingPlanner) {
+        com.wisdomtower.academy.ui.study.NativeToolRequests.pendingPlanner = false
+        activeStudyTool = "planner"
+    }
+    if (com.wisdomtower.academy.ui.study.NativeToolRequests.pendingNotebook) {
+        com.wisdomtower.academy.ui.study.NativeToolRequests.pendingNotebook = false
+        activeStudyTool = "notes"
+    }
+    if (com.wisdomtower.academy.ui.study.NativeToolRequests.pendingTargets) {
+        com.wisdomtower.academy.ui.study.NativeToolRequests.pendingTargets = false
+        activeStudyTool = "targets"
+    }
+    if (com.wisdomtower.academy.ui.study.NativeToolRequests.pendingStatus) {
+        com.wisdomtower.academy.ui.study.NativeToolRequests.pendingStatus = false
+        activeStudyTool = "status"
+    }
 
     LaunchedEffect(isLoggedIn, currentUser?.id) {
         NotificationRepository.refreshNotifications(currentUser?.id, currentUser?.email)
@@ -1087,6 +1124,7 @@ fun MainScreen(
     }
 
     val resetOverlays: () -> Unit = {
+        activeStudyTool = null
         activeWorkspace = null
         selectedPackage = null
         activeStudyUrl = null
@@ -1175,53 +1213,40 @@ fun MainScreen(
         softNavFallbackRunnable = null
 
         val targetUrl = url.trim()
+        // U1 Option A: study tools open as a global overlay without changing tabs or clearing workspace
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=tutor")) {
-            com.wisdomtower.academy.ui.study.NativeToolRequests.requestTutor()
+            activeStudyTool = "tutor"
             menuExpanded = false
-            activeStudyUrl = null
-            selectedIndex = 1
             return
         }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=calc")) {
-            com.wisdomtower.academy.ui.study.NativeToolRequests.requestCalculator()
+            activeStudyTool = "calculator"
             menuExpanded = false
-            activeStudyUrl = null
-            selectedIndex = 1
             return
         }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=time")) {
-            com.wisdomtower.academy.ui.study.NativeToolRequests.requestTimer()
+            activeStudyTool = "timer"
             menuExpanded = false
-            activeStudyUrl = null
-            selectedIndex = 1
             return
         }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=plan")) {
-            com.wisdomtower.academy.ui.study.NativeToolRequests.requestPlanner()
+            activeStudyTool = "planner"
             menuExpanded = false
-            activeStudyUrl = null
-            selectedIndex = 1
             return
         }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=note")) {
-            com.wisdomtower.academy.ui.study.NativeToolRequests.requestNotebook()
+            activeStudyTool = "notes"
             menuExpanded = false
-            activeStudyUrl = null
-            selectedIndex = 1
             return
         }
         if (targetUrl.contains("/learning") && (targetUrl.contains("tool=goal") || targetUrl.contains("tool=target"))) {
-            com.wisdomtower.academy.ui.study.NativeToolRequests.requestTargets()
+            activeStudyTool = "targets"
             menuExpanded = false
-            activeStudyUrl = null
-            selectedIndex = 1
             return
         }
         if (targetUrl.contains("/learning") && (targetUrl.contains("tool=analytic") || targetUrl.contains("tool=status"))) {
-            com.wisdomtower.academy.ui.study.NativeToolRequests.requestStatus()
+            activeStudyTool = "status"
             menuExpanded = false
-            activeStudyUrl = null
-            selectedIndex = 1
             return
         }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=")) {
@@ -1594,6 +1619,10 @@ fun MainScreen(
         }
         if (menuExpanded) {
             menuExpanded = false
+            return@BackHandler
+        }
+        if (activeStudyTool != null) {
+            activeStudyTool = null
             return@BackHandler
         }
         val twv = toolOverlayWebView
@@ -2993,53 +3022,40 @@ fun MainScreen(
                                         navigateTo("https://www.wisdom-tower-academy.live/learning", 1)
                                         return true
                                     }
+                                    // U1 Option A: study tools open as a global overlay without changing tabs or clearing workspace
                                     if (u.contains("/learning") && u.contains("tool=tutor")) {
-                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestTutor()
+                                        activeStudyTool = "tutor"
                                         menuExpanded = false
-                                        activeStudyUrl = null
-                                        selectedIndex = 1
                                         return true
                                     }
                                     if (u.contains("/learning") && u.contains("tool=calc")) {
-                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestCalculator()
+                                        activeStudyTool = "calculator"
                                         menuExpanded = false
-                                        activeStudyUrl = null
-                                        selectedIndex = 1
                                         return true
                                     }
                                     if (u.contains("/learning") && u.contains("tool=time")) {
-                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestTimer()
+                                        activeStudyTool = "timer"
                                         menuExpanded = false
-                                        activeStudyUrl = null
-                                        selectedIndex = 1
                                         return true
                                     }
                                     if (u.contains("/learning") && u.contains("tool=plan")) {
-                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestPlanner()
+                                        activeStudyTool = "planner"
                                         menuExpanded = false
-                                        activeStudyUrl = null
-                                        selectedIndex = 1
                                         return true
                                     }
                                     if (u.contains("/learning") && u.contains("tool=note")) {
-                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestNotebook()
+                                        activeStudyTool = "notes"
                                         menuExpanded = false
-                                        activeStudyUrl = null
-                                        selectedIndex = 1
                                         return true
                                     }
                                     if (u.contains("/learning") && (u.contains("tool=goal") || u.contains("tool=target"))) {
-                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestTargets()
+                                        activeStudyTool = "targets"
                                         menuExpanded = false
-                                        activeStudyUrl = null
-                                        selectedIndex = 1
                                         return true
                                     }
                                     if (u.contains("/learning") && (u.contains("tool=analytic") || u.contains("tool=status"))) {
-                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestStatus()
+                                        activeStudyTool = "status"
                                         menuExpanded = false
-                                        activeStudyUrl = null
-                                        selectedIndex = 1
                                         return true
                                     }
                                     if (u.contains("/learning") && u.contains("tool=")) {
@@ -3263,6 +3279,7 @@ fun MainScreen(
                 }
 
                 // Native Drawer Screens (About, Contact, FAQ, Privacy, Terms)
+                // U1 Option A: raised to zIndex 25f so they open above StudyWorkspaceScreen (18f)
                 if (activeDrawerScreen != null) {
                     when (activeDrawerScreen) {
                         "about" -> AboutScreen(
@@ -3270,35 +3287,97 @@ fun MainScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(WisdomNavy)
-                                .zIndex(16f)
+                                .zIndex(25f)
                         )
                         "contact" -> ContactScreen(
                             onBack = { activeDrawerScreen = null },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(WisdomNavy)
-                                .zIndex(16f)
+                                .zIndex(25f)
                         )
                         "faq" -> FaqScreen(
                             onBack = { activeDrawerScreen = null },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(WisdomNavy)
-                                .zIndex(16f)
+                                .zIndex(25f)
                         )
                         "privacy" -> PrivacyScreen(
                             onBack = { activeDrawerScreen = null },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(WisdomNavy)
-                                .zIndex(16f)
+                                .zIndex(25f)
                         )
                         "terms" -> TermsScreen(
                             onBack = { activeDrawerScreen = null },
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(WisdomNavy)
-                                .zIndex(16f)
+                                .zIndex(25f)
+                        )
+                    }
+                }
+
+                // Native Global Study Tools Overlays (U1 Option A: accessible from any screen at zIndex 120f)
+                val currentTool = activeStudyTool
+                if (currentTool != null) {
+                    when (currentTool) {
+                        "tutor" -> NativeTutorScreen(
+                            onBack = { activeStudyTool = null },
+                            courseContext = activeWorkspace?.first,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(120f)
+                        )
+                        "calculator" -> NativeCalculatorScreen(
+                            onBack = { activeStudyTool = null },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(120f)
+                        )
+                        "timer" -> NativeTimerScreen(
+                            onBack = { activeStudyTool = null },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(120f)
+                        )
+                        "planner" -> NativePlannerScreen(
+                            onBack = { activeStudyTool = null },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(120f)
+                        )
+                        "notes" -> NativeNotebookScreen(
+                            onBack = { activeStudyTool = null },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(120f)
+                        )
+                        "targets" -> NativeTargetsScreen(
+                            onBack = { activeStudyTool = null },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(120f)
+                        )
+                        "status" -> NativeStatusScreen(
+                            onBack = { activeStudyTool = null },
+                            isLoggedIn = isLoggedIn,
+                            studentName = currentProfile?.fullName ?: currentUser?.fullName,
+                            educationLevel = currentProfile?.educationLevel,
+                            stream = currentProfile?.stream,
+                            dailyGoalMinutes = currentProfile?.dailyStudyGoalMinutes?.takeIf { it > 0 } ?: 45,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(WisdomNavy)
+                                .zIndex(120f)
                         )
                     }
                 }
