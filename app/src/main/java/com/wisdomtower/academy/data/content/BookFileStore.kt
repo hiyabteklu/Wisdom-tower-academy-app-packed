@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -100,7 +101,7 @@ object BookFileStore {
                     }
                 }
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {}
 
         // 2) Range GET probe (1 byte: bytes=0-0)
         try {
@@ -122,7 +123,7 @@ object BookFileStore {
                     return@withContext cl
                 }
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {}
 
         null
     }
@@ -133,9 +134,9 @@ object BookFileStore {
         val kb = bytes / 1024.0
         val mb = kb / 1024.0
         return if (mb >= 1.0) {
-            String.format(java.util.Locale.US, "%.1f MB", mb)
+            String.format(Locale.US, "%.1f MB", mb)
         } else {
-            String.format(java.util.Locale.US, "%.1f KB", kb)
+            String.format(Locale.US, "%.1f KB", kb)
         }
     }
 

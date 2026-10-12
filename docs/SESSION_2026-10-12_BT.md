@@ -46,10 +46,11 @@
       - `StudyWorkspaceScreen.kt`: diff = 0
     - Verified compilation (`compile_applet`) and TypeScript linting (`lint_applet` / `tsc --noEmit`) pass cleanly.
 
-  - **RUN #295 CI ROOT CAUSE & FIX:**
-    - GitHub Actions Run #295 failed during `compileReleaseJavaWithJavac`.
-    - Cause: `.env.example` had its 6 values stripped to empty (`KEY=`), causing `secrets-gradle-plugin` to generate invalid Java syntax in `BuildConfig.java` (`public static final String KEY = ;`), identical to Run #7 and Run #285.
-    - Fix: Restored the 6 non-empty public keys and live values in `.env.example`. Added failure entry to `docs/BUILD_PITFALLS.md`.
+  - **RUN #295 & #296 CI ROOT CAUSE & FIX:**
+    - GitHub Actions Run #295 & #296 failed in `:app:compileReleaseKotlin` with `CompilationErrorException`.
+    - Cause: `LaunchedEffect(current.items, hubId)` was invoked directly inside `LazyColumn { ... }` in `HubItemListScreen.kt`. `LazyColumn` has receiver `LazyListScope` which is not a `@Composable` context.
+    - Fix: Hoisted `LaunchedEffect(result, hubId)` out of `LazyColumn` into the screen's `@Composable` function scope. Also removed unused `probeScope`, replaced labeled return `return@OpenCard` in `StudyWorkspaceScreen.kt` with clean `if/else`, and imported `Locale` in `BookFileStore.kt`.
+    - Added failure entry to `docs/BUILD_PITFALLS.md`.
 
   - **FILES TOUCHED:**
     - `.env.example`

@@ -131,7 +131,6 @@ fun HubItemListScreen(
 
     // T4 (2026-10-12): Real book file sizes (memory map keyed by resource id)
     var fileSizeMap by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
-    val probeScope = rememberCoroutineScope()
 
     // F4b: "Download all" progress (items done, items in total) and the items waiting for a "Remove" answer
     var bulk by remember { mutableStateOf<Pair<Int, Int>?>(null) }
@@ -193,6 +192,36 @@ fun HubItemListScreen(
         if (loggedIn) {
             result = null
             result = LearningContentRepository.list(context, scopePath, hubId, full = hubId in COUNT_HUBS)
+        }
+    }
+
+    // T4: If this is the books hub, load cached file sizes instantly and probe missing ones quietly
+    LaunchedEffect(result, hubId) {
+        val current = result
+        if (hubId == "books" && current is ContentListResult.Success) {
+            // 1) Quick read of local cache / saved files (no network)
+            val quickSizes = mutableMapOf<String, Long>()
+            for (item in current.items) {
+                BookFileStore.getCachedFileSize(context, item.id)?.let {
+                    quickSizes[item.id] = it
+                }
+            }
+            if (quickSizes.isNotEmpty()) {
+                fileSizeMap = fileSizeMap + quickSizes
+            }
+
+            // 2) Probe remaining un-downloaded books with lightweight HEAD / Range request
+            for (item in current.items) {
+                if (item.id !in fileSizeMap && item.id !in quickSizes) {
+                    val url = LearningContentRepository.appwriteViewUrl(item.storagePath)
+                    if (url != null) {
+                        val probed = BookFileStore.probeFileSize(context, item.id, url)
+                        if (probed != null && probed > 0L) {
+                            fileSizeMap = fileSizeMap + (item.id to probed)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -268,35 +297,6 @@ fun HubItemListScreen(
                 }
 
                 current is ContentListResult.Success -> {
-                    // T4: If this is the books hub, load cached file sizes instantly and probe missing ones quietly
-                    LaunchedEffect(current.items, hubId) {
-                        if (hubId == "books") {
-                            // 1) Quick read of local cache / saved files (no network)
-                            val quickSizes = mutableMapOf<String, Long>()
-                            for (item in current.items) {
-                                BookFileStore.getCachedFileSize(context, item.id)?.let {
-                                    quickSizes[item.id] = it
-                                }
-                            }
-                            if (quickSizes.isNotEmpty()) {
-                                fileSizeMap = fileSizeMap + quickSizes
-                            }
-
-                            // 2) Probe remaining un-downloaded books with lightweight HEAD / Range request
-                            for (item in current.items) {
-                                if (item.id !in fileSizeMap && item.id !in quickSizes) {
-                                    val url = LearningContentRepository.appwriteViewUrl(item.storagePath)
-                                    if (url != null) {
-                                        val probed = BookFileStore.probeFileSize(context, item.id, url)
-                                        if (probed != null && probed > 0L) {
-                                            fileSizeMap = fileSizeMap + (item.id to probed)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                     item(key = "hub_list_tools") {
                         DownloadTools(
                             todo = current.items.count { it.id !in downloaded },

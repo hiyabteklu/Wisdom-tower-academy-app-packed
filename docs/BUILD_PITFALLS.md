@@ -111,9 +111,14 @@
 * **Fix:** Called `ScreenBackButton(onClick = { ... })` explicitly with named parameter syntax so `onClick` receives the lambda cleanly.
 * **DO NOT:** **Never use trailing lambda syntax on a composable or function where the lambda is NOT the last parameter, especially when trailing parameters have defaults (`modifier: Modifier = Modifier`). Always pass `onClick = { ... }` explicitly.**
 
-### 2026-10-12 – Run #295 failed (`compileReleaseJavaWithJavac`)
+### 2026-10-12 – Run #295 & #296 failed (`:app:compileReleaseKotlin`)
 
-#### Problem: Empty values in `.env.example` breaking `BuildConfig.java` syntax
-* **Cause:** Commit `ccbc7799e194572b2fa6c8921c2fa6e4182e069d` inadvertently stripped the values of the 6 public keys in `.env.example`, leaving them empty (`NEXT_PUBLIC_APPWRITE_BUCKET_ID=`, etc.). The `secrets-gradle-plugin` transforms every entry in `.env.example` into a `BuildConfig` field. Empty entries generate invalid Java syntax (`public static final String NEXT_PUBLIC_APPWRITE_BUCKET_ID = ;`), causing `compileReleaseJavaWithJavac` to fail with syntax errors (identical to Run #7 and Run #285).
-* **Fix:** Restored the 6 public non-empty keys and live values in `.env.example`.
-* **DO NOT:** **Rule (h) & Rule 12: Never empty out `.env.example` keys or push empty values. `.env.example` must strictly preserve the 6 public, non-empty live keys (`NEXT_PUBLIC_*`).**
+#### Problem: Calling `@Composable` `LaunchedEffect` directly inside `LazyColumn` (`LazyListScope`) in `HubItemListScreen.kt`
+* **Cause:** In `HubItemListScreen.kt` (lines 271-298), `LaunchedEffect(current.items, hubId)` was placed directly inside `LazyColumn { ... }` in the `current is ContentListResult.Success` branch. The content lambda of `LazyColumn` has receiver `LazyListScope` (`LazyListScope.() -> Unit`), which is NOT a `@Composable` function context. In Jetpack Compose, calling `@Composable` functions (like `LaunchedEffect`) from a non-composable context causes a Kotlin compiler error (`@Composable invocations can only happen from the context of a @Composable function`), resulting in `org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error`.
+* **Fix:**
+  1. Hoisted `LaunchedEffect(result, hubId)` out of `LazyColumn` to the top-level composable function scope of `HubItemListScreen`.
+  2. Removed the unused `val probeScope = rememberCoroutineScope()` in `HubItemListScreen.kt`.
+  3. Replaced labeled return `return@OpenCard` in `StudyWorkspaceScreen.kt` with clean `if/else` branching.
+  4. Explicitly imported `java.util.Locale` in `BookFileStore.kt` and normalized catch blocks to standard `catch (e: Exception)`.
+* **DO NOT:** **Never invoke `@Composable` functions (including `LaunchedEffect`, `DisposableEffect`, or composables) directly inside `LazyColumn` or `LazyRow` builder scopes. Only the item lambdas (`item { ... }` / `items { ... }`) have `@Composable` scope. Background side-effects belong at the screen composable scope before or after layout declarations.**
+

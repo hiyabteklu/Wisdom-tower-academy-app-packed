@@ -464,26 +464,26 @@ fun StudyWorkspaceScreen(
                         // Exit Exam: the website hub pages are static "Content coming soon" (no database rows).
                         if (isExitExam) {
                             exitExamHub = hub.name
-                            return@OpenCard
-                        }
-                        // N9: closed course -> message instead of opening (Entrance Questions are never gated here)
-                        val gate = if (entranceUrl == null) access.gate else HubGate.Open
-                        when (gate) {
-                            HubGate.ComingSoon, HubGate.PackageRequired -> {
-                                gateMessage = GateMessage(gate, hub.name)
-                            }
+                        } else {
+                            // N9: closed course -> message instead of opening (Entrance Questions are never gated here)
+                            val gate = if (entranceUrl == null) access.gate else HubGate.Open
+                            when (gate) {
+                                HubGate.ComingSoon, HubGate.PackageRequired -> {
+                                    gateMessage = GateMessage(gate, hub.name)
+                                }
 
-                            HubGate.Open -> {
-                                if (contentScope != null && hub.id in NATIVE_HUB_IDS) {
-                                    view = WorkspaceView.HubList(hub.id)
-                                } else {
-                                    onOpenHub(hub.id, entranceUrl ?: safeHubUrl(basePath, hub.id))
+                                HubGate.Open -> {
+                                    if (contentScope != null && hub.id in NATIVE_HUB_IDS) {
+                                        view = WorkspaceView.HubList(hub.id)
+                                    } else {
+                                        onOpenHub(hub.id, entranceUrl ?: safeHubUrl(basePath, hub.id))
+                                    }
                                 }
                             }
-                        }
-                        if (entranceUrl == null) {
-                            // Re-check in the background so the next tap uses a fresh answer (cached 30 s).
-                            uiScope.launch { access = ContentAccess.resolve(basePath, loggedIn) }
+                            if (entranceUrl == null) {
+                                // Re-check in the background so the next tap uses a fresh answer (cached 30 s).
+                                uiScope.launch { access = ContentAccess.resolve(basePath, loggedIn) }
+                            }
                         }
                     }
                 )
