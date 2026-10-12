@@ -233,6 +233,12 @@ fun LearningScreen(
     // Requests from outside (side menu, website links) are not wired yet.
     var statusOpen by remember { mutableStateOf(false) }
     BackHandler(enabled = statusOpen) { statusOpen = false }
+    LaunchedEffect(NativeToolRequests.pendingStatus) {
+        if (NativeToolRequests.pendingStatus) {
+            NativeToolRequests.pendingStatus = false
+            statusOpen = true
+        }
+    }
     if (statusOpen) {
         NativeStatusScreen(
             onBack = { statusOpen = false },

@@ -1212,6 +1212,13 @@ fun MainScreen(
             selectedIndex = 1
             return
         }
+        if (targetUrl.contains("/learning") && (targetUrl.contains("tool=analytic") || targetUrl.contains("tool=status"))) {
+            com.wisdomtower.academy.ui.study.NativeToolRequests.requestStatus()
+            menuExpanded = false
+            activeStudyUrl = null
+            selectedIndex = 1
+            return
+        }
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=")) {
             val toolTitle = when {
                 targetUrl.contains("tool=tutor") -> "AI Tutor"
@@ -3008,6 +3015,13 @@ fun MainScreen(
                                     }
                                     if (u.contains("/learning") && (u.contains("tool=goal") || u.contains("tool=target"))) {
                                         com.wisdomtower.academy.ui.study.NativeToolRequests.requestTargets()
+                                        menuExpanded = false
+                                        activeStudyUrl = null
+                                        selectedIndex = 1
+                                        return true
+                                    }
+                                    if (u.contains("/learning") && (u.contains("tool=analytic") || u.contains("tool=status"))) {
+                                        com.wisdomtower.academy.ui.study.NativeToolRequests.requestStatus()
                                         menuExpanded = false
                                         activeStudyUrl = null
                                         selectedIndex = 1
