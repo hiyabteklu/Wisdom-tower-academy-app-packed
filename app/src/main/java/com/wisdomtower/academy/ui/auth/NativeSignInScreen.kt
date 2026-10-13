@@ -1,15 +1,27 @@
 package com.wisdomtower.academy.ui.auth
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,6 +33,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -45,6 +58,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,11 +66,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
@@ -84,13 +102,17 @@ import kotlinx.coroutines.launch
 
 /**
  * Native copy of the website login page (website-reference/src/app/login/page.tsx).
- * Texts, field order and colours follow that page. This screen only collects input and calls
+ * Texts, field order and behaviour follow that page. This screen only collects input and calls
  * [SupabaseAuthClient]; storing the session and telling the WebView is done by the caller
  * through [onSuccess] (S2c / S2d in STATUS.md).
  *
  * "Forgot password?" now opens the native [ForgotPasswordScreen] inside this screen (N13, session
  * log BB), so the caller needs no change. [onForgotPassword] is kept only so existing callers still
  * compile; it is no longer called.
+ *
+ * Glass look (session log 2026-10-13 J, docs/GLASS_PLAN.md): see-through card with a bright top edge,
+ * sliding segmented tabs, glass fields, glossy cyan button with a press effect, soft entrance and
+ * smooth open/close of the sign-up fields. Only the look and motion changed; texts and logic did not.
  *
  * STATUS: written, NOT yet compiled or tested on a device.
  */
@@ -112,8 +134,13 @@ private val Slate200 = Color(0xFFE2E8F0)
 private val Slate300 = Color(0xFFCBD5E1)
 private val Slate400 = Color(0xFF94A3B8)
 private val CyanLight = Color(0xFF67E8F9)
-private val FieldBackground = Color(0xE6020617)
-private val FieldBorder = Color(0x33FFFFFF)
+
+// Glass tokens for this screen (same family as ui/theme/WisdomGlass.kt, a little stronger so
+// text fields stay easy to see on the card).
+private val FieldBackground = Color.White.copy(alpha = 0.06f)
+private val FieldBorder = Color.White.copy(alpha = 0.12f)
+private val GlassRowFill = Color.White.copy(alpha = 0.04f)
+private val GlassRowBorder = Color.White.copy(alpha = 0.10f)
 
 private class AuthNotice(
     val text: String,
@@ -147,6 +174,22 @@ fun NativeSignInScreen(
     var loading by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf<AuthNotice?>(null) }
     var showReset by remember { mutableStateOf(false) }
+
+    // Soft entrance of the card, plays once when the screen opens.
+    var appeared by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { appeared = true }
+    val enter by animateFloatAsState(
+        targetValue = if (appeared) 1f else 0f,
+        animationSpec = tween(durationMillis = 560),
+        label = "authEnter"
+    )
+    val chevron by animateFloatAsState(
+        targetValue = if (levelPickerOpen) 180f else 0f,
+        animationSpec = tween(durationMillis = 220),
+        label = "levelChevron"
+    )
+    val reveal = expandVertically(animationSpec = tween(280)) + fadeIn(animationSpec = tween(280))
+    val conceal = shrinkVertically(animationSpec = tween(220)) + fadeOut(animationSpec = tween(160))
 
     val scope = rememberCoroutineScope()
     val focus = LocalFocusManager.current
@@ -260,82 +303,105 @@ fun NativeSignInScreen(
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header branding
-            BrandLogo(size = 60.dp)
-            Spacer(modifier = Modifier.height(12.dp))
+            // Header branding: logo with a soft cyan glow behind it
+            Box(
+                modifier = Modifier
+                    .graphicsLayer { alpha = enter }
+                    .drawBehind {
+                        val r = size.minDimension * 1.4f
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(WisdomCyan.copy(alpha = 0.22f), Color.Transparent),
+                                radius = r
+                            ),
+                            radius = r
+                        )
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                BrandLogo(size = 64.dp)
+            }
+            Spacer(modifier = Modifier.height(14.dp))
             Text(
                 text = "Wisdom Tower Academy",
                 color = Color.White,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.graphicsLayer { alpha = enter }
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Auth card
-            val cardShape = RoundedCornerShape(24.dp)
+            // Glass auth card
+            val cardShape = RoundedCornerShape(28.dp)
             Box(
                 modifier = Modifier
                     .widthIn(max = 448.dp)
                     .fillMaxWidth()
+                    .graphicsLayer {
+                        alpha = enter
+                        translationY = (1f - enter) * 48f
+                    }
                     .clip(cardShape)
-                    .border(BorderStroke(1.dp, Color(0x33FFFFFF)), cardShape)
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color(0xFF131F38), Color(0xFF0E172A), Color(0xFF0A101D))
+                            listOf(
+                                Color.White.copy(alpha = 0.09f),
+                                Color.White.copy(alpha = 0.03f)
+                            )
                         )
                     )
+                    .border(
+                        BorderStroke(
+                            1.dp,
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.28f),
+                                    Color.White.copy(alpha = 0.06f)
+                                )
+                            )
+                        ),
+                        cardShape
+                    )
             ) {
-                // Top radiant highlight
+                // Bright top edge (thin cyan sheen, like light catching the glass)
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .height(4.dp)
+                        .fillMaxWidth(0.7f)
+                        .height(1.5.dp)
                         .background(
                             Brush.horizontalGradient(
-                                listOf(WisdomCyan, Color(0xFF7DD3FC), WisdomCyan)
+                                listOf(
+                                    Color.Transparent,
+                                    WisdomCyan.copy(alpha = 0.75f),
+                                    Color.Transparent
+                                )
                             )
                         )
                 )
 
                 Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 20.dp)) {
-                    // Mode tabs
-                    val tabsShape = RoundedCornerShape(16.dp)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(tabsShape)
-                            .border(BorderStroke(1.dp, Color(0x26FFFFFF)), tabsShape)
-                            .background(Color(0xCC020617))
-                            .padding(4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        ModeTab(
-                            label = "Sign In",
-                            selected = mode == AuthMode.SIGN_IN,
-                            onClick = { switchMode(AuthMode.SIGN_IN) },
-                            modifier = Modifier.weight(1f)
-                        )
-                        ModeTab(
-                            label = "Create Account",
-                            selected = mode == AuthMode.SIGN_UP,
-                            onClick = { switchMode(AuthMode.SIGN_UP) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    // Mode tabs: iOS style segmented control with a sliding pill
+                    GlassModeTabs(mode = mode, onSelect = { switchMode(it) })
                     Spacer(modifier = Modifier.height(24.dp))
 
                     // Full legal name (sign up only)
-                    if (mode == AuthMode.SIGN_UP) {
-                        AuthField(
-                            label = "Full Legal Name",
-                            value = fullName,
-                            onValueChange = { fullName = it },
-                            placeholder = "e.g. Abebe Bikila",
-                            leadingIcon = Icons.Filled.School
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                    AnimatedVisibility(
+                        visible = mode == AuthMode.SIGN_UP,
+                        enter = reveal,
+                        exit = conceal
+                    ) {
+                        Column {
+                            AuthField(
+                                label = "Full Legal Name",
+                                value = fullName,
+                                onValueChange = { fullName = it },
+                                placeholder = "e.g. Abebe Bikila",
+                                leadingIcon = Icons.Filled.School
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     }
 
                     // Email or phone
@@ -350,103 +416,130 @@ fun NativeSignInScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Academic level (sign up only)
-                    if (mode == AuthMode.SIGN_UP) {
-                        Text(
-                            text = "ACADEMIC LEVEL",
-                            color = Slate200,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.8.sp
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        val pickerShape = RoundedCornerShape(12.dp)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(pickerShape)
-                                .border(BorderStroke(1.dp, FieldBorder), pickerShape)
-                                .background(FieldBackground)
-                                .clickable { levelPickerOpen = !levelPickerOpen }
-                                .padding(horizontal = 14.dp, vertical = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.School,
-                                contentDescription = null,
-                                tint = Slate400,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
+                    AnimatedVisibility(
+                        visible = mode == AuthMode.SIGN_UP,
+                        enter = reveal,
+                        exit = conceal
+                    ) {
+                        Column {
                             Text(
-                                text = educationLevel,
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.weight(1f)
+                                text = "ACADEMIC LEVEL",
+                                color = Slate200,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.8.sp
                             )
-                            Icon(
-                                imageVector = Icons.Filled.KeyboardArrowDown,
-                                contentDescription = null,
-                                tint = if (levelPickerOpen) CyanLight else Slate400,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .rotate(if (levelPickerOpen) 180f else 0f)
-                            )
-                        }
-                        if (levelPickerOpen) {
                             Spacer(modifier = Modifier.height(6.dp))
-                            val listShape = RoundedCornerShape(16.dp)
-                            Column(
+                            val pickerShape = RoundedCornerShape(14.dp)
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(listShape)
-                                    .border(BorderStroke(1.dp, Color(0x33FFFFFF)), listShape)
-                                    .background(Color(0xFF0C1527))
-                                    .padding(vertical = 6.dp)
+                                    .clip(pickerShape)
+                                    .background(FieldBackground)
+                                    .border(
+                                        BorderStroke(
+                                            1.dp,
+                                            if (levelPickerOpen) WisdomCyan.copy(alpha = 0.85f) else FieldBorder
+                                        ),
+                                        pickerShape
+                                    )
+                                    .clickable { levelPickerOpen = !levelPickerOpen }
+                                    .padding(horizontal = 14.dp, vertical = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                ACADEMIC_LEVEL_OPTIONS.forEach { option ->
-                                    val isSelected = option == educationLevel
-                                    Row(
+                                Icon(
+                                    imageVector = Icons.Filled.School,
+                                    contentDescription = null,
+                                    tint = Slate400,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = educationLevel,
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    imageVector = Icons.Filled.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = if (levelPickerOpen) CyanLight else Slate400,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .rotate(chevron)
+                                )
+                            }
+                            AnimatedVisibility(
+                                visible = levelPickerOpen,
+                                enter = reveal,
+                                exit = conceal
+                            ) {
+                                Column {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    val listShape = RoundedCornerShape(16.dp)
+                                    // Stays almost solid (like dropdown menus elsewhere) so it is easy to read.
+                                    Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .background(if (isSelected) Color(0x3306B6D4) else Color.Transparent)
-                                            .clickable {
-                                                educationLevel = option
-                                                levelPickerOpen = false
-                                            }
-                                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                            .clip(listShape)
+                                            .background(Color(0xF2101A2E))
+                                            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.16f)), listShape)
+                                            .padding(vertical = 6.dp)
                                     ) {
-                                        Text(
-                                            text = option,
-                                            color = if (isSelected) CyanLight else Slate200,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Filled.Check,
-                                                contentDescription = null,
-                                                tint = CyanLight,
-                                                modifier = Modifier.size(16.dp)
-                                            )
+                                        ACADEMIC_LEVEL_OPTIONS.forEach { option ->
+                                            val isSelected = option == educationLevel
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(
+                                                        if (isSelected) Color(0x3306B6D4) else Color.Transparent
+                                                    )
+                                                    .clickable {
+                                                        educationLevel = option
+                                                        levelPickerOpen = false
+                                                    }
+                                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = option,
+                                                    color = if (isSelected) CyanLight else Slate200,
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                if (isSelected) {
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Check,
+                                                        contentDescription = null,
+                                                        tint = CyanLight,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        if (educationLevel == "Other") {
-                            AuthField(
-                                label = "Specify your academic level",
-                                value = customLevel,
-                                onValueChange = { customLevel = it },
-                                placeholder = "e.g. Master's, College Diploma, Self-learner...",
-                                leadingIcon = Icons.Filled.School
-                            )
                             Spacer(modifier = Modifier.height(16.dp))
+
+                            AnimatedVisibility(
+                                visible = educationLevel == "Other",
+                                enter = reveal,
+                                exit = conceal
+                            ) {
+                                Column {
+                                    AuthField(
+                                        label = "Specify your academic level",
+                                        value = customLevel,
+                                        onValueChange = { customLevel = it },
+                                        placeholder = "e.g. Master's, College Diploma, Self-learner...",
+                                        leadingIcon = Icons.Filled.School
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                }
+                            }
                         }
                     }
 
@@ -478,131 +571,111 @@ fun NativeSignInScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Confirm password + terms (sign up only)
-                    if (mode == AuthMode.SIGN_UP) {
-                        AuthField(
-                            label = "Confirm Password",
-                            value = confirmPassword,
-                            onValueChange = { confirmPassword = it },
-                            placeholder = "••••••••",
-                            leadingIcon = Icons.Filled.Lock,
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done,
-                            onImeAction = { submit() },
-                            isPassword = true,
-                            showPassword = showPassword
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        val termsShape = RoundedCornerShape(12.dp)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(termsShape)
-                                .border(BorderStroke(1.dp, Color(0x1AFFFFFF)), termsShape)
-                                .background(Color(0x05FFFFFF))
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = agreedToTerms,
-                                onCheckedChange = { agreedToTerms = it },
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = WisdomCyan,
-                                    uncheckedColor = Slate400,
-                                    checkmarkColor = WisdomDarkOnCyan
-                                )
+                    AnimatedVisibility(
+                        visible = mode == AuthMode.SIGN_UP,
+                        enter = reveal,
+                        exit = conceal
+                    ) {
+                        Column {
+                            AuthField(
+                                label = "Confirm Password",
+                                value = confirmPassword,
+                                onValueChange = { confirmPassword = it },
+                                placeholder = "••••••••",
+                                leadingIcon = Icons.Filled.Lock,
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Done,
+                                onImeAction = { submit() },
+                                isPassword = true,
+                                showPassword = showPassword
                             )
-                            TappableText(
-                                text = "I agree to the Terms of Service and Privacy Policy.",
-                                links = listOf(
-                                    LinkSpec("Terms of Service") { onOpenTerms() },
-                                    LinkSpec("Privacy Policy") { onOpenPrivacy() }
-                                ),
-                                baseColor = Slate300,
-                                fontSize = 12.sp,
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            val termsShape = RoundedCornerShape(14.dp)
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(end = 8.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    // Notice box
-                    notice?.let { n ->
-                        val noticeShape = RoundedCornerShape(12.dp)
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(noticeShape)
-                                .border(BorderStroke(1.dp, Color(0x1AFFFFFF)), noticeShape)
-                                .background(Color(0xCC0F172A))
-                                .padding(12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = n.text,
-                                color = Slate300,
-                                fontSize = 12.sp,
-                                textAlign = TextAlign.Center
-                            )
-                            if (n.actionLabel != null && n.onAction != null) {
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = n.actionLabel + " →",
-                                    color = WisdomCyan,
+                                    .fillMaxWidth()
+                                    .clip(termsShape)
+                                    .background(GlassRowFill)
+                                    .border(BorderStroke(1.dp, GlassRowBorder), termsShape)
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = agreedToTerms,
+                                    onCheckedChange = { agreedToTerms = it },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = WisdomCyan,
+                                        uncheckedColor = Slate400,
+                                        checkmarkColor = WisdomDarkOnCyan
+                                    )
+                                )
+                                TappableText(
+                                    text = "I agree to the Terms of Service and Privacy Policy.",
+                                    links = listOf(
+                                        LinkSpec("Terms of Service") { onOpenTerms() },
+                                        LinkSpec("Privacy Policy") { onOpenPrivacy() }
+                                    ),
+                                    baseColor = Slate300,
                                     fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    textDecoration = TextDecoration.Underline,
-                                    modifier = Modifier.clickable { n.onAction.invoke() }
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 8.dp)
                                 )
                             }
+                            Spacer(modifier = Modifier.height(16.dp))
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    // Notice box (glass)
+                    AnimatedVisibility(
+                        visible = notice != null,
+                        enter = reveal,
+                        exit = conceal
+                    ) {
+                        notice?.let { n ->
+                            Column {
+                                val noticeShape = RoundedCornerShape(14.dp)
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(noticeShape)
+                                        .background(Color.White.copy(alpha = 0.06f))
+                                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)), noticeShape)
+                                        .padding(12.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = n.text,
+                                        color = Slate300,
+                                        fontSize = 12.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    if (n.actionLabel != null && n.onAction != null) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = n.actionLabel + " →",
+                                            color = WisdomCyan,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            textDecoration = TextDecoration.Underline,
+                                            modifier = Modifier.clickable { n.onAction.invoke() }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
                     }
 
                     // Submit button
-                    val submitEnabled = !loading && !(mode == AuthMode.SIGN_UP && !agreedToTerms)
-                    val buttonShape = RoundedCornerShape(12.dp)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(buttonShape)
-                            .background(if (submitEnabled) WisdomCyan else WisdomCyan.copy(alpha = 0.5f))
-                            .clickable(enabled = submitEnabled) { submit() }
-                            .padding(horizontal = 24.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (loading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp,
-                                color = WisdomDarkOnCyan
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (mode == AuthMode.SIGN_IN) "Signing In..." else "Creating Account...",
-                                color = WisdomDarkOnCyan,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        } else {
-                            Text(
-                                text = if (mode == AuthMode.SIGN_IN) "Sign In" else "Create Account",
-                                color = WisdomDarkOnCyan,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = null,
-                                tint = WisdomDarkOnCyan,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
+                    GlassPrimaryButton(
+                        label = if (mode == AuthMode.SIGN_IN) "Sign In" else "Create Account",
+                        busyLabel = if (mode == AuthMode.SIGN_IN) "Signing In..." else "Creating Account...",
+                        loading = loading,
+                        enabled = !loading && !(mode == AuthMode.SIGN_UP && !agreedToTerms),
+                        onClick = { submit() }
+                    )
 
                     // Footer: switch mode
                     Spacer(modifier = Modifier.height(20.dp))
@@ -610,7 +683,7 @@ fun NativeSignInScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(1.dp)
-                            .background(Color(0x1AFFFFFF))
+                            .background(Color.White.copy(alpha = 0.08f))
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     if (mode == AuthMode.SIGN_IN) {
@@ -637,19 +710,77 @@ fun NativeSignInScreen(
         }
 
         if (onClose != null) {
-            IconButton(
-                onClick = onClose,
+            // Round glass close button, same family as the back buttons of the other screens.
+            Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
                     .padding(8.dp)
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.06f))
+                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Close,
-                    contentDescription = "Close",
-                    tint = Slate300
-                )
+                IconButton(onClick = onClose, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Close",
+                        tint = Slate300,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
+        }
+    }
+}
+
+/** iOS style segmented control: a glass pill slides between "Sign In" and "Create Account". */
+@Composable
+private fun GlassModeTabs(
+    mode: AuthMode,
+    onSelect: (AuthMode) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val trackShape = RoundedCornerShape(16.dp)
+    val pillShape = RoundedCornerShape(13.dp)
+    val bias by animateFloatAsState(
+        targetValue = if (mode == AuthMode.SIGN_IN) -1f else 1f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 380f),
+        label = "authTabBias"
+    )
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(trackShape)
+            .background(Color.Black.copy(alpha = 0.22f))
+            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), trackShape)
+    ) {
+        // Sliding pill (sized by the labels row below, so it always matches its height)
+        Box(modifier = Modifier.matchParentSize().padding(3.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .fillMaxHeight()
+                    .align(BiasAlignment(horizontalBias = bias, verticalBias = 0f))
+                    .clip(pillShape)
+                    .background(Color.White.copy(alpha = 0.16f))
+                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.20f)), pillShape)
+            )
+        }
+        Row(modifier = Modifier.fillMaxWidth().padding(3.dp)) {
+            ModeTab(
+                label = "Sign In",
+                selected = mode == AuthMode.SIGN_IN,
+                onClick = { onSelect(AuthMode.SIGN_IN) },
+                modifier = Modifier.weight(1f)
+            )
+            ModeTab(
+                label = "Create Account",
+                selected = mode == AuthMode.SIGN_UP,
+                onClick = { onSelect(AuthMode.SIGN_UP) },
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -661,21 +792,105 @@ private fun ModeTab(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(12.dp)
+    val textColor by animateColorAsState(
+        targetValue = if (selected) Color.White else Slate400,
+        animationSpec = tween(durationMillis = 220),
+        label = "authTabText"
+    )
     Box(
         modifier = modifier
-            .clip(shape)
-            .background(if (selected) Color(0x26FFFFFF) else Color.Transparent)
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
             .padding(horizontal = 16.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
-            color = if (selected) Color.White else Slate400,
+            color = textColor,
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold
         )
+    }
+}
+
+/** Glossy cyan button with a soft glow and a small "press in" effect, like an iOS button. */
+@Composable
+private fun GlassPrimaryButton(
+    label: String,
+    busyLabel: String,
+    loading: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed && enabled) 0.97f else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 500f),
+        label = "authButtonScale"
+    )
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .shadow(
+                elevation = if (enabled) 10.dp else 0.dp,
+                shape = shape,
+                ambientColor = WisdomCyan,
+                spotColor = WisdomCyan
+            )
+            .clip(shape)
+            .background(if (enabled) WisdomCyan else WisdomCyan.copy(alpha = 0.45f))
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color.White.copy(alpha = 0.30f), Color.Transparent)
+                )
+            )
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            )
+            .padding(horizontal = 24.dp, vertical = 15.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                strokeWidth = 2.dp,
+                color = WisdomDarkOnCyan
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = busyLabel,
+                color = WisdomDarkOnCyan,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+        } else {
+            Text(
+                text = label,
+                color = WisdomDarkOnCyan,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = WisdomDarkOnCyan,
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }
 
@@ -717,7 +932,7 @@ internal fun AuthField(
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(14.dp),
             placeholder = { Text(text = placeholder, fontSize = 14.sp) },
             leadingIcon = {
                 Icon(
@@ -745,10 +960,10 @@ internal fun AuthField(
                 unfocusedTextColor = Color.White,
                 focusedContainerColor = FieldBackground,
                 unfocusedContainerColor = FieldBackground,
-                focusedBorderColor = WisdomCyan,
+                focusedBorderColor = WisdomCyan.copy(alpha = 0.85f),
                 unfocusedBorderColor = FieldBorder,
                 cursorColor = WisdomCyan,
-                focusedLeadingIconColor = Slate400,
+                focusedLeadingIconColor = CyanLight,
                 unfocusedLeadingIconColor = Slate400,
                 focusedTrailingIconColor = Slate400,
                 unfocusedTrailingIconColor = Slate400,
