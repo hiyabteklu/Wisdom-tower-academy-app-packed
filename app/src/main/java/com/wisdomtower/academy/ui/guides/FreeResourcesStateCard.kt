@@ -11,21 +11,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wisdomtower.academy.ui.theme.OutfitFontFamily
+import com.wisdomtower.academy.ui.theme.PlusJakartaSansFontFamily
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
-import com.wisdomtower.academy.ui.theme.WisdomMuted
 
-/** Plain message card for the Success Stories / Scholarships tabs (loading, error, nothing published). */
+/**
+ * Plain message card for the Success Stories / Scholarships tabs (loading, error, nothing published).
+ * Larger type (2026-10-14, Other resources redesign): heading 20 sp heavy, message 16 sp.
+ */
 @Composable
 fun FreeResourcesStateCard(heading: String?, message: String) {
-    WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 20.dp) {
+    WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 28.dp) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier = Modifier.padding(22.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (heading != null) {
-                Text(heading, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    text = heading,
+                    fontFamily = OutfitFontFamily,
+                    fontSize = 20.sp,
+                    lineHeight = 25.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
+                )
             }
-            Text(message, fontSize = 12.sp, color = WisdomMuted, lineHeight = 16.sp)
+            Text(
+                text = message,
+                fontFamily = PlusJakartaSansFontFamily,
+                fontSize = 16.sp,
+                lineHeight = 25.sp,
+                color = Color(0xFFCBD5E1)
+            )
         }
     }
 }
