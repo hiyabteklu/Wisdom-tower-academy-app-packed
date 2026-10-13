@@ -6,6 +6,10 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.wisdomtower.academy.BrandSplashLoader
 import com.wisdomtower.academy.data.content.AiExplainRepository
 import com.wisdomtower.academy.data.content.ContentItemResult
 import com.wisdomtower.academy.data.content.LearningContentRepository
@@ -97,6 +102,10 @@ private fun flushNoteProgress(resourceId: String, progress: NoteProgress) {
  * scrolled percent with `WTBridge.onProgress({ pct })` (100 from 95 percent on and after a Summary), saved to
  * `learning_progress` (the higher percent is kept by the repository); the reading time is added every 30 seconds
  * and once more when the screen is left. Nothing is saved for a signed-out student (the repository returns false).
+ *
+ * Loading look (owner request 2026-10-13): while the note is fetched and while the page lays itself out under the
+ * dark cover (T6), the app-start loader ([BrandSplashLoader]) is shown in the middle instead of a plain dark screen or
+ * the standard spinner; the cover fades away when the page reports ready.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -219,7 +228,7 @@ fun NotesReaderScreen(
                     }
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (showSpinner) {
-                            CircularProgressIndicator(color = WisdomCyan)
+                            BrandSplashLoader()
                         }
                     }
                 }
@@ -232,12 +241,27 @@ fun NotesReaderScreen(
                             webRef = webRef,
                             modifier = Modifier.fillMaxSize()
                         )
-                        if (!pageReady) {
+                        AnimatedVisibility(
+                            visible = !pageReady,
+                            modifier = Modifier.fillMaxSize(),
+                            enter = EnterTransition.None,
+                            exit = fadeOut(tween(220))
+                        ) {
+                            var showCoverLoader by remember { mutableStateOf(false) }
+                            LaunchedEffect(resourceId) {
+                                delay(150L)
+                                showCoverLoader = true
+                            }
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .background(Color(0xFF0A101D))
-                            )
+                                    .background(Color(0xFF0A101D)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (showCoverLoader) {
+                                    BrandSplashLoader()
+                                }
+                            }
                         }
                     }
                 }
