@@ -54,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -69,8 +70,10 @@ import com.wisdomtower.academy.data.content.TutorSession
 import com.wisdomtower.academy.data.content.TutorSessionStore
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
-import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
+import com.wisdomtower.academy.ui.theme.WisdomGlassBorder
+import com.wisdomtower.academy.ui.theme.WisdomGlassFill
+import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -112,6 +115,16 @@ private class TutorStreamHolder {
  *    page stays alive underneath, so nothing reloads when the list is opened or closed.
  * Differences from the website: no avatar picture on the welcome screen and answers.
  *
+ * Scroll freeze fix (owner report 2026-10-13: "same bug as the notes reader, a quick swipe does nothing unless the
+ * finger rests first"): the tutor page `tutor.html` is a local WebView exactly like the notes page, but this screen
+ * never called [PauseShellWhileShown], which is what gives local pages the touch fix (parents may not intercept the
+ * gesture, no over-scroll, no zoom detector) and quiets the hidden website WebView. It is called now, first thing.
+ * Hypothesis: same cause as the notes report; NOT proven on a device.
+ *
+ * Glass polish (2026-10-13): toolbar buttons, message box and chat list use the glass tokens of `WisdomGlass.kt`
+ * (white 4 to 8 percent fills and edges) and the chat list panel has a navy gradient with rounded left corners,
+ * like the drawer. No layout or behaviour change.
+ *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
 @Composable
@@ -120,6 +133,9 @@ fun NativeTutorScreen(
     modifier: Modifier = Modifier,
     courseContext: String? = null
 ) {
+    // Same touch fix + quiet background as the notes, flashcards and quiz screens (see ShellPause.kt).
+    PauseShellWhileShown()
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -378,12 +394,13 @@ fun NativeTutorScreen(
     BackHandler(enabled = !showHistory) { onBack() }
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = WisdomCyan,
-        unfocusedBorderColor = WisdomBorderWhite,
+        focusedBorderColor = WisdomCyan.copy(alpha = 0.7f),
+        unfocusedBorderColor = WisdomGlassBorder,
         focusedTextColor = Color.White,
         unfocusedTextColor = Color.White,
-        focusedContainerColor = Color(0xFF060B17),
-        unfocusedContainerColor = Color(0xFF060B17)
+        cursorColor = WisdomCyan,
+        focusedContainerColor = WisdomGlassFillStrong,
+        unfocusedContainerColor = WisdomGlassFill
     )
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -414,8 +431,8 @@ fun NativeTutorScreen(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.06f))
-                        .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
+                        .background(WisdomGlassFillStrong)
+                        .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(12.dp))
                         .clickable { showClearConfirm = true },
                     contentAlignment = Alignment.Center
                 ) {
@@ -459,7 +476,7 @@ fun NativeTutorScreen(
                             overflow = TextOverflow.Ellipsis
                         )
                     },
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(20.dp),
                     colors = fieldColors,
                     singleLine = false,
                     minLines = 1,
@@ -471,9 +488,9 @@ fun NativeTutorScreen(
                     Box(
                         modifier = Modifier
                             .height(56.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(WisdomAccentAmber.copy(alpha = 0.25f))
-                            .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.4f)), RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(WisdomAccentAmber.copy(alpha = 0.22f))
+                            .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.4f)), RoundedCornerShape(20.dp))
                             .clickable { stop() }
                             .padding(horizontal = 18.dp),
                         contentAlignment = Alignment.Center
@@ -484,8 +501,8 @@ fun NativeTutorScreen(
                     Box(
                         modifier = Modifier
                             .size(56.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(WisdomCyan.copy(alpha = if (input.isBlank()) 0.4f else 1f))
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(WisdomCyan.copy(alpha = if (input.isBlank()) 0.35f else 1f))
                             .clickable { send(null) },
                         contentAlignment = Alignment.Center
                     ) {
@@ -505,7 +522,7 @@ fun NativeTutorScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.55f))
+                    .background(Color(0x66030812))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -523,7 +540,8 @@ fun NativeTutorScreen(
                     .align(Alignment.CenterEnd)
                     .fillMaxHeight()
                     .fillMaxWidth(0.88f)
-                    .background(Color(0xFF0E172A))
+                    .clip(RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp))
+                    .background(Brush.verticalGradient(listOf(Color(0xF2152238), Color(0xF20D1829))))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -619,9 +637,9 @@ private fun HeaderPill(text: String, accent: Boolean, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (accent) WisdomCyan.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.06f))
+            .background(if (accent) WisdomCyan.copy(alpha = 0.18f) else WisdomGlassFillStrong)
             .border(
-                BorderStroke(1.dp, if (accent) WisdomCyan.copy(alpha = 0.4f) else WisdomBorderWhite),
+                BorderStroke(1.dp, if (accent) WisdomCyan.copy(alpha = 0.4f) else WisdomGlassBorder),
                 RoundedCornerShape(12.dp)
             )
             .clickable { onClick() }
@@ -706,11 +724,11 @@ private fun HistoryPanel(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isActive) WisdomCyan.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.03f))
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (isActive) WisdomCyan.copy(alpha = 0.15f) else WisdomGlassFill)
                         .border(
-                            BorderStroke(1.dp, if (isActive) WisdomCyan.copy(alpha = 0.4f) else WisdomBorderWhite),
-                            RoundedCornerShape(12.dp)
+                            BorderStroke(1.dp, if (isActive) WisdomCyan.copy(alpha = 0.4f) else WisdomGlassBorder),
+                            RoundedCornerShape(14.dp)
                         )
                         .clickable { onSelect(s.id) }
                         .padding(horizontal = 10.dp, vertical = 9.dp),
