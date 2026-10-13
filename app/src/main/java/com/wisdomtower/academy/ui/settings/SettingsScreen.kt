@@ -80,7 +80,7 @@ import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
-import com.wisdomtower.academy.ui.theme.WisdomModernCard
+import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.launch
 import java.io.File
@@ -183,7 +183,7 @@ fun SettingsScreen(
         ) {
             // TOP HEADER: Student Identity & Actions
             item(key = "settings_header_card") {
-                WisdomModernCard(
+                WisdomGlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     cornerRadius = 20.dp,
                     borderColor = WisdomBorderWhite
@@ -1066,7 +1066,7 @@ private fun SettingsAccordionCard(
     onToggle: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    WisdomModernCard(
+    WisdomGlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
         borderColor = WisdomBorderWhite

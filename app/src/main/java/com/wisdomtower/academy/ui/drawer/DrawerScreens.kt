@@ -57,7 +57,9 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
-import com.wisdomtower.academy.ui.theme.WisdomModernCard
+import com.wisdomtower.academy.ui.theme.WisdomGlassBorder
+import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
+import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.launch
 
@@ -91,8 +93,8 @@ fun DrawerHeaderBar(
             modifier = Modifier
                 .size(36.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF111B2E).copy(alpha = 0.8f))
-                .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
+                .background(WisdomGlassFillStrong)
+                .border(BorderStroke(1.dp, WisdomGlassBorder), CircleShape)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
@@ -152,7 +154,7 @@ private fun AboutTextCard(
     topRight: String? = null,
     borderColor: Color = WisdomBorderWhite
 ) {
-    WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp, borderColor = borderColor) {
+    WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp, borderColor = borderColor) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             if (topLeft != null || topRight != null) {
                 Row(
@@ -220,7 +222,7 @@ fun AboutScreen(
             }
 
             item(key = "hero") {
-                WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp) {
+                WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp) {
                     Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Eyebrow("The Next Era of Ethiopian EdTech", WisdomAccentAmber)
                         Text(
@@ -242,7 +244,7 @@ fun AboutScreen(
 
             // Owner decision 2026-10-12: one trust line instead of the four numeric metric cards.
             item(key = "trusted") {
-                WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
+                WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -261,7 +263,7 @@ fun AboutScreen(
             }
 
             item(key = "paradigm") {
-                WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp, borderColor = WisdomAccentAmber.copy(alpha = 0.3f)) {
+                WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp, borderColor = WisdomAccentAmber.copy(alpha = 0.3f)) {
                     Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Eyebrow("The Paradigm Shift", WisdomAccentAmber)
                         Text(
@@ -313,7 +315,7 @@ fun AboutScreen(
             }
 
             item(key = "horizon") {
-                WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp, borderColor = WisdomCyan.copy(alpha = 0.3f)) {
+                WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp, borderColor = WisdomCyan.copy(alpha = 0.3f)) {
                     Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Eyebrow("The Broader Horizon")
                         Text(
@@ -348,7 +350,7 @@ fun AboutScreen(
             }
 
             item(key = "ecosystem") {
-                WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp) {
+                WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -456,7 +458,7 @@ fun ContactScreen(
 
             if (status == "success") {
                 item(key = "success_state") {
-                    WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
+                    WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -684,7 +686,7 @@ fun FaqScreen(
             }
 
             item(key = "coming_soon") {
-                WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
+                WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 24.dp) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -780,7 +782,7 @@ private fun LegalDocumentScreen(
             }
 
             item(key = "intro_card") {
-                WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp) {
+                WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 22.dp) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Eyebrow(doc.badge, accent)
                         Text(doc.effective, fontSize = 11.sp, color = WisdomMuted)
@@ -792,7 +794,7 @@ private fun LegalDocumentScreen(
             }
 
             item(key = "summary_card") {
-                WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 18.dp, borderColor = accent.copy(alpha = 0.3f)) {
+                WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 18.dp, borderColor = accent.copy(alpha = 0.3f)) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Eyebrow(doc.summaryTitle, accent)
                         doc.summaryItems.forEach { (lead, text) ->
@@ -814,7 +816,7 @@ private fun LegalDocumentScreen(
 
             items(doc.sections.size, key = { "section_${doc.sections[it].number}" }) { i ->
                 val section = doc.sections[i]
-                WisdomModernCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
+                WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(section.number, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accent)
