@@ -1,6 +1,7 @@
 package com.wisdomtower.academy.ui.guides
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -42,7 +43,8 @@ const val SCHOLARSHIP_DEFAULT_INTRO =
  * The lists and the flags are Compose state: a screen that reads them recomposes when they change.
  *
  * Field mapping copied from the website pages (success-stories/page.tsx, scholarships/page.tsx):
- *  - story: meta.studentName, meta.program, meta.result (or title), meta.year, meta.quote, body_md
+ *  - story: meta.studentName, meta.program, meta.result (or title), meta.year, meta.quote, body_md,
+ *    image_path (cover photo, bucket `free-resources`, see [publicImageUrl])
  *  - scholarship: title, meta.provider|organization, meta.amount|award, meta.eligibility,
  *    meta.level|degree, meta.country|location, deadline, external_url, body_md
  *  - page shells: subtitle (both pages) and body_md (scholarships intro)
@@ -202,6 +204,19 @@ object FreeResourcesLive {
         return ""
     }
 
+    /**
+     * Same as the website's `freeResourcePublicUrl`: a full http(s) link is used as it is, anything else is a path
+     * inside the PUBLIC storage bucket `free-resources`. Returns "" when there is no image.
+     */
+    private fun publicImageUrl(path: String): String {
+        if (path.isEmpty()) return ""
+        if (path.startsWith("http://") || path.startsWith("https://")) return path
+        val base = BuildConfig.NEXT_PUBLIC_SUPABASE_URL.trim().trimEnd('/')
+        if (base.isEmpty()) return ""
+        val encoded = path.trimStart('/').split('/').joinToString("/") { Uri.encode(it) }
+        return "$base/storage/v1/object/public/free-resources/$encoded"
+    }
+
     private fun parseStories(rows: JSONArray?): List<SuccessStory> {
         val out = mutableListOf<SuccessStory>()
         if (rows == null) return out
@@ -216,7 +231,8 @@ object FreeResourcesLive {
                     program = meta.pick("program"),
                     year = meta.pick("year"),
                     quote = meta.pick("quote"),
-                    body = row.pick("body_md")
+                    body = row.pick("body_md"),
+                    imageUrl = publicImageUrl(row.pick("image_path"))
                 )
             )
         }

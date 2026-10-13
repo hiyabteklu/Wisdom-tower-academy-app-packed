@@ -26,6 +26,7 @@ val GUIDE_TABS = listOf(
     GuideTab("scholarships", "Scholarships", WisdomAccentRose)
 )
 
+/** [imageUrl] is the full public link of the cover photo (website column `image_path`), "" when the story has none. */
 data class SuccessStory(
     val id: String,
     val name: String,
@@ -33,7 +34,8 @@ data class SuccessStory(
     val program: String,
     val year: String,
     val quote: String,
-    val body: String
+    val body: String,
+    val imageUrl: String = ""
 )
 
 data class ScholarshipOpportunity(
