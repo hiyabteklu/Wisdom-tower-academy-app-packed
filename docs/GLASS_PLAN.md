@@ -10,8 +10,8 @@ Tokens and the shared card live in `ui/theme/WisdomGlass.kt` (`WisdomGlassCard`,
 One area per step, each step checked on the phone before the next:
 
 1. **Hub lists** (books, notes, flashcards, question banks, exams listings) + round back button. `HubItemListScreen.kt`. [~]
-2. **Tools**: the tool cards on the Learning screen and the study workspace. `LearningScreen.kt`, `StudyWorkspaceScreen.kt`.
-3. **Packages and courses**: package, semester and course cards, the card body of `OpenCard`.
+2. **Tools**: the tool cards on the Learning screen and the study workspace. `LearningScreen.kt`, `StudyWorkspaceScreen.kt`. [~] (Learning screen done in `f8e5b618`; `StudyWorkspaceScreen.kt` not confirmed.)
+3. **Packages and courses**: package, semester and course cards, the card body of `OpenCard`. `OpenCard.kt` (one card for every package, subject, semester, course, entrance stream/subject/year) and the round back button in `PackageDetailScreen.kt`. [~] Not done in this area: `GpaCalculatorCard.kt` (Freshman page), left for a later step.
 4. **Account, Settings, drawer, notifications**.
 5. **Guides + Home**: success stories, universities, departments, scholarships, resource cards. (Then switch the
    default of `WisdomModernCard` itself to glass so any card not yet touched follows.)
