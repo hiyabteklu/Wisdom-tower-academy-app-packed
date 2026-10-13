@@ -11,13 +11,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,7 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -105,8 +101,11 @@ private fun flushNoteProgress(resourceId: String, progress: NoteProgress) {
  * dark cover (T6), the app-start loader ([BrandSplashLoader]) is shown in the middle instead of a plain dark screen or
  * the standard spinner; the cover fades away (animated alpha, 220 ms) when the page reports ready.
  * Build fix 2026-10-13: the cover used `AnimatedVisibility` inside a `Box` inside a `Column`, which the compiler
- * refuses (ColumnScope extension "cannot be called in this context with an implicit receiver"); it is now a plain
- * `animateFloatAsState` alpha.
+ * refuses; it is now a plain `animateFloatAsState` alpha.
+ *
+ * Clean reading (owner request 2026-10-13): NO top row (back arrow + note title) any more, the note uses the whole
+ * screen under the app bar. Leaving is done with the phone Back button / gesture (handled by `StudyWorkspaceScreen`);
+ * [onBack] and [title] are kept in the signature but not drawn.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -202,24 +201,6 @@ fun NotesReaderScreen(
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
         Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                ScreenBackButton(onBack)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
             when (val r = result) {
                 null -> {
                     var showSpinner by remember { mutableStateOf(false) }
