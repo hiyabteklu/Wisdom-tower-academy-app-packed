@@ -35,11 +35,16 @@ import androidx.compose.ui.unit.sp
  * Reusable UI Components reproducing website CSS classes (globals.css & ui-polish.css).
  */
 
+/**
+ * GLASS (2026-10-13, owner request, docs/GLASS_PLAN.md area 5): the default card is now the see-through glass of the
+ * Targets screen (white 4% fill, white 8% edge, see WisdomGlass.kt), so every screen that still calls this card
+ * follows the glass look. An explicit borderColor passed by a caller (accent edges) is kept.
+ */
 @Composable
 fun WisdomModernCard(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 16.dp,
-    borderColor: Color = WisdomCardBorderSubtle,
+    borderColor: Color = WisdomGlassBorder,
     borderWidth: Dp = 1.dp,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
@@ -56,8 +61,8 @@ fun WisdomModernCard(
     Box(
         modifier = modifier
             .clip(shape)
+            .background(WisdomGlassFill)
             .border(BorderStroke(borderWidth, borderColor), shape)
-            .background(WisdomCardSurfaceGradient)
             .then(clickModifier),
         content = content
     )
@@ -110,7 +115,7 @@ fun WisdomSecondaryButton(
         modifier = modifier
             .clip(shape)
             .border(BorderStroke(1.dp, borderColor), shape)
-            .background(Color(0xFF111B2E).copy(alpha = 0.85f))
+            .background(WisdomGlassFillStrong)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
