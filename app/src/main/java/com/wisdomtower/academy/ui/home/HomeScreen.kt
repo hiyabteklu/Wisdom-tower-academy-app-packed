@@ -1,11 +1,5 @@
 package com.wisdomtower.academy.ui.home
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,18 +30,13 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.ui.packages.ENTRANCE_BASE_PATH
@@ -66,10 +55,8 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentSky
 import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
-import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
-import com.wisdomtower.academy.ui.theme.WisdomPrimaryButton
 import com.wisdomtower.academy.ui.theme.WisdomSecondaryButton
 import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
 
@@ -222,12 +209,13 @@ fun HomeScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(22.dp)
         ) {
-            // 1. Hero Section
+            // 1. Account line: one row, "New here? Create a free account" + "Sign in" (signed out)
+            //    or the welcome text + "My Learning" (signed in). The big "Wisdom Tower Academy" title and the
+            //    "Enter Academy" button were removed on purpose (2026-10-13): the header already shows the brand.
             item(key = "hero_section") {
                 HeroSection(
                     isLoggedIn = isLoggedIn,
                     userName = userName,
-                    onEnterAcademy = { onNavigateToUrl("/academy") },
                     onLearning = { onNavigateToUrl("/learning") },
                     onSignIn = { onNavigateToUrl("/login") },
                     onSignUp = { onNavigateToUrl("/signup") }
@@ -297,119 +285,29 @@ fun HomeScreen(
     }
 }
 
+/**
+ * The only thing at the top of Home: ONE line.
+ *  - signed out: "New here? Create a free account" on the left, "Sign in" button on the right;
+ *  - signed in: "Welcome back, <name>" on the left, "My Learning" button on the right.
+ */
 @Composable
 private fun HeroSection(
     isLoggedIn: Boolean,
     userName: String?,
-    onEnterAcademy: () -> Unit,
     onLearning: () -> Unit,
     onSignIn: () -> Unit,
     onSignUp: () -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "hero_gradient")
-    val gradientShift by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 4000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "hero_anim"
-    )
-
-    val animatedGradient = Brush.horizontalGradient(
-        colors = listOf(
-            WisdomCyan,
-            WisdomAccentSky,
-            WisdomAccentViolet,
-            WisdomCyan
-        ),
-        startX = gradientShift * 200f,
-        endX = (gradientShift + 1f) * 600f
-    )
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // "Wisdom Tower Academy" with animated gradient accent on "Tower"
-        val headingText = buildAnnotatedString {
-            withStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.Black)) {
-                append("Wisdom ")
-            }
-            withStyle(
-                SpanStyle(
-                    brush = animatedGradient,
-                    fontWeight = FontWeight.Black
-                )
-            ) {
-                append("Tower ")
-            }
-            withStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.Black)) {
-                append("Academy")
-            }
-        }
-
-        Text(
-            text = headingText,
-            fontSize = 32.sp,
-            lineHeight = 38.sp,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        // Action Buttons Row
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            WisdomPrimaryButton(
-                text = "Enter Academy",
-                onClick = onEnterAcademy,
-                icon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        tint = WisdomDarkOnCyan,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            )
-
-            if (isLoggedIn) {
-                WisdomSecondaryButton(
-                    text = "My Learning",
-                    onClick = onLearning,
-                    borderColor = WisdomCyan.copy(alpha = 0.4f),
-                    textColor = WisdomCyan,
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.School,
-                            contentDescription = null,
-                            tint = WisdomCyan,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                )
-            } else {
-                WisdomSecondaryButton(
-                    text = "Sign in",
-                    onClick = onSignIn,
-                    borderColor = WisdomAccentAmber.copy(alpha = 0.45f),
-                    textColor = WisdomAccentAmber,
-                    icon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Login,
-                            contentDescription = null,
-                            tint = WisdomAccentAmber,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                )
-            }
-        }
-
-        // Status Line: Welcome back / New here?
-        Spacer(modifier = Modifier.height(10.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         if (isLoggedIn) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = "Welcome back, ",
                     color = WisdomMuted,
@@ -419,22 +317,30 @@ private fun HeroSection(
                     text = (userName ?: "Student"),
                     color = WisdomCyan,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = " · ",
-                    color = WisdomMuted,
-                    fontSize = 12.sp
-                )
-                Text(
-                    text = "Continue where you left off",
-                    color = WisdomCyan.copy(alpha = 0.9f),
-                    fontSize = 12.sp,
-                    modifier = Modifier.clickable(onClick = onLearning)
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
+            WisdomSecondaryButton(
+                text = "My Learning",
+                onClick = onLearning,
+                borderColor = WisdomCyan.copy(alpha = 0.4f),
+                textColor = WisdomCyan,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.School,
+                        contentDescription = null,
+                        tint = WisdomCyan,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            )
         } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = "New here? ",
                     color = WisdomMuted,
@@ -448,6 +354,20 @@ private fun HeroSection(
                     modifier = Modifier.clickable(onClick = onSignUp)
                 )
             }
+            WisdomSecondaryButton(
+                text = "Sign in",
+                onClick = onSignIn,
+                borderColor = WisdomAccentAmber.copy(alpha = 0.45f),
+                textColor = WisdomAccentAmber,
+                icon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Login,
+                        contentDescription = null,
+                        tint = WisdomAccentAmber,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            )
         }
     }
 }
