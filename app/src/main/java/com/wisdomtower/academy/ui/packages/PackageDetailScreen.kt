@@ -85,6 +85,10 @@ private val ECE_SEMESTER_ENTRIES = listOf(
  * The unused parameters are kept so the caller in MainActivity.kt does not change.
  *
  * GLASS (2026-10-13, docs/GLASS_PLAN.md area 3): the round back button uses the glass look of the Targets screen.
+ *
+ * Clean cards (owner request 2026-10-13): the ECE course cards (and the workspace header they open) show the course
+ * TITLE only, without the course code ("ECEg3051 · Electromagnetic Fields" -> "Electromagnetic Fields"). The code is
+ * still in the data and in the cover picture.
  */
 @Composable
 fun PackageDetailScreen(
@@ -237,9 +241,9 @@ fun PackageDetailScreen(
                     }
                 } else {
                     openGrid("ece_courses_${eceSemester.id}", eceSemester.courses) { course ->
-                        OpenCard("${course.code} · ${course.title}", course.assetImage) {
+                        OpenCard(course.title, course.assetImage) {
                             onOpenSubjectWorkspace(
-                                "${course.code} · ${course.title}",
+                                course.title,
                                 "ECE Year 3 · ${eceSemester.label}",
                                 course.path
                             )
