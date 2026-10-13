@@ -24,8 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -170,7 +174,14 @@ fun WisdomOpenButton(
 }
 
 /**
- * Atmospheric background reproduction with soft radial glow orbs.
+ * Atmospheric background: two soft glow orbs (cyan top-left, purple middle-right) on the dark page colour.
+ *
+ * GLASS area 7 (2026-10-13, docs/GLASS_PLAN.md): the orbs are now drawn with radial gradients that fade to fully
+ * transparent at their own edge. Before, each orb was a solid circle with `Modifier.blur(...)`: the blur is cut at the
+ * square box of the circle (hard rectangle edges, seen in the owner's screenshots) and does nothing on Android 11 and
+ * older (hard circle). Gradients look the same on every phone and are cheaper than a blur on every screen.
+ * Same colours, same centres (cyan at 130dp / 70dp, purple at 280dp / 240dp from the top-left corner) and about the
+ * same strength as the old blurred look. Hypothesis: the strength may need a small tweak after the owner sees it.
  */
 @Composable
 fun AtmosphereBackground(
@@ -179,22 +190,42 @@ fun AtmosphereBackground(
     Box(
         modifier = modifier
             .background(WisdomBackground)
-    ) {
-        // Orb 1: Cyan glow top
-        Box(
-            modifier = Modifier
-                .size(240.dp)
-                .offset(x = 10.dp, y = (-50).dp)
-                .blur(80.dp)
-                .background(WisdomCyan.copy(alpha = 0.16f), CircleShape)
-        )
-        // Orb 2: Purple glow middle right
-        Box(
-            modifier = Modifier
-                .size(200.dp)
-                .offset(x = 180.dp, y = 140.dp)
-                .blur(70.dp)
-                .background(WisdomAccentPurple.copy(alpha = 0.12f), CircleShape)
-        )
-    }
+            .clipToBounds()
+            .drawBehind {
+                // Orb 1: cyan glow top
+                drawGlowOrb(
+                    color = WisdomCyan,
+                    peakAlpha = 0.11f,
+                    center = Offset(130.dp.toPx(), 70.dp.toPx()),
+                    radius = 220.dp.toPx()
+                )
+                // Orb 2: purple glow middle right
+                drawGlowOrb(
+                    color = WisdomAccentPurple,
+                    peakAlpha = 0.08f,
+                    center = Offset(280.dp.toPx(), 240.dp.toPx()),
+                    radius = 190.dp.toPx()
+                )
+            }
+    )
+}
+
+/** One soft glow: strongest in the centre, smooth bell-shaped fall-off, exactly transparent at [radius]. */
+private fun DrawScope.drawGlowOrb(color: Color, peakAlpha: Float, center: Offset, radius: Float) {
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                color.copy(alpha = peakAlpha),
+                color.copy(alpha = peakAlpha * 0.91f),
+                color.copy(alpha = peakAlpha * 0.68f),
+                color.copy(alpha = peakAlpha * 0.42f),
+                color.copy(alpha = peakAlpha * 0.21f),
+                color.copy(alpha = 0f)
+            ),
+            center = center,
+            radius = radius
+        ),
+        radius = radius,
+        center = center
+    )
 }
