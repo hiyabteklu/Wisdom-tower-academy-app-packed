@@ -40,8 +40,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
-import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
+import com.wisdomtower.academy.ui.theme.WisdomGlassBorder
+import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 
 // Electrical & Computer Engineering (website-reference/src/data/special-packages.ts: name "Electrical & Computer
@@ -82,6 +83,8 @@ private val ECE_SEMESTER_ENTRIES = listOf(
  *    Back button / phone back key go up one level first.
  * The Freshman GPA calculator is kept (the website shows it on the same page).
  * The unused parameters are kept so the caller in MainActivity.kt does not change.
+ *
+ * GLASS (2026-10-13, docs/GLASS_PLAN.md area 3): the round back button uses the glass look of the Targets screen.
  */
 @Composable
 fun PackageDetailScreen(
@@ -159,8 +162,8 @@ fun PackageDetailScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF111B2E).copy(alpha = 0.8f))
-                            .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
+                            .background(WisdomGlassFillStrong)
+                            .border(BorderStroke(1.dp, WisdomGlassBorder), CircleShape)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),

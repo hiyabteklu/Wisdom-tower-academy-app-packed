@@ -35,13 +35,16 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDark
-import com.wisdomtower.academy.ui.theme.WisdomModernCard
+import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 
 /**
  * THE one card used for packages, subjects and courses everywhere in the app (owner rule 2026-10-11):
  * optional picture (16:9, no overlay, no tag, no gradient), the title, and one "Open" button.
  * Nothing else: no description, no price, no lock, no label. Always free.
  * Always used inside [openGrid] so every list is two cards per row.
+ *
+ * GLASS (2026-10-13, owner request, docs/GLASS_PLAN.md area 3): the card body is the see-through glass of the
+ * Targets screen ([WisdomGlassCard]) instead of the almost solid navy. Picture, texts and the Open button are unchanged.
  */
 @Composable
 fun OpenCard(
@@ -68,7 +71,7 @@ fun OpenCard(
 ) {
     val context = LocalContext.current
 
-    WisdomModernCard(
+    WisdomGlassCard(
         modifier = modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
         onClick = onClick
