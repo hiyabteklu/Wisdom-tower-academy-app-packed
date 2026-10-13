@@ -6,10 +6,8 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -36,6 +33,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -105,7 +103,10 @@ private fun flushNoteProgress(resourceId: String, progress: NoteProgress) {
  *
  * Loading look (owner request 2026-10-13): while the note is fetched and while the page lays itself out under the
  * dark cover (T6), the app-start loader ([BrandSplashLoader]) is shown in the middle instead of a plain dark screen or
- * the standard spinner; the cover fades away when the page reports ready.
+ * the standard spinner; the cover fades away (animated alpha, 220 ms) when the page reports ready.
+ * Build fix 2026-10-13: the cover used `AnimatedVisibility` inside a `Box` inside a `Column`, which the compiler
+ * refuses (ColumnScope extension "cannot be called in this context with an implicit receiver"); it is now a plain
+ * `animateFloatAsState` alpha.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -234,6 +235,11 @@ fun NotesReaderScreen(
                 }
 
                 is ContentItemResult.Found -> {
+                    val coverAlpha by animateFloatAsState(
+                        targetValue = if (pageReady) 0f else 1f,
+                        animationSpec = tween(220),
+                        label = "noteCoverAlpha"
+                    )
                     Box(modifier = Modifier.fillMaxSize()) {
                         NoteWebView(
                             body = r.item.bodyMd.orEmpty(),
@@ -241,12 +247,7 @@ fun NotesReaderScreen(
                             webRef = webRef,
                             modifier = Modifier.fillMaxSize()
                         )
-                        AnimatedVisibility(
-                            visible = !pageReady,
-                            modifier = Modifier.fillMaxSize(),
-                            enter = EnterTransition.None,
-                            exit = fadeOut(tween(220))
-                        ) {
+                        if (coverAlpha > 0f) {
                             var showCoverLoader by remember { mutableStateOf(false) }
                             LaunchedEffect(resourceId) {
                                 delay(150L)
@@ -255,6 +256,7 @@ fun NotesReaderScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
+                                    .alpha(coverAlpha)
                                     .background(Color(0xFF0A101D)),
                                 contentAlignment = Alignment.Center
                             ) {
