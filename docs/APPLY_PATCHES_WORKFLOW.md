@@ -1,5 +1,9 @@
 # Generic "Apply pending patches" workflow (owner pastes this once)
 
+**OWNER RULE (2026-10-13): whenever an agent writes a patch script, the final message to the owner MUST give, for every unapplied patch (the new one and all older ones still waiting):**
+**1. Script name (exact file name inside `scripts/`), 2. Branch name to type into the workflow, 3. what it changes in one short line.**
+**The agent must check which patches are still unapplied (look for each script's marker in `main`) and list ALL of them, in the order to run.**
+
 The chat tool cannot write files under `.github/workflows/`, so the owner replaces
 `.github/workflows/apply-pending-patches.yml` with the text below ONE TIME. After that any agent only has to
 push a script into `scripts/`, and the owner taps **Actions > Apply pending patches > Run workflow**, types the
