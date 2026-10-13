@@ -61,7 +61,10 @@ import com.wisdomtower.academy.data.content.SavedContent
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
-import com.wisdomtower.academy.ui.theme.WisdomModernCard
+import com.wisdomtower.academy.ui.theme.WisdomGlassBorder
+import com.wisdomtower.academy.ui.theme.WisdomGlassCard
+import com.wisdomtower.academy.ui.theme.WisdomGlassFill
+import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -102,6 +105,9 @@ private val RemoveRed = Color(0xFFFDA4AF)
  *  - a tap on the green check of an item asks "Remove from this phone?" and deletes only that saved copy;
  *  - "Remove saved (n)" asks once and deletes every saved item of this hub ([SavedContent]).
  *    Reading progress is kept; the item can be downloaded again at any time.
+ *
+ * GLASS (2026-10-13, owner request, docs/GLASS_PLAN.md area 1): rows, message cards, the round download button and
+ * the round back button use the see-through glass look of the Targets screen (white 4-6% fill, white 8% edge).
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -504,7 +510,7 @@ private fun ItemRow(
         if (isDownloaded) "Saved offline" else null
     ).joinToString(" \u00B7 ")
 
-    WisdomModernCard(
+    WisdomGlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
         onClick = onClick
@@ -609,7 +615,7 @@ private fun DownloadButton(
         modifier = Modifier
             .size(36.dp)
             .clip(CircleShape)
-            .background(Color(0xFF111B2E).copy(alpha = 0.8f))
+            .background(WisdomGlassFillStrong)
             .border(border, CircleShape)
             .clickable(
                 enabled = enabled,
@@ -640,9 +646,9 @@ private fun MessageCard(title: String?, message: String, onRetry: (() -> Unit)?)
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF111B2E).copy(alpha = 0.8f))
-            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(20.dp))
+            .background(WisdomGlassFill)
+            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(20.dp))
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -677,15 +683,15 @@ private fun MessageCard(title: String?, message: String, onRetry: (() -> Unit)?)
     }
 }
 
-/** The round back button used at the top of the study screens (same look as the package and workspace pages). */
+/** The round back button used at the top of the study screens (glass look, same as the Targets screen). */
 @Composable
 internal fun ScreenBackButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(48.dp)
             .clip(CircleShape)
-            .background(Color(0xFF111B2E).copy(alpha = 0.85f))
-            .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
+            .background(WisdomGlassFillStrong)
+            .border(BorderStroke(1.dp, WisdomGlassBorder), CircleShape)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
