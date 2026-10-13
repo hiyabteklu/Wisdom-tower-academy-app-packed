@@ -2,6 +2,7 @@ package com.wisdomtower.academy.data.content
 
 import android.util.Log
 import com.wisdomtower.academy.BuildConfig
+import com.wisdomtower.academy.data.auth.AuthStateManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -33,11 +34,15 @@ enum class HubGate {
  *
  * A signed-OUT student on a `require_purchase` course is NOT blocked here: the native screens show their own
  * "Sign in to open" message (owner rule: real content needs a signed-in student).
+ *
+ * [unlockIds] are the package ids that open this course. [gate] asks [ContentAccess.ownsNow] again every time it
+ * is read, so a code the student entered a moment ago counts at once, without the screen having to re-resolve.
  */
 data class CourseAccess(
     val mode: HubLockMode,
     val signedIn: Boolean,
-    val owned: Boolean
+    val owned: Boolean,
+    val unlockIds: List<String> = emptyList()
 ) {
     val gate: HubGate
         get() = when (mode) {
@@ -46,6 +51,7 @@ data class CourseAccess(
             HubLockMode.RequirePurchase -> when {
                 !signedIn -> HubGate.Open
                 owned -> HubGate.Open
+                ContentAccess.ownsNow(unlockIds) -> HubGate.Open
                 else -> HubGate.PackageRequired
             }
         }
@@ -65,7 +71,13 @@ data class CourseAccess(
  *
  * Free mode (owner, 2026-10-11): `IS_FREE_MODE` is true on the website, so every signed-in student owns every
  * package. [IS_FREE_MODE] below MUST be kept equal to the website value. The app never shows a price or a
- * purchase button; when the website later records purchases, only [ownsAny] has to change.
+ * purchase button.
+ *
+ * Paid mode (activation codes, owner request 2026-10-13, plan step N9b): when [IS_FREE_MODE] is false a student owns
+ * a package if it is free for registered students, or if the database has an enrollment, a verified order or an
+ * access grant for them (read by [ActivationClient.fetchOwnedPackageIds], same sources as the website). A student
+ * can add an enrollment by typing an activation code ([redeem]). Nothing in the app tells the student where or how
+ * to pay: codes are sold outside the app.
  *
  * Offline or server trouble: the last answer is reused, else the static rule applies (never a crash, never a
  * silent lock-out because of a network error).
@@ -86,6 +98,15 @@ object ContentAccess {
     const val PURCHASE_TITLE = "Package required"
     const val PURCHASE_BODY = "Unlock this pathway with the matching package to access study materials."
     const val PURCHASE_BUTTON = "Keep exploring"
+
+    /** Activation code box texts (neutral on purpose: no price, no "buy", no payment instructions). */
+    const val CODE_PROMPT = "Have an activation code?"
+    const val CODE_HINT = "Enter your code"
+    const val CODE_BUTTON = "Activate"
+    const val CODE_SUCCESS = "Unlocked. You can open it now."
+
+    /** `ALL_PACKAGES_ID` of `lib/access-grants.ts`: a grant that opens every package. */
+    private const val ALL_PACKAGES_ID = "__all__"
 
     /** `FREE_FOR_REGISTERED_PACKAGE_IDS` of `lib/ownership.ts` (used only when free mode is off). */
     private val FREE_FOR_REGISTERED = setOf(
@@ -110,6 +131,12 @@ object ContentAccess {
 
     private val cache = HashMap<String, Pair<Long, HubLockMode?>>()
 
+    /** Packages the signed-in student owns (paid mode only), with the student and the time they were read. */
+    private class Owned(val userId: String, val ids: Set<String>, val at: Long)
+
+    @Volatile
+    private var owned: Owned? = null
+
     /**
      * The access state of the course at [basePath] (a website route such as `/academy/freshman/physics`;
      * a trailing hub id is ignored). Reads the admin locks from Supabase (cached 30 s).
@@ -124,13 +151,15 @@ object ContentAccess {
         )
         val dynamic = if (keys.isEmpty()) null else dynamicMode(keys)
         val mode = dynamic ?: staticLockMode(base)
-        return CourseAccess(mode, signedIn, ownsAny(signedIn, unlockIds))
+        if (signedIn && !IS_FREE_MODE) refreshOwnership(false)
+        return CourseAccess(mode, signedIn, ownsAny(signedIn, unlockIds), unlockIds)
     }
 
     /** Same as [resolve] without the network: the static rule only (used until the first answer arrives). */
     fun staticAccess(basePath: String, signedIn: Boolean): CourseAccess {
         val base = normalize(basePath)
-        return CourseAccess(staticLockMode(base), signedIn, ownsAny(signedIn, unlockPackageIds(base)))
+        val unlockIds = unlockPackageIds(base)
+        return CourseAccess(staticLockMode(base), signedIn, ownsAny(signedIn, unlockIds), unlockIds)
     }
 
     /** `isUnlocked(package)` of the plan: true when the hubs of the course at [basePath] may be opened now. */
@@ -141,14 +170,72 @@ object ContentAccess {
 
     /**
      * Does the student own one of [unlockIds]? Free mode: every signed-in student owns everything.
-     * Paid mode (NOT finished): only the free-for-registered packages; enrollments, verified orders and
-     * access grants of the website (`lib/orders.ts`, `lib/access-grants.ts`) are not read yet, so a paid
-     * package stays closed in the app rather than opening by mistake (plan step N9b).
+     * Paid mode: the free-for-registered packages, plus whatever the database says the student owns
+     * (enrollment, verified order, access grant or an activation code), as last read by [refreshOwnership].
      */
     private fun ownsAny(signedIn: Boolean, unlockIds: List<String>): Boolean {
         if (!signedIn) return false
         if (IS_FREE_MODE) return true
-        return unlockIds.any { it in FREE_FOR_REGISTERED }
+        if (unlockIds.any { it in FREE_FOR_REGISTERED }) return true
+        return ownsNow(unlockIds)
+    }
+
+    /** True when the last known purchases, grants or codes of the signed-in student cover one of [unlockIds]. */
+    internal fun ownsNow(unlockIds: List<String>): Boolean {
+        if (unlockIds.isEmpty()) return false
+        val ids = currentOwned()
+        return ALL_PACKAGES_ID in ids || unlockIds.any { it in ids }
+    }
+
+    private fun currentOwned(): Set<String> {
+        val uid = AuthStateManager.currentUser.value?.id
+        val snapshot = owned
+        return if (uid != null && snapshot != null && snapshot.userId == uid) snapshot.ids else emptySet()
+    }
+
+    /** Reads what the student owns from Supabase (cached 30 s). Keeps the old answer if the read fails. */
+    private suspend fun refreshOwnership(force: Boolean) {
+        val uid = AuthStateManager.currentUser.value?.id ?: return
+        val now = System.currentTimeMillis()
+        val snapshot = owned
+        if (!force && snapshot != null && snapshot.userId == uid && now - snapshot.at < CACHE_MS) return
+        try {
+            AuthStateManager.refreshIfNeeded()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "token refresh failed: ${e.javaClass.simpleName}")
+        }
+        val token = AuthStateManager.currentUser.value?.accessToken
+        if (token.isNullOrBlank()) return
+        val ids = ActivationClient.fetchOwnedPackageIds(token) ?: return
+        owned = Owned(uid, ids, now)
+    }
+
+    /**
+     * Activation code entry: sends [code] to the server with the student's own login. On success the new packages
+     * count at once (the local answer is updated before the server is read again).
+     */
+    suspend fun redeem(code: String): RedeemResult {
+        val uid = AuthStateManager.currentUser.value?.id
+            ?: return RedeemResult.Failure("Please sign in first.", true)
+        AuthStateManager.refreshIfNeeded()
+        var token = AuthStateManager.currentUser.value?.accessToken
+        if (token.isNullOrBlank()) {
+            return RedeemResult.Failure("Your session expired. Please sign in again.", true)
+        }
+        var result = ActivationClient.redeem(code, token)
+        val first = result
+        if (first is RedeemResult.Failure && first.sessionExpired && AuthStateManager.refreshIfNeeded(force = true)) {
+            token = AuthStateManager.currentUser.value?.accessToken
+            if (!token.isNullOrBlank()) result = ActivationClient.redeem(code, token)
+        }
+        val done = result
+        if (done is RedeemResult.Success) {
+            owned = Owned(uid, currentOwned() + done.packageIds, System.currentTimeMillis())
+            refreshOwnership(true)
+        }
+        return result
     }
 
     // ---------- static rules (website `data/content-availability.ts`) ----------
