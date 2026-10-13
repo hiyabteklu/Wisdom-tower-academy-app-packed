@@ -4,6 +4,8 @@ package com.wisdomtower.academy.ui.guides
 // copied from the website pages: components/academy/*, app/academy/{universities,departments,
 // scholarships,success-stories}/page.tsx and data/universities.ts. Do not add wording that is not there.
 
+import com.wisdomtower.academy.ui.theme.WisdomGlassFill
+import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
@@ -108,7 +110,7 @@ fun GuidesScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF111B2E).copy(alpha = 0.8f))
+                            .background(WisdomGlassFillStrong)
                             .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
@@ -149,7 +151,7 @@ fun GuidesScreen(
                                 )
                                 .background(
                                     if (isSelected) tab.accentColor.copy(alpha = 0.15f)
-                                    else Color(0xFF111B2E).copy(alpha = 0.6f)
+                                    else WisdomGlassFill
                                 )
                                 .clickable(
                                     interactionSource = remember { MutableInteractionSource() },
