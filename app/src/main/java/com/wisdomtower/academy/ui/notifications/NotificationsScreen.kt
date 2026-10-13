@@ -52,9 +52,12 @@ import com.wisdomtower.academy.data.auth.AuthStateManager
 import com.wisdomtower.academy.data.model.NativeNotificationItem
 import com.wisdomtower.academy.data.repository.NotificationRepository
 import com.wisdomtower.academy.ui.theme.WisdomAccentSky
-import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
+import com.wisdomtower.academy.ui.theme.WisdomGlassBorder
+import com.wisdomtower.academy.ui.theme.WisdomGlassFill
+import com.wisdomtower.academy.ui.theme.WisdomGlassFillQuiet
+import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
 
@@ -62,6 +65,10 @@ import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
  * N12: native copy of the website notifications page (website-reference/src/app/notifications/page.tsx).
  * Texts, filters and category labels are the website's. The list is only what /api/notifications returns.
  * Not ported on purpose: the "Orders & Access" filter and order notices (no purchase UI in the app).
+ *
+ * GLASS (2026-10-13, docs/GLASS_PLAN.md area 4): the notice rows, the guest notice, the loading skeleton and the
+ * empty state use the see-through glass look of the Targets screen. An unread notice is a little brighter
+ * (white 6%) than a read one (white 2%).
  */
 private enum class NoticeFilter(val label: String) {
     All("All"),
@@ -216,9 +223,9 @@ fun NotificationsScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(if (selected) WisdomAccentSky else Color.White.copy(alpha = 0.05f))
+                                .background(if (selected) WisdomAccentSky else WisdomGlassFillStrong)
                                 .border(
-                                    BorderStroke(1.dp, if (selected) WisdomAccentSky else WisdomBorderWhite),
+                                    BorderStroke(1.dp, if (selected) WisdomAccentSky else WisdomGlassBorder),
                                     RoundedCornerShape(12.dp)
                                 )
                                 .clickable { filter = f }
@@ -243,7 +250,7 @@ fun NotificationsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF0B1B30))
+                            .background(WisdomGlassFill)
                             .border(BorderStroke(1.dp, WisdomAccentSky.copy(alpha = 0.30f)), RoundedCornerShape(16.dp))
                             .padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -305,8 +312,8 @@ fun NotificationsScreen(
                             .fillMaxWidth()
                             .padding(bottom = 12.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF070D18))
-                            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(16.dp))
+                            .background(WisdomGlassFillQuiet)
+                            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(16.dp))
                             .padding(16.dp)
                     ) {
                         Box(
@@ -335,8 +342,8 @@ fun NotificationsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFF091120))
-                            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(16.dp))
+                            .background(WisdomGlassFill)
+                            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(16.dp))
                             .padding(vertical = 56.dp, horizontal = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -392,8 +399,8 @@ private fun NoticeRow(n: NativeNotificationItem, onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(bottom = 10.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(if (n.read) Color(0xFF070D18) else Color(0xFF08162A))
-            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(16.dp))
+            .background(if (n.read) WisdomGlassFillQuiet else WisdomGlassFillStrong)
+            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(16.dp))
             .clickable { onClick() }
             .padding(14.dp),
         verticalAlignment = Alignment.Top
