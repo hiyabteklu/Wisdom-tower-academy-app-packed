@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -55,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -62,6 +64,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
@@ -597,6 +600,38 @@ private fun SuccessStoriesFullSection(stories: List<SuccessStory>) {
     }
 }
 
+/**
+ * Cover photo of a success story (website: 16:10 photo at the top of the card, amber trophy when there is no
+ * photo). The trophy stays behind the photo, so it is also what the student sees while the photo loads or if
+ * it cannot be loaded.
+ */
+@Composable
+private fun StoryCover(imageUrl: String, description: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1.6f)
+            .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+            .background(Color(0xFF0B1426)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.EmojiEvents,
+            contentDescription = null,
+            tint = WisdomAccentAmber.copy(alpha = 0.3f),
+            modifier = Modifier.size(56.dp)
+        )
+        if (imageUrl.isNotBlank()) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = description,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
 @Composable
 private fun SuccessStoryCardItem(story: SuccessStory) {
     var expanded by remember { mutableStateOf(false) }
@@ -607,79 +642,85 @@ private fun SuccessStoryCardItem(story: SuccessStory) {
         cornerRadius = 20.dp,
         borderColor = if (expanded) WisdomAccentAmber.copy(alpha = 0.5f) else WisdomBorderWhite
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("ACHIEVEMENT", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
-                    Text(story.achievement, fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color.White)
-                    val byline = listOf(story.name, story.program, story.year).filter { it.isNotBlank() }.joinToString(" · ")
-                    if (byline.isNotEmpty()) {
-                        Text(byline, fontSize = 11.sp, color = WisdomMuted)
-                    }
-                }
-                Icon(
-                    imageVector = Icons.Default.EmojiEvents,
-                    contentDescription = null,
-                    tint = WisdomAccentAmber,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            if (story.quote.isNotBlank()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(WisdomAccentAmber.copy(alpha = 0.06f))
-                        .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.2f)), RoundedCornerShape(12.dp))
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = "“${story.quote}”",
-                        fontSize = 11.5.sp,
-                        fontStyle = FontStyle.Italic,
-                        color = Color(0xFFFDE68A),
-                        lineHeight = 16.sp
-                    )
-                }
-            }
-
-            if (story.body.isNotBlank()) {
-                Text(
-                    text = story.body.trim(),
-                    fontSize = 11.5.sp,
-                    color = WisdomMuted,
-                    lineHeight = 16.sp,
-                    maxLines = if (expanded || !longBody) Int.MAX_VALUE else 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            if (longBody) {
+        Column {
+            StoryCover(
+                imageUrl = story.imageUrl,
+                description = story.name.ifBlank { story.achievement }
+            )
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { expanded = !expanded }
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = if (expanded) "Show less" else "Read full story",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = WisdomAccentAmber
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("ACHIEVEMENT", fontSize = 9.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
+                        Text(story.achievement, fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color.White)
+                        val byline = listOf(story.name, story.program, story.year).filter { it.isNotBlank() }.joinToString(" · ")
+                        if (byline.isNotEmpty()) {
+                            Text(byline, fontSize = 11.sp, color = WisdomMuted)
+                        }
+                    }
                     Icon(
-                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        imageVector = Icons.Default.EmojiEvents,
                         contentDescription = null,
                         tint = WisdomAccentAmber,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(24.dp)
                     )
+                }
+
+                if (story.quote.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(WisdomAccentAmber.copy(alpha = 0.06f))
+                            .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.2f)), RoundedCornerShape(12.dp))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "“${story.quote}”",
+                            fontSize = 11.5.sp,
+                            fontStyle = FontStyle.Italic,
+                            color = Color(0xFFFDE68A),
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+
+                if (story.body.isNotBlank()) {
+                    Text(
+                        text = story.body.trim(),
+                        fontSize = 11.5.sp,
+                        color = WisdomMuted,
+                        lineHeight = 16.sp,
+                        maxLines = if (expanded || !longBody) Int.MAX_VALUE else 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (longBody) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { expanded = !expanded }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (expanded) "Show less" else "Read full story",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = WisdomAccentAmber
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = WisdomAccentAmber,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
                 }
             }
         }
