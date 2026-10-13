@@ -78,16 +78,21 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
 import com.wisdomtower.academy.ui.theme.WisdomAccentRose
 import com.wisdomtower.academy.ui.theme.WisdomAccentSky
-import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDark
-import com.wisdomtower.academy.ui.theme.WisdomModernCard
+import com.wisdomtower.academy.ui.theme.WisdomGlassBorder
+import com.wisdomtower.academy.ui.theme.WisdomGlassCard
+import com.wisdomtower.academy.ui.theme.WisdomGlassFill
+import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 
 /**
  * Native Learning screen mirroring website reference:
  * - src/app/learning/page.tsx
  * - src/app/learning/LearningContent.tsx
+ *
+ * GLASS (2026-10-13, owner request, docs/GLASS_PLAN.md area 2): the header card, the guest banner, the Study Tools
+ * card (and its tiles) and the empty-curriculum card use the see-through glass look of the Targets screen.
  *
  * Header:
  * - Scholar Avatar, Full Name ("Scholar" when the name is unknown, as on the website), Student Folio (WTA-XXXX), User Email
@@ -292,10 +297,9 @@ fun LearningScreen(
         ) {
             // TOP HEADER: Scholar Name, Folio, Email
             item(key = "learning_header") {
-                WisdomModernCard(
+                WisdomGlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    cornerRadius = 24.dp,
-                    borderColor = WisdomBorderWhite
+                    cornerRadius = 24.dp
                 ) {
                     Column(
                         modifier = Modifier
@@ -370,10 +374,9 @@ fun LearningScreen(
             // GUEST SCHOLAR BANNER (if signed out)
             if (!isLoggedIn) {
                 item(key = "guest_banner") {
-                    WisdomModernCard(
+                    WisdomGlassCard(
                         modifier = Modifier.fillMaxWidth(),
-                        cornerRadius = 18.dp,
-                        borderColor = WisdomBorderWhite
+                        cornerRadius = 18.dp
                     ) {
                         Column(
                             modifier = Modifier
@@ -413,7 +416,7 @@ fun LearningScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(20.dp))
-                                        .background(Color.White.copy(alpha = 0.05f))
+                                        .background(WisdomGlassFillStrong)
                                         .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)), RoundedCornerShape(20.dp))
                                         .clickable { onNavigateToUrl("/signup") }
                                         .padding(vertical = 8.dp),
@@ -429,10 +432,9 @@ fun LearningScreen(
 
             // STUDY TOOLS DOCK (8 tiles matching website)
             item(key = "study_tools_dock") {
-                WisdomModernCard(
+                WisdomGlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    cornerRadius = 24.dp,
-                    borderColor = WisdomBorderWhite
+                    cornerRadius = 24.dp
                 ) {
                     Column(
                         modifier = Modifier
@@ -539,8 +541,8 @@ fun LearningScreen(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .background(Color.White.copy(alpha = 0.04f))
-                            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(20.dp))
+                            .background(WisdomGlassFill)
+                            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(20.dp))
                             .clickable { onNavigateToUrl("/packages") }
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
@@ -566,10 +568,9 @@ fun LearningScreen(
             // Empty state (same texts as the website when no package is selected)
             if (enrolledCourses.isEmpty()) {
                 item(key = "curriculum_empty") {
-                    WisdomModernCard(
+                    WisdomGlassCard(
                         modifier = Modifier.fillMaxWidth(),
-                        cornerRadius = 16.dp,
-                        borderColor = WisdomBorderWhite
+                        cornerRadius = 16.dp
                     ) {
                         Column(
                             modifier = Modifier
@@ -634,8 +635,8 @@ private fun ToolTileButton(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White.copy(alpha = 0.04f))
-            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(16.dp))
+            .background(WisdomGlassFill)
+            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(16.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
@@ -652,8 +653,8 @@ private fun ToolTileButton(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.06f))
-                    .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp)),
+                    .background(WisdomGlassFillStrong)
+                    .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
