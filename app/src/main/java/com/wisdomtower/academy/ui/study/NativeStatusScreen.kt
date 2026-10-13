@@ -44,14 +44,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wisdomtower.academy.data.auth.AuthStateManager
+import com.wisdomtower.academy.data.content.MySubjectsStore
 import com.wisdomtower.academy.data.content.ProgressFetchResult
 import com.wisdomtower.academy.data.content.ProgressRow
+import com.wisdomtower.academy.data.content.ResourceScopeIndex
 import com.wisdomtower.academy.data.content.StudentProgressReader
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 
@@ -79,6 +83,12 @@ private val StPanelBg = Color(0xFF0B1329)
  * (e) a Close button was added and the cards are one per row on the phone; (f) signed out shows the Learning screen's
  * sign-in sentence.
  *
+ * T8 "My Subjects" (2026-10-14, docs/T8_MY_SUBJECTS_PLAN.md): the rows are filtered BEFORE [computeStatus] so only the
+ * subjects the student picked in Settings count (picks live on this phone, [MySubjectsStore]; the resource-to-subject map
+ * is [ResourceScopeIndex]). [computeStatus] and what is saved to `learning_progress` are unchanged. With no picks at all
+ * (Academic Level without a package, or not set) everything is counted and one line says so. If the subject map cannot be
+ * loaded (offline, no cache) the screen says so and shows NO totals.
+ *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
 @Composable
@@ -91,9 +101,12 @@ fun NativeStatusScreen(
     dailyGoalMinutes: Int,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var reloadKey by remember { mutableStateOf(0) }
     var loading by remember { mutableStateOf(isLoggedIn) }
     var failed by remember { mutableStateOf(false) }
+    var errorText by remember { mutableStateOf<String?>(null) }
+    var countedLine by remember { mutableStateOf<String?>(null) }
     var rows by remember { mutableStateOf<List<ProgressRow>?>(null) }
 
     LaunchedEffect(isLoggedIn, reloadKey) {
@@ -103,8 +116,34 @@ fun NativeStatusScreen(
         }
         loading = true
         failed = false
+        errorText = null
         when (val result = StudentProgressReader.fetchAll()) {
-            is ProgressFetchResult.Success -> rows = result.rows
+            is ProgressFetchResult.Success -> {
+                val userId = AuthStateManager.currentUser.value?.id
+                val picks = if (userId != null) MySubjectsStore.load(context, userId, educationLevel) else null
+                if (picks == null || picks.keys.isEmpty()) {
+                    // Nothing picked and no package for the Academic Level: count everything, say so.
+                    rows = result.rows
+                    countedLine = "Counting all your study activity. Choose your subjects in Settings > My Subjects."
+                } else {
+                    val first = ResourceScopeIndex.get(context)
+                    // A record of a resource the cached map does not know (new content): refresh the map once.
+                    val index = if (first != null && result.rows.any { it.resourceId !in first.map }) {
+                        ResourceScopeIndex.get(context, forceRefresh = true) ?: first
+                    } else {
+                        first
+                    }
+                    if (index == null) {
+                        rows = null
+                        failed = true
+                        errorText = "Could not load your subject list. Check your internet connection and try again."
+                    } else {
+                        val counted = MySubjectsStore.filterRows(result.rows, index.map, picks.keys)
+                        rows = counted
+                        countedLine = buildCountedLine(picks.keys, result.rows.size - counted.size)
+                    }
+                }
+            }
             else -> failed = true
         }
         loading = false
@@ -230,6 +269,12 @@ fun NativeStatusScreen(
                         )
                     }
                 }
+
+                // T8: what is counted (picked subjects), so the totals are never a surprise
+                val counted = countedLine
+                if (counted != null && isLoggedIn && !loading && !failed) {
+                    Text(counted, fontSize = 11.sp, color = StMuted, lineHeight = 16.sp)
+                }
             }
 
             // States: signed out, loading, failed
@@ -249,7 +294,7 @@ fun NativeStatusScreen(
             } else if (failed || summary == null) {
                 StPanel(borderColor = StRose.copy(alpha = 0.30f)) {
                     Text(
-                        "Could not load your study records. Check your internet connection and try again.",
+                        errorText ?: "Could not load your study records. Check your internet connection and try again.",
                         fontSize = 13.sp,
                         color = StSlate300,
                         lineHeight = 19.sp
@@ -451,6 +496,20 @@ fun NativeStatusScreen(
         }
     }
 }
+}
+
+/** T8: the one line that says what "Your status" is counting (real numbers only). */
+private fun buildCountedLine(pickedKeys: Set<String>, excludedRecords: Int): String {
+    val n = pickedKeys.size
+    val labels = pickedKeys
+        .map { MySubjectsStore.packageOf(it) }
+        .distinct()
+        .mapNotNull { id -> MySubjectsStore.packages.firstOrNull { it.id == id }?.label }
+        .joinToString(", ")
+    val subjects = if (n == 1) "1 subject" else "$n subjects"
+    val base = if (labels.isNotEmpty()) "Counting $subjects: $labels." else "Counting $subjects."
+    val other = if (excludedRecords > 0) " Other activity ($excludedRecords records) is not counted." else ""
+    return "$base$other Change it in Settings > My Subjects."
 }
 
 @Composable
