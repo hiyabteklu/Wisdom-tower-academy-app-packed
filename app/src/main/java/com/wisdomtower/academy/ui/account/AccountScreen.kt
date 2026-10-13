@@ -14,8 +14,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -581,6 +579,19 @@ private fun MyProfileHero(
     val accent = if (complete) GoldMid else WisdomCyan
     val doneCount = milestones.count { it.second }
 
+    // The crown fades and bounces in at 100%. No AnimatedVisibility here: inside this Box-in-Column the compiler
+    // refuses it ("cannot be called in this context with an implicit receiver", see docs/SESSION_2026-10-13_H.md).
+    val crownAlpha by animateFloatAsState(
+        targetValue = if (complete) 1f else 0f,
+        animationSpec = tween(durationMillis = 600),
+        label = "crown_alpha"
+    )
+    val crownScale by animateFloatAsState(
+        targetValue = if (complete) 1f else 0.6f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "crown_scale"
+    )
+
     WisdomGlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 24.dp,
@@ -619,14 +630,14 @@ private fun MyProfileHero(
                         initials = initialsOf(displayName)
                     )
                 }
-                AnimatedVisibility(
-                    visible = complete,
-                    enter = fadeIn(tween(600)) + scaleIn(
-                        initialScale = 0.6f,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+                if (crownAlpha > 0f) {
+                    PremiumCrown(
+                        modifier = Modifier.graphicsLayer {
+                            alpha = crownAlpha
+                            scaleX = crownScale
+                            scaleY = crownScale
+                        }
                     )
-                ) {
-                    PremiumCrown()
                 }
             }
 
