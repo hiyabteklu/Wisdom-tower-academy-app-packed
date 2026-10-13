@@ -94,7 +94,7 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
-import com.wisdomtower.academy.ui.theme.WisdomModernCard
+import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.launch
 
@@ -378,7 +378,7 @@ private fun StudentIdCardFront(
     val schoolText = (userProfile?.schoolName?.takeIf { it.isNotBlank() } ?: idData.institutionName) +
         (userProfile?.townRegion?.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: "")
 
-    WisdomModernCard(
+    WisdomGlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 20.dp,
         borderWidth = if (hasCrown) 1.5.dp else 1.dp,
@@ -652,7 +652,7 @@ private fun StudentIdCardFront(
 private fun StudentIdCardBack(
     idData: StudentIdData
 ) {
-    WisdomModernCard(
+    WisdomGlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 20.dp,
         borderWidth = 1.dp,
@@ -761,7 +761,7 @@ private fun FloatingPillControlBar(
     onNavigateToUrl: (String) -> Unit,
     onSignOut: () -> Unit
 ) {
-    WisdomModernCard(
+    WisdomGlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 18.dp,
         borderColor = WisdomBorderWhite
@@ -938,7 +938,7 @@ private fun ScholarProfileVerificationPanel(
 
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // Completion Gauge Header Card (tap to open the checklist, like the website)
-        WisdomModernCard(
+        WisdomGlassCard(
             modifier = Modifier.fillMaxWidth(),
             cornerRadius = 16.dp,
             borderColor = if (completionScore >= 100) WisdomAccentAmber.copy(alpha = 0.5f) else WisdomCyan.copy(alpha = 0.35f)
@@ -1316,7 +1316,7 @@ private fun StepAccordionCard(
     onToggle: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    WisdomModernCard(
+    WisdomGlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 14.dp,
         borderColor = WisdomBorderWhite
