@@ -55,6 +55,9 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentSky
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDark
+import com.wisdomtower.academy.ui.theme.WisdomGlassBorder
+import com.wisdomtower.academy.ui.theme.WisdomGlassFill
+import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import java.util.Locale
@@ -69,6 +72,9 @@ import kotlin.math.max
  *
  * The course list is the Freshman subject list without "physical-fitness" (pass/fail), as on the website.
  * Nothing here is invented: every text and number comes from those three files.
+ *
+ * Glass look (docs/GLASS_PLAN.md area 8): the three inner panels (course rows, grade-scale table, result box) use the
+ * shared glass tokens instead of dark fills, so they match the glass card around them.
  */
 private data class GpaGradeBand(
     val min: Double,
@@ -292,8 +298,8 @@ fun GpaCalculatorCard() {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .background(WisdomDark.copy(alpha = 0.6f))
-                            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(14.dp))
+                            .background(WisdomGlassFillStrong)
+                            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(14.dp))
                             .padding(horizontal = 14.dp, vertical = 12.dp)
                     ) {
                         if (counted == 0 || creditSum <= 0.0) {
@@ -362,7 +368,8 @@ private fun GpaScaleTable() {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(Color(0xFF0A1120))
+            .background(WisdomGlassFill)
+            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(10.dp))
             .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
@@ -400,8 +407,8 @@ private fun GpaRowEditor(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(WisdomDark.copy(alpha = 0.4f))
-            .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
+            .background(WisdomGlassFill)
+            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(12.dp))
             .padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
