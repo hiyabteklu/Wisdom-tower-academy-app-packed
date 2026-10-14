@@ -1,6 +1,6 @@
 # COMPETITION_STATUS.md — THE ONLY LIVE WORK (started 2026-10-14)
 
-> Repo is PUBLIC: no secrets, no student names or emails. Read order: this file, `docs/COMPETITION_DECISIONS.md` (owner answers; OVERRIDES the plan), `docs/COMPETITION_PLAN.md` (data model, stages, edge cases), then `docs/BUILD_PITFALLS.md` before any Kotlin.
+> Repo is PUBLIC: no secrets, no student names or emails. Read order: this file, `docs/COMPETITION_DECISIONS.md` (owner answers; OVERRIDES the plan), `docs/COMPETITION_PLAN.md` (data model, stages, edge cases), then `docs/BUILD_PITFALLS.md` before any Kotlin. Database contract: `docs/COMPETITION_API_CONTRACT.md`.
 
 ## Owner order (2026-10-14, in the owner's words)
 "Questions A-G are accepted as default. So it becomes your task. Start and execute all the plan one at a time (the task associated with the refresh button to trophy and completion.... Etc. No other task, remove any other tasks. Cuz they're all done (or archive them), what we have in hand is building the competition space."
@@ -20,9 +20,9 @@ Meaning for agents: run the stages below IN ORDER, one at a time, without waitin
 | Stage | What | Status |
 |---|---|---|
 | C0 | Decisions recorded, old tasks archived | DONE 2026-10-14 (docs only) |
-| C1 | Database + security (tables, RLS, RPCs, SQL tests) | IN PROGRESS: C1 |
-| C2 | Admin publish path (SQL RPC + checklist, website dashboard contract) | TODO |
-| C3 | App data layer (`data/competition/*`, server-time offset, phase logic) | TODO |
+| C1 | Database + security (tables, RLS, RPCs, SQL tests) | `[~]` APPLIED to live Supabase (4 migrations). Verified live 2026-10-14: RLS on 7 tables, policies, anon blocked, triggers enabled, 0 test rows. NOT verified: functional SQL tests (results never seen). Repo copy of the SQL not pushed yet. |
+| C2 | Admin publish path (SQL RPC + checklist, website dashboard contract) | IN PROGRESS: C2. SQL RPCs exist; contract written (`docs/COMPETITION_API_CONTRACT.md`). Website dashboard + owner checklist TODO |
+| C3 | App data layer (`data/competition/*`, server-time offset, phase logic) | TODO (can start from the contract) |
 | C4 | Trophy replaces Refresh in the top bar; Refresh row moves to the drawer (patch script for `MainActivity.kt`) | TODO |
 | C5 | Competitions hub + countdown screen | TODO |
 | C6 | Native exam runner (ranked uses global `ends_at`; practice reuses the hub exam runner) | TODO |
@@ -35,3 +35,4 @@ Still unconfirmed (carried over, not blocking): build results of #363 (T9 motion
 
 ## Session log (append only)
 - 2026-10-14 | Claude (chat) | C0 done. `IN PROGRESS: C1` (database). Plan for C1: write `docs/sql/competitions_v1.sql`, apply it to the Supabase project with the connector (owner granted read and write on 2026-10-11 and ordered execution on 2026-10-14), verify with rolled-back SQL tests, remove test data, log results here.
+- 2026-10-14 | Claude (chat, session G) | Found C1 applied in live Supabase but unlogged (previous agent cut off). Verified security state live (see stage board), wrote `docs/COMPETITION_API_CONTRACT.md`, `docs/SESSION_2026-10-14_G.md`. C1 stays `[~]`: functional tests not seen. Correction: the plan line above says the SQL goes to `docs/sql/competitions_v1.sql`; that file is NOT in the repo yet. Next: run and log SQL tests, push the SQL copy (use the live CTE leaderboard), then C2 website dashboard / C3.
