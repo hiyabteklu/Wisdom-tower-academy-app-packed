@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -55,6 +57,10 @@ private val MutedText = Color(0xFF94A3B8)
 // NOT in this slice (later stages): join, resume, practice buttons (C6), leaderboard and review (C7).
 // The list reloads every 30 seconds so an admin pause or start-now reaches an open screen (owner Q7),
 // and again when a card's phase moves on with the clock.
+// C5 slice 2: a contest the server still marks as unseen gets a small cyan dot in front of its title
+// (no text, so nothing is invented). The screen keeps the dot for as long as it stays open and tells the
+// server through CompetitionRepository.markSeen, so the dot is gone the next time the hub opens.
+// A failed markSeen call is simply tried again on the next 30 second reload.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionsHubScreen(
@@ -66,6 +72,10 @@ fun CompetitionsHubScreen(
     var errorText by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var nowMs by remember { mutableLongStateOf(CompetitionRepository.serverNowMs()) }
+    // ids that were unseen when this screen first got them (the dot stays while the screen is open)
+    var freshIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    // ids the server already confirmed as seen
+    val markedIds = remember { mutableSetOf<String>() }
 
     LaunchedEffect(reloadKey) {
         if (contests.isEmpty()) loading = true
@@ -73,6 +83,16 @@ fun CompetitionsHubScreen(
             is CompetitionResult.Ok -> {
                 contests = r.value.items
                 errorText = null
+                val unseenIds = r.value.items.filter { it.unseen }.map { it.id }
+                if (unseenIds.isNotEmpty()) {
+                    freshIds = freshIds + unseenIds
+                    for (id in unseenIds) {
+                        if (id !in markedIds) {
+                            val marked = CompetitionRepository.markSeen(id)
+                            if (marked is CompetitionResult.Ok) markedIds.add(id)
+                        }
+                    }
+                }
             }
             is CompetitionResult.Failed -> errorText = r.message
         }
@@ -143,7 +163,11 @@ fun CompetitionsHubScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(rows, key = { it.first.id }) { row ->
-                        CompetitionCard(summary = row.first, display = row.second)
+                        CompetitionCard(
+                            summary = row.first,
+                            display = row.second,
+                            isNew = row.first.id in freshIds
+                        )
                     }
                 }
             }
@@ -152,7 +176,7 @@ fun CompetitionsHubScreen(
 }
 
 @Composable
-private fun CompetitionCard(summary: CompetitionSummary, display: CompetitionDisplay) {
+private fun CompetitionCard(summary: CompetitionSummary, display: CompetitionDisplay, isNew: Boolean) {
     val shape = RoundedCornerShape(18.dp)
     val badge = if (display.phase == CompetitionPhase.PAUSED) {
         "Postponed by admin"
@@ -178,6 +202,13 @@ private fun CompetitionCard(summary: CompetitionSummary, display: CompetitionDis
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            if (isNew) {
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .background(CyanAccent, CircleShape)
+                )
+            }
             Text(
                 text = summary.title,
                 color = Color.White,
