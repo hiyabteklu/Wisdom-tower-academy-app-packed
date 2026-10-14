@@ -23,6 +23,16 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -136,7 +146,7 @@ private val GuideSoftColor = Color(0xFFCBD5E1)
 /** Reading text of every guide page: 16 sp on 26 sp lines, light slate (high contrast on the dark glass). */
 private val GuideBodyStyle = TextStyle(
     fontFamily = PlusJakartaSansFontFamily,
-    fontWeight = FontWeight.Normal,
+    fontWeight = FontWeight.Bold,
     fontSize = 16.sp,
     lineHeight = 26.sp,
     color = GuideBodyColor
@@ -146,7 +156,7 @@ private val GuideBodyStyle = TextStyle(
 private val GuideQuoteStyle = TextStyle(
     fontFamily = ContentFontFamily,
     fontStyle = FontStyle.Italic,
-    fontWeight = FontWeight.Normal,
+    fontWeight = FontWeight.Bold,
     fontSize = 19.sp,
     lineHeight = 28.sp,
     color = Color(0xFFFDE68A)
@@ -226,7 +236,7 @@ fun GuidesScreen(
     val context = LocalContext.current
     var activeSlug by remember { mutableStateOf(initialSlug) }
     val listState = rememberLazyListState()
-    val tabState = rememberLazyListState()
+    val tabScroll = rememberScrollState()
 
     val (uniIntro, universitiesList) = remember { GuidesRepository.loadUniversities(context) }
     val uniClosing = remember { GuidesRepository.loadUniversitiesClosing(context) }
@@ -235,8 +245,6 @@ fun GuidesScreen(
 
     // Keep the chosen tab in view, and bring the page back up to the tabs when a new guide opens.
     LaunchedEffect(activeSlug) {
-        val index = GUIDE_TABS.indexOfFirst { it.slug == activeSlug }
-        if (index >= 0) tabState.animateScrollToItem(maxOf(index - 1, 0))
         if (listState.firstVisibleItemIndex > 1) listState.animateScrollToItem(1)
     }
 
@@ -269,22 +277,12 @@ fun GuidesScreen(
             }
 
             item(key = "switcher_row") {
-                LazyRow(
-                    state = tabState,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(GUIDE_TABS) { tab ->
-                        GuideTabPill(
-                            tab = tab,
-                            selected = activeSlug == tab.slug,
-                            onClick = { activeSlug = tab.slug }
-                        )
-                    }
-                }
+                GuideTabRow(activeSlug = activeSlug, scroll = tabScroll, onSelect = { activeSlug = it })
             }
 
             item(key = "guide_content") {
                 AnimatedContent(
+                    modifier = Modifier.animateContentSize(animationSpec = spring(dampingRatio = 0.85f, stiffness = 300f)),
                     targetState = activeSlug,
                     transitionSpec = {
                         (fadeIn(animationSpec = tween(340, delayMillis = 90)) +
@@ -337,6 +335,101 @@ private fun GuideBackPill(onBack: () -> Unit) {
     }
 }
 
+/**
+ * Tab row with ONE glass pill that slides (spring) from tab to tab and changes colour, like the Sign In / Create
+ * Account switch. The row scrolls sideways when the tabs are wider than the screen; the chosen tab is brought into view.
+ */
+@Composable
+private fun GuideTabRow(activeSlug: String, scroll: ScrollState, onSelect: (String) -> Unit) {
+    val density = LocalDensity.current
+    val xs = remember { mutableStateMapOf<String, Float>() }
+    val ws = remember { mutableStateMapOf<String, Float>() }
+    val hs = remember { mutableStateMapOf<String, Float>() }
+    val targetX = xs[activeSlug]
+    val targetW = ws[activeSlug]
+    val targetH = hs[activeSlug]
+    val slide = spring<Float>(dampingRatio = 0.72f, stiffness = 380f)
+    val indX by animateFloatAsState(targetValue = targetX ?: 0f, animationSpec = slide, label = "guideTabX")
+    val indW by animateFloatAsState(targetValue = targetW ?: 0f, animationSpec = slide, label = "guideTabW")
+    val accent = GUIDE_TABS.firstOrNull { it.slug == activeSlug }?.accentColor ?: WisdomCyan
+    val indColor by animateColorAsState(targetValue = accent, animationSpec = tween(260), label = "guideTabAccent")
+
+    LaunchedEffect(activeSlug, targetX) {
+        if (targetX != null) {
+            scroll.animateScrollTo((targetX - with(density) { 28.dp.toPx() }).toInt().coerceAtLeast(0))
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxWidth().horizontalScroll(scroll)) {
+        if (targetW != null && targetH != null) {
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(indX.roundToInt(), 0) }
+                    .width(with(density) { indW.toDp() })
+                    .height(with(density) { targetH.toDp() })
+                    .clip(CircleShape)
+                    .background(indColor.copy(alpha = 0.22f))
+                    .border(BorderStroke(1.5.dp, indColor), CircleShape)
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            GUIDE_TABS.forEach { tab ->
+                val selected = activeSlug == tab.slug
+                val fill by animateColorAsState(
+                    targetValue = if (selected) Color.Transparent else WisdomGlassFillStrong,
+                    animationSpec = tween(240),
+                    label = "guideTabFill"
+                )
+                val edge by animateColorAsState(
+                    targetValue = if (selected) Color.Transparent else WisdomBorderWhite,
+                    animationSpec = tween(240),
+                    label = "guideTabEdge2"
+                )
+                val foreground by animateColorAsState(
+                    targetValue = if (selected) tab.accentColor else GuideSoftColor,
+                    animationSpec = tween(240),
+                    label = "guideTabFg2"
+                )
+                Box(
+                    modifier = Modifier.onGloballyPositioned { c ->
+                        val x = c.positionInParent().x
+                        val w = c.size.width.toFloat()
+                        val h = c.size.height.toFloat()
+                        if (xs[tab.slug] != x) xs[tab.slug] = x
+                        if (ws[tab.slug] != w) ws[tab.slug] = w
+                        if (hs[tab.slug] != h) hs[tab.slug] = h
+                    }
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .softClickable { onSelect(tab.slug) }
+                            .clip(CircleShape)
+                            .background(fill)
+                            .border(BorderStroke(1.5.dp, edge), CircleShape)
+                            .padding(horizontal = 18.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = guideIcon(tab.slug),
+                            contentDescription = null,
+                            tint = foreground,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = tab.title,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = foreground,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** Tab as an iOS style pill: icon + label, colours glide between selected and not selected. */
 @Composable
 private fun GuideTabPill(tab: GuideTab, selected: Boolean, onClick: () -> Unit) {
@@ -375,7 +468,7 @@ private fun GuideTabPill(tab: GuideTab, selected: Boolean, onClick: () -> Unit) 
         Text(
             text = tab.title,
             fontSize = 15.sp,
-            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold,
+            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Bold,
             color = foreground,
             maxLines = 1
         )
@@ -508,7 +601,7 @@ private fun FactBadge(label: String) {
             .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
             .padding(horizontal = 14.dp, vertical = 7.dp)
     ) {
-        Text(text = label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = GuideSoftColor)
+        Text(text = label, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GuideSoftColor)
     }
 }
 
@@ -717,9 +810,10 @@ private fun GuideSearchField(value: String, onChange: (String) -> Unit, placehol
         textStyle = TextStyle(
             fontFamily = PlusJakartaSansFontFamily,
             fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
             color = Color.White
         ),
-        placeholder = { Text(placeholder, fontSize = 15.sp, color = GuideSoftColor) },
+        placeholder = { Text(placeholder, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = GuideSoftColor) },
         leadingIcon = {
             Icon(Icons.Filled.Search, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(22.dp))
         },
@@ -780,7 +874,7 @@ private fun FilterChip(label: String, selected: Boolean, accent: Color, onClick:
         Text(
             text = label,
             fontSize = 15.sp,
-            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.SemiBold,
+            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Bold,
             color = foreground,
             maxLines = 1
         )
@@ -1155,7 +1249,7 @@ private fun SuccessStoryCardItem(story: SuccessStory) {
                                 text = byline,
                                 fontSize = 15.sp,
                                 lineHeight = 21.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Bold,
                                 color = GuideSoftColor
                             )
                         }
@@ -1564,7 +1658,7 @@ private fun UniversityDetailCard(uni: UniversityDetail) {
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Filled.LocationOn, contentDescription = null, tint = WisdomAccentSky, modifier = Modifier.size(20.dp))
-                Text(text = uni.location, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = GuideSoftColor)
+                Text(text = uni.location, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = GuideSoftColor)
             }
 
             val facts = buildList {
