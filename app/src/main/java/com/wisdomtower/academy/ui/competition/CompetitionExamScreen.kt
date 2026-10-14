@@ -40,6 +40,7 @@ import com.wisdomtower.academy.data.competition.CompetitionRepository
 import com.wisdomtower.academy.data.competition.CompetitionResult
 import com.wisdomtower.academy.data.competition.CompetitionRunnerState
 import com.wisdomtower.academy.data.competition.CompetitionSession
+import com.wisdomtower.academy.data.competition.ExamLockdown
 import com.wisdomtower.academy.data.competition.SubmitResult
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import kotlinx.coroutines.CoroutineScope
@@ -58,7 +59,7 @@ private val ExamDarkText = Color(0xFF0A101D)
 private val examSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
 // C6 slice 2: the native competition exam screen (ranked or practice), built on CompetitionRunnerState.
-// It is NOT reachable yet: nothing opens it until slice 3 adds the Join / Resume / Practice buttons.
+// Reachable since slice 3: the hub cards open it with the Join / Resume / Practice buttons.
 // What it does: shows one question at a time with its choices, a row of question numbers, the time left
 // to the GLOBAL deadline (server-corrected clock), autosaves the answers a moment after each change and
 // every 10 seconds (saveAnswers), and submits when the student confirms or when the time reaches zero
@@ -67,7 +68,7 @@ private val examSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default
 // Leaving with the Back button does not stop the clock; the student can resume until the deadline.
 // Slice 2b (owner: we want LaTeX and KaTeX): the question and its choices are drawn by
 // CompetitionQuestionView, which shows them in the local KaTeX page assets/notes/competition.html.
-// The ExamLockdown hook comes later (C10).
+// Slice 4: while a ranked exam is open it raises ExamLockdown.active (C10 reads it, nothing does yet).
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionExamScreen(
@@ -90,6 +91,14 @@ fun CompetitionExamScreen(
     DisposableEffect(Unit) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false }
+    }
+
+    // ranked exam open: raise the app-wide lockdown flag, lower it when the screen goes away
+    DisposableEffect(session.entryId) {
+        if (state.isRanked) ExamLockdown.enter()
+        onDispose {
+            if (state.isRanked) ExamLockdown.leave()
+        }
     }
 
     // clock, once per second, server-corrected
