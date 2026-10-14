@@ -67,6 +67,7 @@ import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.settings.SettingsScreen
 import com.wisdomtower.academy.ui.drawer.AboutScreen
+import com.wisdomtower.academy.ui.competition.CompetitionsHubScreen
 import com.wisdomtower.academy.ui.drawer.ContactScreen
 import com.wisdomtower.academy.ui.drawer.FaqScreen
 import com.wisdomtower.academy.ui.drawer.PrivacyScreen
@@ -138,6 +139,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -1001,6 +1003,7 @@ fun MainScreen(
     var activeDrawerScreen by remember { mutableStateOf<String?>(null) }
     var activeStudyTool by remember { mutableStateOf<String?>(null) }
     var showNotifications by remember { mutableStateOf(false) } // P15-native-notifications
+    var showCompetitions by remember { mutableStateOf(false) } // C4-competitions-trophy
     var webView: WebView? by remember { mutableStateOf(null) }
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -1131,6 +1134,7 @@ fun MainScreen(
         activeGuideSlug = null
         activeDrawerScreen = null
         showNotifications = false // P15-native-notifications
+        showCompetitions = false // C4-competitions-trophy
         closeToolOverlay()
         menuExpanded = false
     }
@@ -1666,6 +1670,10 @@ fun MainScreen(
             activeGuideSlug = null
             return@BackHandler
         }
+        if (showCompetitions) { // C4-competitions-trophy
+            showCompetitions = false
+            return@BackHandler
+        }
         if (showNotifications) { // P15-native-notifications
             showNotifications = false
             return@BackHandler
@@ -1875,6 +1883,47 @@ fun MainScreen(
         }
     }
 
+    // C4-competitions-trophy: the hard-refresh logic that used to live in the top-bar button (unchanged), now shared with the drawer row
+    fun performHardRefresh() {
+        // S12-P3: a native screen covers the WebView, so refresh the native data
+        if (!(selectedIndex == 1 && activeStudyUrl != null)) {
+            NotificationRepository.refreshNotifications(currentUser?.id, currentUser?.email)
+            AcademyRepository.refreshCatalog()
+            Toast.makeText(context, "Refreshing…", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val wv = webView
+        val currentUrl = wv?.url.orEmpty()
+        if (wv != null) {
+            navigationStatusText = "Refreshing…"
+            startNavigationLoading()
+            webProgress = 15
+            val online = isOnline(context)
+            val isOfflineAsset = currentUrl.contains("offline.html") || currentUrl.startsWith("file://")
+            val target = if (isOfflineAsset) lastTargetUrl.ifBlank { SITE } else currentUrl.ifBlank { lastTargetUrl.ifBlank { SITE } }
+
+            if (online) {
+                wv.settings.cacheMode = WebSettings.LOAD_DEFAULT
+                if (isOfflineAsset) {
+                    wv.loadUrl(target)
+                } else {
+                    wv.evaluateJavascript(StructuralNav.HARD_REFRESH_JS) {
+                        Handler(Looper.getMainLooper()).post {
+                            wv.reload()
+                        }
+                    }
+                }
+            } else {
+                if (WebCacheVault.has(context, target)) {
+                    wv.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                    wv.loadUrl(target)
+                } else {
+                    showOffline(wv, force = true)
+                }
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -2020,49 +2069,15 @@ fun MainScreen(
                             IconButton(
                                 onClick = {
                                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                    // S12-P3: a native screen covers the WebView, so refresh the native data
-                                    if (!(selectedIndex == 1 && activeStudyUrl != null)) {
-                                        NotificationRepository.refreshNotifications(currentUser?.id, currentUser?.email)
-                                        AcademyRepository.refreshCatalog()
-                                        Toast.makeText(context, "Refreshing…", Toast.LENGTH_SHORT).show()
-                                        return@IconButton
-                                    }
-                                    val wv = webView
-                                    val currentUrl = wv?.url.orEmpty()
-                                    if (wv != null) {
-                                        navigationStatusText = "Refreshing…"
-                                        startNavigationLoading()
-                                        webProgress = 15
-                                        val online = isOnline(context)
-                                        val isOfflineAsset = currentUrl.contains("offline.html") || currentUrl.startsWith("file://")
-                                        val target = if (isOfflineAsset) lastTargetUrl.ifBlank { SITE } else currentUrl.ifBlank { lastTargetUrl.ifBlank { SITE } }
-
-                                        if (online) {
-                                            wv.settings.cacheMode = WebSettings.LOAD_DEFAULT
-                                            if (isOfflineAsset) {
-                                                wv.loadUrl(target)
-                                            } else {
-                                                wv.evaluateJavascript(StructuralNav.HARD_REFRESH_JS) {
-                                                    Handler(Looper.getMainLooper()).post {
-                                                        wv.reload()
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            if (WebCacheVault.has(context, target)) {
-                                                wv.settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
-                                                wv.loadUrl(target)
-                                            } else {
-                                                showOffline(wv, force = true)
-                                            }
-                                        }
-                                    }
+                                    // C4-competitions-trophy: trophy opens the competitions screen
+                                    resetOverlays()
+                                    showCompetitions = true
                                 },
                                 modifier = Modifier.size(44.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Filled.Refresh,
-                                    contentDescription = "Refresh",
+                                    imageVector = Icons.Filled.EmojiEvents,
+                                    contentDescription = "Competitions",
                                     tint = Accent,
                                     modifier = Modifier.size(22.dp)
                                 )
@@ -3264,6 +3279,17 @@ fun MainScreen(
                     )
                 }
 
+                // C4-competitions-trophy: native competitions screen (trophy)
+                if (showCompetitions) {
+                    CompetitionsHubScreen(
+                        onBack = { showCompetitions = false },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(WisdomNavy)
+                            .zIndex(17f)
+                    )
+                }
+
                 // P15-native-notifications: native notifications screen (bell)
                 if (showNotifications) {
                     NotificationsScreen(
@@ -3989,6 +4015,24 @@ fun MainScreen(
                                 onClick = {
                                     menuExpanded = false
                                     navigateTo("https://www.wisdom-tower-academy.live/learning?tool=planner")
+                                }
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(CardBorderSubtle)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            DrawerCompactRow(
+                                icon = Icons.Filled.Refresh,
+                                label = "Refresh",
+                                onClick = {
+                                    menuExpanded = false
+                                    performHardRefresh()
                                 }
                             )
 
