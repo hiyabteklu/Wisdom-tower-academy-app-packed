@@ -234,6 +234,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.wisdomtower.academy.ui.theme.MyApplicationTheme
+import androidx.compose.ui.draw.shadow
 import kotlinx.coroutines.delay
 
 // Unified native tokens mirroring the live website (wisdom.* palette)
@@ -4113,12 +4114,13 @@ fun MainScreen(
  * - Unselected tabs: completely unboxed, quiet muted slate icon & label.
  * - Selection animation: smooth physics-based spring slide across the shared track.
  */
-private val NavGlassTrack = Color.White.copy(alpha = 0.05f)
+// FloatingPillNav v1
+private val NavTrackTop = Color(0xFF101C30)
+private val NavTrackBottom = CardSurface
 
 /**
- * Glass bottom navigation (owner request 2026-10-13). One see-through capsule, no outline of its own; the sliding
- * selection pill is the only outlined piece (wide and thin, 1dp edge, soft cyan fill). The pill glides with a long
- * ease-out slide and starts on the tap itself; the page switch follows a moment later.
+ * Floating pill navigation. One independent capsule track in the app palette (no bar or band behind it),
+ * a slim sliding selection pill, icons only. The active tab's label expands to the right of its icon.
  */
 @Composable
 private fun AliveBottomNav(
@@ -4138,79 +4140,84 @@ private fun AliveBottomNav(
         pending = null
     }
 
+    val slide = androidx.compose.animation.core.CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
+    // The active tab is wider so its label fits; the pill follows the same animated widths.
+    val weights = items.indices.map { i ->
+        animateFloatAsState(
+            targetValue = if (i == targetIndex) 2.35f else 1f,
+            animationSpec = tween(420, easing = slide),
+            label = "navWeight$i"
+        ).value
+    }
+
+    val trackShape = RoundedCornerShape(999.dp)
     Box(
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 14.dp, vertical = 8.dp)
+            .padding(horizontal = 24.dp, vertical = 10.dp)
     ) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(NavGlassTrack)
+                .height(52.dp)
+                .shadow(
+                    elevation = 14.dp,
+                    shape = trackShape,
+                    ambientColor = Accent.copy(alpha = 0.25f),
+                    spotColor = Accent.copy(alpha = 0.25f)
+                )
+                .clip(trackShape)
+                .background(Brush.verticalGradient(listOf(NavTrackTop, NavTrackBottom)))
+                .border(BorderStroke(1.dp, CardBorder), trackShape)
         ) {
-            val itemCount = items.size.coerceAtLeast(1)
-            val tabWidth = maxWidth / itemCount
-
-            val pillLeft by animateDpAsState(
-                targetValue = tabWidth * targetIndex,
-                animationSpec = tween(
-                    durationMillis = 460,
-                    easing = androidx.compose.animation.core.CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
-                ),
-                label = "bottomNavPillSlide"
-            )
+            val inset = 4.dp
+            val inner = maxWidth - inset * 2
+            val total = weights.sum().coerceAtLeast(0.001f)
+            val widths = weights.map { inner * (it / total) }
+            val pillLeft = inset + widths.take(targetIndex).fold(0.dp) { a, b -> a + b }
 
             Box(
                 modifier = Modifier
                     .offset(x = pillLeft)
-                    .width(tabWidth)
-                    .fillMaxHeight()
-                    .padding(horizontal = 4.dp, vertical = 7.dp)
-                    .clip(RoundedCornerShape(999.dp))
+                    .width(widths.getOrElse(targetIndex) { 0.dp })
+                    .height(40.dp)
+                    .align(Alignment.CenterStart)
+                    .clip(trackShape)
                     .background(
                         Brush.verticalGradient(
-                            listOf(Accent.copy(alpha = 0.20f), Accent.copy(alpha = 0.09f))
+                            listOf(Accent.copy(alpha = 0.26f), Accent.copy(alpha = 0.12f))
                         )
                     )
-                    .border(
-                        BorderStroke(1.dp, Accent.copy(alpha = 0.55f)),
-                        RoundedCornerShape(999.dp)
-                    )
+                    .border(BorderStroke(1.dp, Accent.copy(alpha = 0.6f)), trackShape)
             )
 
             Row(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = inset),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items.forEachIndexed { index, item ->
                     val selected = targetIndex == index
                     val interactionSource = remember(index) { MutableInteractionSource() }
                     val isPressed by interactionSource.collectIsPressedAsState()
-
                     val contentScale by animateFloatAsState(
                         targetValue = if (isPressed) 0.94f else 1.0f,
                         animationSpec = tween(120),
                         label = "tabItemScale"
                     )
-                    val iconColor by animateColorAsState(
+                    val tint by animateColorAsState(
                         targetValue = if (selected) Accent else Muted,
                         animationSpec = tween(260),
-                        label = "tabIconColor"
-                    )
-                    val textColor by animateColorAsState(
-                        targetValue = if (selected) Accent else Muted,
-                        animationSpec = tween(260),
-                        label = "tabTextColor"
+                        label = "tabTint"
                     )
 
                     Box(
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(weights[index].coerceAtLeast(0.01f))
                             .fillMaxHeight()
-                            .clip(RoundedCornerShape(999.dp))
+                            .clip(trackShape)
                             .clickable(
                                 interactionSource = interactionSource,
                                 indication = null
@@ -4220,29 +4227,32 @@ private fun AliveBottomNav(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .scale(contentScale)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.scale(contentScale)
                         ) {
                             Icon(
                                 imageVector = item.icon,
                                 contentDescription = item.title,
-                                tint = iconColor,
-                                modifier = Modifier.size(20.dp)
+                                tint = tint,
+                                modifier = Modifier.size(22.dp)
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = item.title,
-                                color = textColor,
-                                fontSize = 10.sp,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                letterSpacing = (-0.1).sp
-                            )
+                            AnimatedVisibility(
+                                visible = selected,
+                                enter = fadeIn(tween(220, delayMillis = 120)) + expandHorizontally(tween(320)),
+                                exit = fadeOut(tween(90)) + shrinkHorizontally(tween(240))
+                            ) {
+                                Text(
+                                    text = item.title,
+                                    color = tint,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    modifier = Modifier.padding(start = 6.dp)
+                                )
+                            }
                         }
                     }
                 }
