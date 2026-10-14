@@ -73,7 +73,9 @@ private val DarkText = Color(0xFF0A101D)
 // confirmation first, because the ranked attempt cannot be restarted (decision C). Resume starts at once.
 // Practice is offered only when the server says it is available (after the window ended, decision A).
 // After the exam a short line says it was submitted; a practice score is shown only as the server sent it.
-// Not in this slice: leaderboard and review (C7), the lockdown hook (C10).
+// C7 slice 2: a Leaderboard button on every ended contest the student may enter (decision G). It opens
+// CompetitionLeaderboardScreen inside this same screen. The review screen is not here yet (C7 slice 3).
+// The lockdown flag is raised by CompetitionExamScreen (C6 slice 4), not here.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionsHubScreen(
@@ -95,6 +97,8 @@ fun CompetitionsHubScreen(
     var confirmId by remember { mutableStateOf<String?>(null) }
     var actionError by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
+    // C7 slice 2: the contest whose leaderboard is open (null = not open)
+    var leaderboardOf by remember { mutableStateOf<CompetitionSummary?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(reloadKey) {
@@ -127,11 +131,11 @@ fun CompetitionsHubScreen(
         }
     }
 
-    // poll the server every 30 seconds (not while an exam is open)
+    // poll the server every 30 seconds (not while an exam or a leaderboard is open)
     LaunchedEffect(Unit) {
         while (true) {
             delay(30_000L)
-            if (session == null) reloadKey += 1
+            if (session == null && leaderboardOf == null) reloadKey += 1
         }
     }
 
@@ -164,6 +168,7 @@ fun CompetitionsHubScreen(
     }
 
     val active = session
+    val board = leaderboardOf
     if (active != null) {
         CompetitionExamScreen(
             session = active,
@@ -176,6 +181,13 @@ fun CompetitionsHubScreen(
                 session = null
                 reloadKey += 1
             },
+            modifier = Modifier.fillMaxSize()
+        )
+    } else if (board != null) {
+        CompetitionLeaderboardScreen(
+            competitionId = board.id,
+            title = board.title,
+            onBack = { leaderboardOf = null },
             modifier = Modifier.fillMaxSize()
         )
     } else {
@@ -251,7 +263,12 @@ fun CompetitionsHubScreen(
                                     notice = null
                                     confirmId = contestId
                                 },
-                                onCancelJoin = { confirmId = null }
+                                onCancelJoin = { confirmId = null },
+                                onOpenLeaderboard = {
+                                    actionError = null
+                                    notice = null
+                                    leaderboardOf = row.first
+                                }
                             )
                         }
                     }
@@ -262,7 +279,7 @@ fun CompetitionsHubScreen(
 }
 
 // One plain line after an exam. A practice score is shown only when the server sent it; a ranked score is
-// not shown here (results and leaderboard come with C7, after the window ends).
+// not shown here (the leaderboard shows it after the window ends).
 private fun finishedNotice(result: SubmitResult?): String {
     if (result == null) return "Your answers were already submitted."
     val score = result.score
@@ -283,7 +300,8 @@ private fun CompetitionCard(
     confirming: Boolean,
     onStart: (Boolean) -> Unit,
     onAskJoin: () -> Unit,
-    onCancelJoin: () -> Unit
+    onCancelJoin: () -> Unit,
+    onOpenLeaderboard: () -> Unit
 ) {
     val shape = RoundedCornerShape(18.dp)
     val badge = if (display.phase == CompetitionPhase.PAUSED) {
@@ -374,6 +392,8 @@ private fun CompetitionCard(
         }
         val showSecondaryPractice = display.action != CompetitionAction.PRACTICE &&
             display.canPractice && summary.practiceAvailable
+        // C7 slice 2: the leaderboard of an ended contest (decision G: everyone in the audience)
+        val showLeaderboard = display.canViewLeaderboard && summary.canEnter
 
         if (confirming && display.action == CompetitionAction.JOIN) {
             Text(
@@ -412,6 +432,14 @@ private fun CompetitionCard(
                         filled = false,
                         enabled = !busy,
                         onClick = { onStart(false) }
+                    )
+                }
+                if (showLeaderboard) {
+                    CardButton(
+                        label = "Leaderboard",
+                        filled = display.action == CompetitionAction.VIEW_RESULT,
+                        enabled = !busy,
+                        onClick = onOpenLeaderboard
                     )
                 }
             }
