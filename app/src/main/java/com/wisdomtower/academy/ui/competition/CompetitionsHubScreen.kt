@@ -74,7 +74,9 @@ private val DarkText = Color(0xFF0A101D)
 // Practice is offered only when the server says it is available (after the window ended, decision A).
 // After the exam a short line says it was submitted; a practice score is shown only as the server sent it.
 // C7 slice 2: a Leaderboard button on every ended contest the student may enter (decision G). It opens
-// CompetitionLeaderboardScreen inside this same screen. The review screen is not here yet (C7 slice 3).
+// CompetitionLeaderboardScreen inside this same screen.
+// C7 slice 3: a Review button on an ended contest where the student has a ranked attempt. It opens
+// CompetitionReviewScreen inside this same screen (correct answers and solutions, math rendered).
 // The lockdown flag is raised by CompetitionExamScreen (C6 slice 4), not here.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
@@ -97,8 +99,9 @@ fun CompetitionsHubScreen(
     var confirmId by remember { mutableStateOf<String?>(null) }
     var actionError by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
-    // C7 slice 2: the contest whose leaderboard is open (null = not open)
+    // C7: the contest whose leaderboard (slice 2) or review (slice 3) is open (null = not open)
     var leaderboardOf by remember { mutableStateOf<CompetitionSummary?>(null) }
+    var reviewOf by remember { mutableStateOf<CompetitionSummary?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(reloadKey) {
@@ -131,11 +134,11 @@ fun CompetitionsHubScreen(
         }
     }
 
-    // poll the server every 30 seconds (not while an exam or a leaderboard is open)
+    // poll the server every 30 seconds (not while an exam, a leaderboard or a review is open)
     LaunchedEffect(Unit) {
         while (true) {
             delay(30_000L)
-            if (session == null && leaderboardOf == null) reloadKey += 1
+            if (session == null && leaderboardOf == null && reviewOf == null) reloadKey += 1
         }
     }
 
@@ -169,6 +172,7 @@ fun CompetitionsHubScreen(
 
     val active = session
     val board = leaderboardOf
+    val reviewing = reviewOf
     if (active != null) {
         CompetitionExamScreen(
             session = active,
@@ -188,6 +192,13 @@ fun CompetitionsHubScreen(
             competitionId = board.id,
             title = board.title,
             onBack = { leaderboardOf = null },
+            modifier = Modifier.fillMaxSize()
+        )
+    } else if (reviewing != null) {
+        CompetitionReviewScreen(
+            competitionId = reviewing.id,
+            title = reviewing.title,
+            onBack = { reviewOf = null },
             modifier = Modifier.fillMaxSize()
         )
     } else {
@@ -268,6 +279,11 @@ fun CompetitionsHubScreen(
                                     actionError = null
                                     notice = null
                                     leaderboardOf = row.first
+                                },
+                                onOpenReview = {
+                                    actionError = null
+                                    notice = null
+                                    reviewOf = row.first
                                 }
                             )
                         }
@@ -301,7 +317,8 @@ private fun CompetitionCard(
     onStart: (Boolean) -> Unit,
     onAskJoin: () -> Unit,
     onCancelJoin: () -> Unit,
-    onOpenLeaderboard: () -> Unit
+    onOpenLeaderboard: () -> Unit,
+    onOpenReview: () -> Unit
 ) {
     val shape = RoundedCornerShape(18.dp)
     val badge = if (display.phase == CompetitionPhase.PAUSED) {
@@ -394,6 +411,8 @@ private fun CompetitionCard(
             display.canPractice && summary.practiceAvailable
         // C7 slice 2: the leaderboard of an ended contest (decision G: everyone in the audience)
         val showLeaderboard = display.canViewLeaderboard && summary.canEnter
+        // C7 slice 3: the review, only for a student who has a ranked attempt in an ended contest
+        val showReview = display.action == CompetitionAction.VIEW_RESULT
 
         if (confirming && display.action == CompetitionAction.JOIN) {
             Text(
@@ -440,6 +459,14 @@ private fun CompetitionCard(
                         filled = display.action == CompetitionAction.VIEW_RESULT,
                         enabled = !busy,
                         onClick = onOpenLeaderboard
+                    )
+                }
+                if (showReview) {
+                    CardButton(
+                        label = "Review",
+                        filled = false,
+                        enabled = !busy,
+                        onClick = onOpenReview
                     )
                 }
             }
