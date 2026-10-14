@@ -1089,7 +1089,6 @@ fun MainScreen(
         }
     }
 
-    var showNotificationSettingsDialog by remember { mutableStateOf(false) }
     var showTimerControlDialog by remember { mutableStateOf(false) }
     var studyPageReturnUrl by remember { mutableStateOf("") }
     var previousTimerRunning by remember { mutableStateOf(false) }
@@ -2440,7 +2439,7 @@ fun MainScreen(
                                 @JavascriptInterface
                                 fun openNotificationSettings() {
                                     mainHandler.post {
-                                        showNotificationSettingsDialog = true
+                                        selectedIndex = 4 // Settings tab: notification switches live there now
                                     }
                                 }
 
@@ -4002,33 +4001,6 @@ fun MainScreen(
                             Spacer(modifier = Modifier.height(4.dp))
 
                             Text(
-                                text = "NOTIFICATIONS & PREFERENCES",
-                                color = Accent.copy(alpha = 0.8f),
-                                fontSize = 9.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
-                            )
-
-                            DrawerCompactRow(
-                                icon = Icons.Filled.Notifications,
-                                label = "Notification Settings",
-                                onClick = {
-                                    menuExpanded = false
-                                    showNotificationSettingsDialog = true
-                                }
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(CardBorderSubtle)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                            Text(
                                 text = "SUPPORT & ABOUT",
                                 color = Accent.copy(alpha = 0.8f),
                                 fontSize = 9.5.sp,
@@ -4074,12 +4046,6 @@ fun MainScreen(
                     }
                 }
             }
-        }
-
-        if (showNotificationSettingsDialog) {
-            NotificationSettingsDialog(
-                onDismiss = { showNotificationSettingsDialog = false }
-            )
         }
 
         if (showTimerControlDialog) {
@@ -4500,175 +4466,6 @@ private fun DrawerCompactRow(
             contentDescription = null,
             tint = Muted.copy(alpha = 0.35f),
             modifier = Modifier.size(11.dp)
-        )
-    }
-}
-
-@Composable
-private fun NotificationSettingsDialog(
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    var timerEnabled by remember { mutableStateOf(AcademyNotificationManager.isTimerEnabled(context)) }
-    var plannerEnabled by remember { mutableStateOf(AcademyNotificationManager.isPlannerEnabled(context)) }
-    var goalsEnabled by remember { mutableStateOf(AcademyNotificationManager.isGoalsEnabled(context)) }
-    var updatesEnabled by remember { mutableStateOf(AcademyNotificationManager.isUpdatesEnabled(context)) }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            color = CardSurface,
-            shape = RoundedCornerShape(20.dp),
-            border = BorderStroke(1.dp, CardBorder),
-            shadowElevation = 24.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(30.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0x2622E0FF)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Notifications,
-                                contentDescription = null,
-                                tint = Accent,
-                                modifier = Modifier.size(17.dp)
-                            )
-                        }
-                        Text(
-                            text = "Notification Settings",
-                            color = Color.White,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
-                        Icon(imageVector = Icons.Filled.Close, contentDescription = "Close", tint = Muted, modifier = Modifier.size(18.dp))
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(CardBorderSubtle))
-                Spacer(modifier = Modifier.height(12.dp))
-
-                NotificationToggleItem(
-                    title = "Study Timer Rewards",
-                    description = "Warm completion alerts with rewarding messages when sessions end",
-                    checked = timerEnabled,
-                    onCheckedChange = {
-                        timerEnabled = it
-                        AcademyNotificationManager.setSetting(context, AcademyNotificationManager.KEY_TIMER_ENABLED, it)
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                NotificationToggleItem(
-                    title = "Planner & Deadlines",
-                    description = "Personalized due-time reminders for scheduled study tasks",
-                    checked = plannerEnabled,
-                    onCheckedChange = {
-                        plannerEnabled = it
-                        AcademyNotificationManager.setSetting(context, AcademyNotificationManager.KEY_PLANNER_ENABLED, it)
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                NotificationToggleItem(
-                    title = "Daily Goal Nudges",
-                    description = "Caring, encouraging check-ins when under your daily study target",
-                    checked = goalsEnabled,
-                    onCheckedChange = {
-                        goalsEnabled = it
-                        AcademyNotificationManager.setSetting(context, AcademyNotificationManager.KEY_GOALS_ENABLED, it)
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                NotificationToggleItem(
-                    title = "Academy Announcements",
-                    description = "New materials, exam schedules, and curriculum updates",
-                    checked = updatesEnabled,
-                    onCheckedChange = {
-                        updatesEnabled = it
-                        AcademyNotificationManager.setSetting(context, AcademyNotificationManager.KEY_UPDATES_ENABLED, it)
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = Accent),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth().height(40.dp)
-                ) {
-                    Text(
-                        text = "Save Preferences",
-                        color = Color(0xFF04101A),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.5.sp
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun NotificationToggleItem(
-    title: String,
-    description: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 10.dp)) {
-            Text(
-                text = title,
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = description,
-                color = Muted,
-                fontSize = 10.5.sp,
-                lineHeight = 14.sp
-            )
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color(0xFF04101A),
-                checkedTrackColor = Accent,
-                uncheckedThumbColor = Muted,
-                uncheckedTrackColor = Color(0x33FFFFFF)
-            )
         )
     }
 }

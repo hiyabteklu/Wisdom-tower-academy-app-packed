@@ -68,6 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wisdomtower.academy.AcademyNotificationManager
 import com.wisdomtower.academy.data.auth.AccountCallResult
 import com.wisdomtower.academy.data.auth.AuthStateManager
 import com.wisdomtower.academy.data.auth.SupabaseAccountClient
@@ -149,8 +150,12 @@ fun SettingsScreen(
     var savingGoals by remember { mutableStateOf(false) }
 
     // Section 2: Notifications
-    var notifDailyStudy by remember { mutableStateOf(prefsStorage.getBoolean("notif_daily_study", true)) }
-    var notifExams by remember { mutableStateOf(prefsStorage.getBoolean("notif_exams", true)) }
+    // These four are the switches the app really obeys (AcademyNotificationManager): the study timer alert,
+    // planner reminders, daily goal nudge and academy announcements (pushes).
+    var notifTimer by remember { mutableStateOf(AcademyNotificationManager.isTimerEnabled(context)) }
+    var notifPlanner by remember { mutableStateOf(AcademyNotificationManager.isPlannerEnabled(context)) }
+    var notifDailyStudy by remember { mutableStateOf(AcademyNotificationManager.isGoalsEnabled(context)) }
+    var notifExams by remember { mutableStateOf(AcademyNotificationManager.isUpdatesEnabled(context)) }
     var notifWeeklyDigest by remember { mutableStateOf(prefsStorage.getBoolean("notif_weekly_digest", true)) }
 
     // Section 3: Game Sound
@@ -529,7 +534,7 @@ fun SettingsScreen(
                             checked = notifDailyStudy,
                             onCheckedChange = {
                                 notifDailyStudy = it
-                                prefsStorage.edit().putBoolean("notif_daily_study", it).apply()
+                                AcademyNotificationManager.setSetting(context, AcademyNotificationManager.KEY_GOALS_ENABLED, it)
                             }
                         )
 
@@ -539,7 +544,7 @@ fun SettingsScreen(
                             checked = notifExams,
                             onCheckedChange = {
                                 notifExams = it
-                                prefsStorage.edit().putBoolean("notif_exams", it).apply()
+                                AcademyNotificationManager.setSetting(context, AcademyNotificationManager.KEY_UPDATES_ENABLED, it)
                             }
                         )
 
@@ -550,6 +555,26 @@ fun SettingsScreen(
                             onCheckedChange = {
                                 notifWeeklyDigest = it
                                 prefsStorage.edit().putBoolean("notif_weekly_digest", it).apply()
+                            }
+                        )
+
+                        ToggleRow(
+                            title = "Study Timer Rewards",
+                            subtitle = "Warm completion alerts with rewarding messages when sessions end",
+                            checked = notifTimer,
+                            onCheckedChange = {
+                                notifTimer = it
+                                AcademyNotificationManager.setSetting(context, AcademyNotificationManager.KEY_TIMER_ENABLED, it)
+                            }
+                        )
+
+                        ToggleRow(
+                            title = "Planner & Deadlines",
+                            subtitle = "Personalized due-time reminders for scheduled study tasks",
+                            checked = notifPlanner,
+                            onCheckedChange = {
+                                notifPlanner = it
+                                AcademyNotificationManager.setSetting(context, AcademyNotificationManager.KEY_PLANNER_ENABLED, it)
                             }
                         )
                     }
