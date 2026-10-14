@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="katex/katex.min.css">
+<link rel="stylesheet" href="richtext.css">
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; padding: 0; background: #0a101d; }
+  body { color: #cbd5e1; font: 15px/1.55 -apple-system, Roboto, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+  #root { padding: 2px 2px 16px; max-width: 680px; margin: 0 auto; overflow-wrap: anywhere; }
+  .msg { text-align: center; color: #94a3b8; padding: 40px 0; font-size: .9rem; }
+
+  /* same look as competition.html (the exam page): question card, prompt, choices */
+  .qcard { border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 14px; background: linear-gradient(160deg, #131f38, #0e172a 60%, #0a101d); }
+  .prompt { color: #fff; font-weight: 700; margin-bottom: 12px; font-family: var(--wt-content-font-family, "WT Tinos", serif); font-style: var(--wt-content-font-style, italic); font-size: var(--wt-content-size-question, 17px); line-height: var(--wt-content-line-question, 26px); }
+  .prompt .study-p { margin: 0 0 .5em; }
+  .note { color: #94a3b8; font-size: .8rem; margin: 0 0 10px; }
+  .crow { display: flex; align-items: center; margin-bottom: 8px; }
+  .choice { width: 100%; text-align: left; display: flex; align-items: baseline; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: rgba(255,255,255,.9); font-size: .85rem; font-weight: 600; box-sizing: border-box; }
+  .choice .cl { color: #fcd34d; font-weight: 800; flex: none; font-style: normal; }
+  .choice .ct { min-width: 0; flex: 1; font-family: var(--wt-content-font-family, "WT Tinos", serif); font-style: var(--wt-content-font-style, italic); font-size: var(--wt-content-size-option, 16px); line-height: var(--wt-content-line-option, 24px); }
+  .choice.ok { border-color: #22c55e; background: rgba(34,197,94,.15); color: #fff; }
+  .choice.bad { border-color: #f87171; background: rgba(248,113,113,.15); color: #fff; }
+  .tag { flex: none; font-size: .62rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; font-style: normal; }
+  .tag.ok { color: #4ade80; }
+  .tag.bad { color: #fca5a5; }
+  .sol { margin-top: 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 14px; background: rgba(255,255,255,.03); }
+  .sol h3 { margin: 0 0 8px; color: #22e0ff; font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; }
+  .sol .study-p { margin: 0 0 .5em; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="katex/katex.min.js"></script>
+<script src="richtext.js"></script>
+<script>
+/*
+ * Competition review page (C7 slice 3). Shows ONE reviewed question: the prompt, the choices with the correct
+ * one in green and a wrong pick in red, and the solution, math included, through the same local KaTeX renderer as
+ * the exam page (richtext.js: WTRich.render for prompt and solution, WTRich.renderInline for each choice).
+ * The app calls window.setReview(jsonText) with { id, prompt, choices, correct, chosen (-1 = none), solution }.
+ * The server only sends correct answers and solutions after the competition window has closed.
+ * Nothing is typed here that the server did not send: an empty solution shows no solution block.
+ * No network, no navigation, no taps.
+ */
+(function () {
+  var root = document.getElementById("root");
+  var cur = null, lastId = null;
+
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function R(t) { try { return window.WTRich.render(String(t == null ? "" : t)); } catch (e) { return esc(t); } }
+  function RI(t) { try { return window.WTRich.renderInline(String(t == null ? "" : t)); } catch (e) { return esc(t); } }
+  function cleanChoice(c) { return String(c == null ? "" : c).replace(/^[A-Da-d][.)]\s*/, "").replace(/[\r\n]+/g, " ").trim(); }
+  function letter(i) { return String.fromCharCode(65 + i); }
+
+  function draw() {
+    if (!cur) return;
+    var keep = (lastId === cur.id) ? (window.pageYOffset || 0) : 0;
+    var choices = Array.isArray(cur.choices) ? cur.choices : [];
+    var chosen = (typeof cur.chosen === "number") ? cur.chosen : -1;
+    var h = '<div class="qcard"><div class="prompt">' + R(cur.prompt) + "</div>";
+    if (chosen < 0) h += '<p class="note">You did not answer this question.</p>';
+    var i, isOk, isBad, cls, tag;
+    for (i = 0; i < choices.length; i++) {
+      isOk = (cur.correct === i);
+      isBad = (chosen === i && chosen !== cur.correct);
+      cls = "choice" + (isOk ? " ok" : (isBad ? " bad" : ""));
+      tag = "";
+      if (isOk) tag = '<span class="tag ok">' + (chosen === i ? "Your answer, correct" : "Correct answer") + "</span>";
+      else if (isBad) tag = '<span class="tag bad">Your answer</span>';
+      h += '<div class="crow"><div class="' + cls + '"><span class="cl">' + letter(i) + '.</span><span class="ct">' + RI(cleanChoice(choices[i])) + "</span>" + tag + "</div></div>";
+    }
+    h += "</div>";
+    if (cur.solution && String(cur.solution).trim().length > 0) {
+      h += '<div class="sol"><h3>Solution</h3><div class="prompt-sol">' + R(cur.solution) + "</div></div>";
+    }
+    root.innerHTML = h;
+    window.scrollTo(0, keep);
+    lastId = cur.id;
+  }
+
+  window.setReview = function (text) {
+    try {
+      cur = JSON.parse(text || "{}");
+      draw();
+    } catch (e) {
+      root.innerHTML = '<p class="msg">Could not display this question.</p>';
+    }
+  };
+})();
+</script>
+</body>
+</html>
