@@ -19,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,8 +33,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.data.competition.CompetitionRepository
 import com.wisdomtower.academy.data.competition.CompetitionResult
+import com.wisdomtower.academy.data.competition.ExamLockdown
+import com.wisdomtower.academy.data.competition.ReviewQuestion
 import com.wisdomtower.academy.data.competition.ReviewResult
+import com.wisdomtower.academy.data.content.AiExplainRepository
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 
 private val RvCardBg = Color(0xFF131F38)
 private val RvCyan = Color(0xFF22E0FF)
@@ -44,7 +52,10 @@ private val RvDarkText = Color(0xFF0A101D)
 // CompetitionRepository.review (the server refuses it earlier, the plain message is shown), then shows one
 // question at a time through CompetitionReviewView (math rendered): the correct answer, the student's pick and
 // the solution, all exactly as the server sent them. Previous and Next move between questions.
-// Not here yet: the Explain with AI button (a later slice; it must stay off while a ranked exam runs).
+// C7 slice 4: Explain with AI button (owner decision Q10). It calls AiExplainRepository.explain with the same body
+// the quiz page sends (mode question, text, question, choices, studentAnswer, correctAnswer, solution). The answer
+// is kept per question for this screen only (nothing is stored) and is shown in the review page with math rendered.
+// The button is not shown while ExamLockdown.active is true (a ranked exam is running).
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionReviewScreen(
@@ -58,6 +69,9 @@ fun CompetitionReviewScreen(
     var errorText by remember(competitionId) { mutableStateOf<String?>(null) }
     var reloadKey by remember(competitionId) { mutableIntStateOf(0) }
     var index by remember(competitionId) { mutableIntStateOf(0) }
+    val explanations = remember(competitionId) { mutableStateMapOf<String, String>() }
+    var explainingId by remember(competitionId) { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(competitionId, reloadKey) {
         loading = true
@@ -131,8 +145,33 @@ fun CompetitionReviewScreen(
                     solution = q.solution,
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxWidth()
+                        .fillMaxWidth(),
+                    explanation = explanations[q.id] ?: ""
                 )
+                if (!ExamLockdown.active) {
+                    val busy = explainingId != null
+                    val explainLabel = if (explainingId == q.id) {
+                        "Explaining..."
+                    } else if (explanations.containsKey(q.id)) {
+                        "Explain again"
+                    } else {
+                        "Explain with AI"
+                    }
+                    RvButton(
+                        label = explainLabel,
+                        filled = false,
+                        enabled = !busy,
+                        onClick = {
+                            val asked = q
+                            scope.launch {
+                                explainingId = asked.id
+                                val answer = AiExplainRepository.explain(buildExplainPayload(asked))
+                                explanations[asked.id] = answer
+                                explainingId = null
+                            }
+                        }
+                    )
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     RvButton(
                         label = "Previous",
@@ -150,6 +189,24 @@ fun CompetitionReviewScreen(
             }
         }
     }
+}
+
+// The body the website's quiz page sends to /api/ai/explain, built only from what the server sent for this question.
+private fun buildExplainPayload(q: ReviewQuestion): String {
+    val list = JSONArray()
+    for (c in q.choices) list.put(c)
+    val picked = q.chosen
+    val student = if (picked != null && picked >= 0 && picked < q.choices.size) q.choices[picked] else "(not answered)"
+    val right = if (q.correct >= 0 && q.correct < q.choices.size) q.choices[q.correct] else ""
+    return JSONObject()
+        .put("mode", "question")
+        .put("text", q.prompt)
+        .put("question", q.prompt)
+        .put("choices", list)
+        .put("studentAnswer", student)
+        .put("correctAnswer", right)
+        .put("solution", q.solution)
+        .toString()
 }
 
 @Composable

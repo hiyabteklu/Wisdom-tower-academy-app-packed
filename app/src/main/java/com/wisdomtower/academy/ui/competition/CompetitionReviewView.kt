@@ -21,6 +21,8 @@ import org.json.JSONObject
 // The page has no taps and no bridge, no network (blockNetworkLoads) and ignores every link.
 // The correct answer and the solution only reach this view after the server closed the window (the server
 // refuses competition_review before that).
+// C7 slice 4: the optional explanation parameter is the text of an AI explanation (empty when there is none);
+// the page shows it in its own block, math rendered.
 // Status: written, not compiled, not seen on a device.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @SuppressLint("SetJavaScriptEnabled")
@@ -32,12 +34,13 @@ fun CompetitionReviewView(
     correct: Int,
     chosen: Int?,
     solution: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    explanation: String = ""
 ) {
     val webRef = remember { arrayOfNulls<WebView>(1) }
     var pageReady by remember { mutableStateOf(false) }
 
-    val payload = remember(questionId, prompt, choices, correct, chosen, solution) {
+    val payload = remember(questionId, prompt, choices, correct, chosen, solution, explanation) {
         val list = JSONArray()
         for (choice in choices) list.put(choice)
         JSONObject()
@@ -47,6 +50,7 @@ fun CompetitionReviewView(
             .put("correct", correct)
             .put("chosen", chosen ?: -1)
             .put("solution", solution)
+            .put("explanation", explanation)
             .toString()
     }
 

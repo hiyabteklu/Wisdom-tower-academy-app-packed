@@ -29,6 +29,7 @@
   .sol { margin-top: 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 14px; background: rgba(255,255,255,.03); }
   .sol h3 { margin: 0 0 8px; color: #22e0ff; font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; }
   .sol .study-p { margin: 0 0 .5em; }
+  .sol.ai h3 { color: #a78bfa; }
 </style>
 </head>
 <body>
@@ -37,12 +38,15 @@
 <script src="richtext.js"></script>
 <script>
 /*
- * Competition review page (C7 slice 3). Shows ONE reviewed question: the prompt, the choices with the correct
- * one in green and a wrong pick in red, and the solution, math included, through the same local KaTeX renderer as
- * the exam page (richtext.js: WTRich.render for prompt and solution, WTRich.renderInline for each choice).
- * The app calls window.setReview(jsonText) with { id, prompt, choices, correct, chosen (-1 = none), solution }.
+ * Competition review page (C7 slice 3, slice 4 added the AI explanation block). Shows ONE reviewed question: the
+ * prompt, the choices with the correct one in green and a wrong pick in red, and the solution, math included,
+ * through the same local KaTeX renderer as the exam page (richtext.js: WTRich.render for prompt, solution and
+ * explanation, WTRich.renderInline for each choice).
+ * The app calls window.setReview(jsonText) with { id, prompt, choices, correct, chosen (-1 = none), solution,
+ * explanation }. explanation is the text the AI route returned when the student tapped Explain with AI, or empty.
  * The server only sends correct answers and solutions after the competition window has closed.
- * Nothing is typed here that the server did not send: an empty solution shows no solution block.
+ * Nothing is typed here that the server did not send: an empty solution shows no solution block, an empty
+ * explanation shows no explanation block.
  * No network, no navigation, no taps.
  */
 (function () {
@@ -75,6 +79,9 @@
     h += "</div>";
     if (cur.solution && String(cur.solution).trim().length > 0) {
       h += '<div class="sol"><h3>Solution</h3><div class="prompt-sol">' + R(cur.solution) + "</div></div>";
+    }
+    if (cur.explanation && String(cur.explanation).trim().length > 0) {
+      h += '<div class="sol ai"><h3>AI explanation</h3><div class="prompt-sol">' + R(cur.explanation) + "</div></div>";
     }
     root.innerHTML = h;
     window.scrollTo(0, keep);
