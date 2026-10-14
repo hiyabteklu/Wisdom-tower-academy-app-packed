@@ -508,6 +508,11 @@ fun SettingsScreen(
                 }
             }
 
+            // T8: My Subjects (which subjects "Your status" counts)
+            item(key = "section_my_subjects") {
+                MySubjectsSection()
+            }
+
             // SECTION 2: Notifications & Study Alerts
             item(key = "section_2_notifs") {
                 SettingsAccordionCard(
