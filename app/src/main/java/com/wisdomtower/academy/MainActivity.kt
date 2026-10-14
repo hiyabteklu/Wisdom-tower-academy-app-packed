@@ -2075,11 +2075,10 @@ fun MainScreen(
                                 },
                                 modifier = Modifier.size(44.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Filled.EmojiEvents,
-                                    contentDescription = "Competitions",
+                                // C5-trophy-dot: same trophy icon, plus a red dot while a contest is new to the student
+                                com.wisdomtower.academy.ui.competition.CompetitionTrophyIcon(
                                     tint = Accent,
-                                    modifier = Modifier.size(22.dp)
+                                    refreshKey = showCompetitions
                                 )
                             }
 
