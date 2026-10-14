@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.data.competition.CompetitionAction
 import com.wisdomtower.academy.data.competition.CompetitionDisplay
+import com.wisdomtower.academy.data.competition.CompetitionError
 import com.wisdomtower.academy.data.competition.CompetitionPhase
 import com.wisdomtower.academy.data.competition.CompetitionPhaseLogic
 import com.wisdomtower.academy.data.competition.CompetitionRepository
@@ -77,6 +78,9 @@ private val DarkText = Color(0xFF0A101D)
 // CompetitionLeaderboardScreen inside this same screen.
 // C7 slice 3: a Review button on an ended contest where the student has a ranked attempt. It opens
 // CompetitionReviewScreen inside this same screen (correct answers and solutions, math rendered).
+// Session P: a live contest this student cannot take part in (not in the audience, package missing, or
+// disqualified) shows one plain line saying why, instead of a card with no explanation. The wording is the
+// same as the repository's error messages.
 // The lockdown flag is raised by CompetitionExamScreen (C6 slice 4), not here.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
@@ -306,6 +310,14 @@ private fun finishedNotice(result: SubmitResult?): String {
     return "Your answers were submitted."
 }
 
+// Session P: why a live contest is closed to this student. Same wording as the repository's error messages.
+private fun blockedText(reason: CompetitionError?): String = when (reason) {
+    CompetitionError.NOT_ALLOWED_PACKAGE -> "This competition is not included in your account."
+    CompetitionError.NOT_ALLOWED_AUDIENCE -> "This competition is not available for your level."
+    CompetitionError.DISQUALIFIED -> "You were disqualified from this competition."
+    else -> "You cannot take part in this competition."
+}
+
 @Composable
 private fun CompetitionCard(
     summary: CompetitionSummary,
@@ -398,6 +410,14 @@ private fun CompetitionCard(
 
         if (display.action == CompetitionAction.SUBMITTED) {
             Text(text = "Submitted", color = LiveGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+        if (display.action == CompetitionAction.BLOCKED) {
+            Text(
+                text = blockedText(display.blockedReason),
+                color = ErrorRed,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
 
         // C6 slice 3: the buttons. Join asks first (the ranked attempt cannot be restarted).
