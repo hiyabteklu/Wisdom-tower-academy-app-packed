@@ -1,9 +1,14 @@
 package com.wisdomtower.academy.ui.home
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,10 +35,17 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +56,7 @@ import com.wisdomtower.academy.ui.packages.ENTRANCE_IMAGE_ASSET
 import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
+import com.wisdomtower.academy.ui.theme.OutfitFontFamily
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
 import com.wisdomtower.academy.ui.theme.WisdomAccentFuchsia
@@ -55,10 +68,11 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentSky
 import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
-import com.wisdomtower.academy.ui.theme.WisdomModernCard
+import com.wisdomtower.academy.ui.theme.WisdomGlassFill
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import com.wisdomtower.academy.ui.theme.WisdomSecondaryButton
 import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
+import kotlinx.coroutines.delay
 
 data class ProgramItem(
     val id: String,
@@ -236,14 +250,16 @@ fun HomeScreen(
                 OpenCard(program.name, program.assetImage) { onNavigateToUrl(program.path) }
             }
 
-            // 4. "Other resources" heading & 2-column grid
+            // 4. "Other resources" heading & 2-column grid (2026-10-14: heavy 26 sp heading, big pill tiles, 18 sp titles)
             item(key = "resources_header") {
                 Text(
                     text = "Other resources",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontFamily = OutfitFontFamily,
+                    fontSize = 26.sp,
+                    lineHeight = 31.sp,
+                    fontWeight = FontWeight.Black,
                     color = WisdomTextPrimary,
-                    modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
+                    modifier = Modifier.padding(top = 10.dp, bottom = 2.dp)
                 )
             }
 
@@ -256,18 +272,20 @@ fun HomeScreen(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Box(modifier = Modifier.weight(1f)) {
-                        ResourceCompactCard(
+                        ResourceTile(
                             resource = first,
+                            index = rowIndex * 2,
                             onClick = { onNavigateToUrl(first.path) }
                         )
                     }
                     if (second != null) {
                         Box(modifier = Modifier.weight(1f)) {
-                            ResourceCompactCard(
+                            ResourceTile(
                                 resource = second,
+                                index = rowIndex * 2 + 1,
                                 onClick = { onNavigateToUrl(second.path) }
                             )
                         }
@@ -372,69 +390,101 @@ private fun HeroSection(
     }
 }
 
+/**
+ * "Other resources" tile (2026-10-14, iOS style): big rounded glass tile tinted with the guide's colour, a round icon,
+ * a heavy 18 sp title (two lines reserved so both tiles of a row are equally tall), and a round arrow. It rises in
+ * softly when it first appears and presses in like the login button. Titles are the website's, unchanged.
+ */
 @Composable
-private fun ResourceCompactCard(
+private fun ResourceTile(
     resource: ResourceGuide,
+    index: Int,
     onClick: () -> Unit
 ) {
-    WisdomModernCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 12.dp,
-        borderColor = WisdomBorderWhite,
-        onClick = onClick
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) 0.96f else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 500f),
+        label = "resourceTilePress"
+    )
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(minOf(index, 6) * 60L)
+        shown = true
+    }
+    val enter by animateFloatAsState(
+        targetValue = if (shown) 1f else 0f,
+        animationSpec = tween(durationMillis = 420),
+        label = "resourceTileEnter"
+    )
+    val accent = resource.accentColor
+    val shape = RoundedCornerShape(28.dp)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                alpha = enter
+                translationY = (1f - enter) * 32f
+                scaleX = pressScale
+                scaleY = pressScale
+            }
+            .clip(shape)
+            .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.18f), WisdomGlassFill)))
+            .border(BorderStroke(1.dp, accent.copy(alpha = 0.4f)), shape)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Small icon tile
             Box(
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(resource.accentColor.copy(alpha = 0.12f))
-                    .border(BorderStroke(1.dp, resource.accentColor.copy(alpha = 0.35f)), RoundedCornerShape(8.dp)),
+                    .size(52.dp)
+                    .clip(CircleShape)
+                    .background(accent.copy(alpha = 0.2f))
+                    .border(BorderStroke(1.dp, accent.copy(alpha = 0.5f)), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = resource.icon,
                     contentDescription = null,
-                    tint = resource.accentColor,
-                    modifier = Modifier.size(18.dp)
+                    tint = accent,
+                    modifier = Modifier.size(28.dp)
                 )
             }
 
-            // Title
-            Text(
-                text = resource.name,
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = 15.sp,
-                modifier = Modifier.weight(1f)
-            )
-
-            // Small round arrow badge on the right matching website span.rounded-full
             Box(
                 modifier = Modifier
-                    .size(22.dp)
+                    .size(34.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.04f))
-                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), CircleShape),
+                    .background(Color.White.copy(alpha = 0.06f))
+                    .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = null,
-                    tint = WisdomMuted,
-                    modifier = Modifier.size(11.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
+
+        Text(
+            text = resource.name,
+            fontFamily = OutfitFontFamily,
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.ExtraBold,
+            lineHeight = 22.sp,
+            minLines = 2,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }

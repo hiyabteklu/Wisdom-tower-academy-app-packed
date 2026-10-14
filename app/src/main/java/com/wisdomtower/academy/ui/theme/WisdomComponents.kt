@@ -1,10 +1,13 @@
 package com.wisdomtower.academy.ui.theme
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +34,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -40,9 +45,31 @@ import androidx.compose.ui.unit.sp
  */
 
 /**
+ * Soft press-in used by the tappable controls (iOS feel, same spring as the login button: scale down a little while the
+ * finger is down, springy return). It must be the FIRST modifier of the element so the whole element (shape included)
+ * scales. Added 2026-10-14 (docs/SESSION_2026-10-14_resources_ios.md).
+ */
+@Composable
+fun Modifier.wisdomPressScale(source: MutableInteractionSource, pressedScale: Float = 0.96f): Modifier {
+    val pressed by source.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) pressedScale else 1f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 500f),
+        label = "wisdomPressScale"
+    )
+    return this.graphicsLayer {
+        scaleX = scale
+        scaleY = scale
+    }
+}
+
+/**
  * GLASS (2026-10-13, owner request, docs/GLASS_PLAN.md area 5): the default card is now the see-through glass of the
  * Targets screen (white 4% fill, white 8% edge, see WisdomGlass.kt), so every screen that still calls this card
  * follows the glass look. An explicit borderColor passed by a caller (accent edges) is kept.
+ *
+ * 2026-10-14: a card that is tappable ([onClick] given) now presses in softly (scale 0.975). A card without [onClick]
+ * is exactly as before (no extra state, so long lists stay cheap).
  */
 @Composable
 fun WisdomModernCard(
@@ -54,24 +81,33 @@ fun WisdomModernCard(
     content: @Composable BoxScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(cornerRadius)
-    val clickModifier = if (onClick != null) {
-        Modifier.clickable(
-            interactionSource = remember { MutableInteractionSource() },
-            indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
-            onClick = onClick
+    if (onClick == null) {
+        Box(
+            modifier = modifier
+                .clip(shape)
+                .background(WisdomGlassFill)
+                .border(BorderStroke(borderWidth, borderColor), shape),
+            content = content
         )
-    } else Modifier
-
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .background(WisdomGlassFill)
-            .border(BorderStroke(borderWidth, borderColor), shape)
-            .then(clickModifier),
-        content = content
-    )
+    } else {
+        val interaction = remember { MutableInteractionSource() }
+        Box(
+            modifier = modifier
+                .wisdomPressScale(interaction, 0.975f)
+                .clip(shape)
+                .background(WisdomGlassFill)
+                .border(BorderStroke(borderWidth, borderColor), shape)
+                .clickable(
+                    interactionSource = interaction,
+                    indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
+                    onClick = onClick
+                ),
+            content = content
+        )
+    }
 }
 
+/** Pill shaped (2026-10-14, iOS feel) with a soft press-in. Size and colours unchanged. */
 @Composable
 fun WisdomPrimaryButton(
     text: String,
@@ -79,17 +115,19 @@ fun WisdomPrimaryButton(
     modifier: Modifier = Modifier,
     icon: (@Composable () -> Unit)? = null
 ) {
-    val shape = RoundedCornerShape(12.dp)
+    val shape = CircleShape
+    val interaction = remember { MutableInteractionSource() }
     Row(
         modifier = modifier
+            .wisdomPressScale(interaction, 0.97f)
             .clip(shape)
             .background(WisdomPrimaryBtnGradient)
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interaction,
                 indication = ripple(color = Color.White.copy(alpha = 0.3f)),
                 onClick = onClick
             )
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 22.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -105,6 +143,7 @@ fun WisdomPrimaryButton(
     }
 }
 
+/** Pill shaped (2026-10-14, iOS feel) with a soft press-in. Size and colours unchanged. */
 @Composable
 fun WisdomSecondaryButton(
     text: String,
@@ -114,18 +153,20 @@ fun WisdomSecondaryButton(
     textColor: Color = WisdomTextPrimary,
     icon: (@Composable () -> Unit)? = null
 ) {
-    val shape = RoundedCornerShape(12.dp)
+    val shape = CircleShape
+    val interaction = remember { MutableInteractionSource() }
     Row(
         modifier = modifier
+            .wisdomPressScale(interaction, 0.97f)
             .clip(shape)
             .border(BorderStroke(1.dp, borderColor), shape)
             .background(WisdomGlassFillStrong)
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interaction,
                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
                 onClick = onClick
             )
-            .padding(horizontal = 18.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
@@ -142,7 +183,7 @@ fun WisdomSecondaryButton(
 }
 
 /**
- * Compact pill button (.btn-open) used across all pathway cards.
+ * Compact pill button (.btn-open) used across all pathway cards. Soft press-in added 2026-10-14.
  */
 @Composable
 fun WisdomOpenButton(
@@ -150,18 +191,20 @@ fun WisdomOpenButton(
     modifier: Modifier = Modifier,
     label: String = "Open →"
 ) {
-    val shape = RoundedCornerShape(20.dp)
+    val shape = CircleShape
+    val interaction = remember { MutableInteractionSource() }
     Box(
         modifier = modifier
+            .wisdomPressScale(interaction, 0.94f)
             .clip(shape)
             .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.5f)), shape)
             .background(WisdomCyan.copy(alpha = 0.08f))
             .clickable(
-                interactionSource = remember { MutableInteractionSource() },
+                interactionSource = interaction,
                 indication = ripple(color = WisdomCyan.copy(alpha = 0.3f)),
                 onClick = onClick
             )
-            .padding(horizontal = 10.dp, vertical = 4.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
