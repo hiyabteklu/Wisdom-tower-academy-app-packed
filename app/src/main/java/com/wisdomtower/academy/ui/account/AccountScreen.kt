@@ -93,6 +93,7 @@ import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.data.auth.AuthStateManager
 import com.wisdomtower.academy.data.model.UserProfile
 import com.wisdomtower.academy.ui.auth.NativeSignInScreen
+import com.wisdomtower.academy.ui.competition.CompetitionPointsCard
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
@@ -205,6 +206,8 @@ private val PillOnAccent = Color(0xFF06101F)
  *   three profile sections with avatar grid and wrapping pill selectors (nothing is cut off to the right),
  *   Save, and Log Out as the LAST item. The student ID card, the "tap to flip" button and the
  *   folio / status / preferences / log-out box were removed.
+ * - Competition points (owner decision B, session O): a small card above the profile panel with the
+ *   cumulative competition points total from the server (ui/competition/CompetitionPointsCard.kt).
  *
  * S4 item d: no invented defaults (stream, region) and no invented enrollment card.
  * Not ported: the website's Admin button (shown only for admin e-mails).
@@ -254,6 +257,10 @@ fun AccountScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item(key = "competition_points") {
+                CompetitionPointsCard()
+            }
+
             item(key = "my_profile_panel") {
                 MyProfilePanel(
                     profile = currentProfile,
