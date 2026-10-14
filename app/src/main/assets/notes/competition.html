@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="katex/katex.min.css">
+<link rel="stylesheet" href="richtext.css">
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; padding: 0; background: #0a101d; }
+  body { color: #cbd5e1; font: 15px/1.55 -apple-system, Roboto, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+  #root { padding: 2px 2px 16px; max-width: 680px; margin: 0 auto; overflow-wrap: anywhere; }
+  button { font-family: inherit; cursor: pointer; }
+  .msg { text-align: center; color: #94a3b8; padding: 40px 0; font-size: .9rem; }
+
+  /* same look as the hub quiz page (quiz.html): question card, prompt, choices */
+  .qcard { border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 14px; background: linear-gradient(160deg, #131f38, #0e172a 60%, #0a101d); }
+  .prompt { color: #fff; font-weight: 700; margin-bottom: 12px; font-family: var(--wt-content-font-family, "WT Tinos", serif); font-style: var(--wt-content-font-style, italic); font-size: var(--wt-content-size-question, 17px); line-height: var(--wt-content-line-question, 26px); }
+  .prompt .study-p { margin: 0 0 .5em; }
+  .crow { display: flex; align-items: center; margin-bottom: 8px; }
+  .choice { width: 100%; text-align: left; display: flex; align-items: baseline; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: rgba(255,255,255,.9); font-size: .85rem; font-weight: 600; }
+  .choice .cl { color: #fcd34d; font-weight: 800; flex: none; font-style: normal; }
+  .choice .ct { min-width: 0; flex: 1; font-family: var(--wt-content-font-family, "WT Tinos", serif); font-style: var(--wt-content-font-style, italic); font-size: var(--wt-content-size-option, 16px); line-height: var(--wt-content-line-option, 24px); }
+  .choice.sel { border-color: #22d3ee; background: rgba(6,182,212,.2); color: #fff; font-weight: 800; }
+  .choice:disabled { opacity: .85; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="katex/katex.min.js"></script>
+<script src="richtext.js"></script>
+<script>
+/*
+ * Competition question page (C6 slice 2b). Shows ONE question with its choices, math included, using the same
+ * local KaTeX renderer as the notes and the hub quiz (richtext.js: WTRich.render for the prompt,
+ * WTRich.renderInline for each choice). It holds NO answers and NO correct values: the app sends only the
+ * prompt, the choices, the chosen index and whether tapping is allowed.
+ * The app calls window.setQuestion(jsonText) with { id, prompt, choices, selected (-1 = none), enabled }.
+ * A tap on a choice goes back through window.WTBridge.onPick(index). The page also marks the tap at once, the
+ * app then sends the real state. Same question id = the scroll position is kept, a new id starts at the top.
+ * No network, no navigation.
+ */
+(function () {
+  var root = document.getElementById("root");
+  var cur = null, lastId = null;
+
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function R(t) { try { return window.WTRich.render(String(t == null ? "" : t)); } catch (e) { return esc(t); } }
+  function RI(t) { try { return window.WTRich.renderInline(String(t == null ? "" : t)); } catch (e) { return esc(t); } }
+  function cleanChoice(c) { return String(c == null ? "" : c).replace(/^[A-Da-d][.)]\s*/, "").replace(/[\r\n]+/g, " ").trim(); }
+  function letter(i) { return String.fromCharCode(65 + i); }
+
+  function draw() {
+    if (!cur) return;
+    var keep = (lastId === cur.id) ? (window.pageYOffset || 0) : 0;
+    var choices = Array.isArray(cur.choices) ? cur.choices : [];
+    var h = '<div class="qcard"><div class="prompt">' + R(cur.prompt) + "</div>";
+    var i, cls;
+    for (i = 0; i < choices.length; i++) {
+      cls = "choice" + (cur.selected === i ? " sel" : "");
+      h += '<div class="crow"><button class="' + cls + '" data-ci="' + i + '"' + (cur.enabled ? "" : " disabled") + '><span class="cl">' + letter(i) +
+        '.</span><span class="ct">' + RI(cleanChoice(choices[i])) + "</span></button></div>";
+    }
+    h += "</div>";
+    root.innerHTML = h;
+    window.scrollTo(0, keep);
+    lastId = cur.id;
+  }
+
+  root.addEventListener("click", function (e) {
+    if (!cur || !cur.enabled) return;
+    var el = e.target;
+    while (el && el !== root && !(el.getAttribute && el.getAttribute("data-ci") !== null)) el = el.parentNode;
+    if (!el || el === root) return;
+    var ci = Number(el.getAttribute("data-ci"));
+    cur.selected = ci;
+    draw();
+    try { if (window.WTBridge && window.WTBridge.onPick) window.WTBridge.onPick(ci); } catch (err) {}
+  });
+
+  window.setQuestion = function (text) {
+    try {
+      cur = JSON.parse(text || "{}");
+      draw();
+    } catch (e) {
+      root.innerHTML = '<p class="msg">Could not display this question.</p>';
+    }
+  };
+})();
+</script>
+</body>
+</html>

@@ -13,11 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -68,8 +65,9 @@ private val examSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default
 // (submit sends the latest answers; the server grades the saved ones if the deadline already passed).
 // ALREADY_SUBMITTED is handled as show-my-result: onFinished(null). Otherwise onFinished gets the result.
 // Leaving with the Back button does not stop the clock; the student can resume until the deadline.
-// Questions are shown as plain text. If the contest questions contain math written in LaTeX, a later slice
-// must render it (hypothesis: they may, because the hub quizzes do). The ExamLockdown hook comes later (C10).
+// Slice 2b (owner: we want LaTeX and KaTeX): the question and its choices are drawn by
+// CompetitionQuestionView, which shows them in the local KaTeX page assets/notes/competition.html.
+// The ExamLockdown hook comes later (C10).
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionExamScreen(
@@ -243,47 +241,21 @@ fun CompetitionExamScreen(
                     }
                 }
 
-                // the question and its choices
-                Column(
+                // the question and its choices, with math, in the local KaTeX page
+                CompetitionQuestionView(
+                    questionId = question.id,
+                    prompt = question.prompt,
+                    choices = question.choices,
+                    selected = state.answerFor(question.id),
+                    enabled = !submitting,
+                    onPick = { index ->
+                        state.select(question.id, index)
+                        version += 1
+                    },
                     modifier = Modifier
                         .weight(1f)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(text = question.prompt, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                    val chosen = state.answerFor(question.id)
-                    for (index in question.choices.indices) {
-                        val selected = chosen == index
-                        val shape = RoundedCornerShape(14.dp)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(shape)
-                                .background(if (selected) ExamCyan.copy(alpha = 0.18f) else ExamCardBg)
-                                .border(1.dp, if (selected) ExamCyan else Color.White.copy(alpha = 0.2f), shape)
-                                .clickable(enabled = !submitting) {
-                                    state.select(question.id, index)
-                                    version += 1
-                                }
-                                .padding(14.dp),
-                            verticalAlignment = Alignment.Top
-                        ) {
-                            Text(
-                                text = ('A' + index).toString(),
-                                color = if (selected) ExamCyan else ExamMuted,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = question.choices[index],
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
+                        .fillMaxWidth()
+                )
 
                 if (saveFailed) {
                     Text(
