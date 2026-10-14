@@ -1,6 +1,6 @@
 # COMPETITION_DECISIONS.md — owner answers (2026-10-14) and what they change
 
-> **This file OVERRIDES `docs/COMPETITION_PLAN.md` wherever they differ.** Read the plan first for the data model and stages, then this file. Owner answers are quoted in the owner's words; "Design effect" is the agent's consequence of each answer (proposal until the owner approves it in C0).
+> **This file OVERRIDES `docs/COMPETITION_PLAN.md` wherever they differ.** Read the plan first for the data model and stages, then this file. Owner answers are quoted in the owner's words; "Design effect" is the agent's consequence of each answer. Section 3 (A to G) was ACCEPTED as the proposed defaults by the owner on 2026-10-14 (see section 4); live stage status is in `docs/COMPETITION_STATUS.md`.
 
 ## 1. Owner answers
 
@@ -12,16 +12,16 @@
 
 **Q3 Attempts and window.** "it's there always, but when the countdown ends the exam starts globally, and the given time ends globally. But the exam is still accessible in practice mode. But that doesn't count into that exams leader board. The leader board of that exam record results that are submitted within the active given window. Outside that the exam is practice mode."
 - Design effect (changes the plan):
-  - One GLOBAL window `starts_at` to `ends_at = starts_at + duration`. Everyone's deadline is `ends_at` (a student who joins late only gets the remaining time; the plan's `late_join_min` is dropped, pending confirmation in section 3).
+  - One GLOBAL window `starts_at` to `ends_at = starts_at + duration`. Everyone's deadline is `ends_at` (a student who joins late only gets the remaining time; the plan's `late_join_min` is dropped, confirmed by answer C).
   - `competition_entries.mode` is `ranked` or `practice`. Exactly one ranked entry per student per contest (unique on competition + user where mode = ranked). Practice entries are unlimited and never rank.
   - Ranked = started and submitted inside the window. Anything submitted after `ends_at` is not ranked.
-  - Practice mode behaves like the existing hub exam runner (answers/explanations shown, own pace). Because practice shows answers, practice is served ONLY after `ends_at` (server check), never during the live window. The exam stays in the app as a practice exam afterwards. Confirm in section 3.
+  - Practice mode behaves like the existing hub exam runner (answers/explanations shown, own pace). Because practice shows answers, practice is served ONLY after `ends_at` (server check), never during the live window. The exam stays in the app as a practice exam afterwards (confirmed by answer A).
 
 **Q4 Leaderboard.** "full name, 1-3 in visible good card, 4-10 in expandable retracted form. All with time used+score out of the total."
-- Design effect: leaderboard shows full name, score as `score / total`, and time used. Ranks 1 to 3 are prominent cards (gold/silver/bronze accents allowed), ranks 4 to 10 in a collapsed expandable section. Ranking: higher score first, then less time used (tie-break; confirm in section 3). Disqualified entries are omitted. Visible after the window ends (see Q5).
+- Design effect: leaderboard shows full name, score as `score / total`, and time used. Ranks 1 to 3 are prominent cards (gold/silver/bronze accents allowed), ranks 4 to 10 in a collapsed expandable section. Ranking: higher score first, then less time used, then earlier submit (answer D). Disqualified entries are omitted. Visible after the window ends (see Q5).
 
 **Q5 Prizes.** "Prize decided by admin (mobile internet package, full access to wisdom tower academy.. etc, and cumulative points accumulating and qualifying for other amazing things. but don't list them there... The exact prize is shown after the exam timer ends and leaderboard shows."
-- Design effect: the app must NOT show any prize before `ends_at`, and must not hard-code any prize text. Prize text is admin-entered per contest (`prize_title`, `prize_details`, optionally per rank) and the server returns it only after `ends_at`. Never put it in the list/countdown payload before then. Cumulative points: a ledger table `competition_points (user_id, competition_id, points, reason, created_at)` written by the server (admin rule, see open question B); the app shows a total only where the owner decides. "Other amazing things" are out of scope for now.
+- Design effect: the app must NOT show any prize before `ends_at`, and must not hard-code any prize text. Prize text is admin-entered per contest (`prize_title`, `prize_details`, optionally per rank) and the server returns it only after `ends_at`. Never put it in the list/countdown payload before then. Cumulative points: a ledger table `competition_points (user_id, competition_id, points, reason, created_at)` written by the server (admin sets points per contest, answer B); the app shows the total in Account. "Other amazing things" are out of scope for now.
 
 **Q6 Refresh button.** "the refresh button becomes in the drawer, where the delicate notification setting used to be (between the tools and about and support, in the middle of them."
 - Design effect: remove Refresh from the top bar, add a "Refresh" row to the drawer (`ui/drawer/*`) between the Tools group and the About and Support group, same row style as its neighbours, same hard-refresh action the top button ran (`StructuralNav.HARD_REFRESH_JS` + reload, with the offline fallbacks it has today). Part of stage C4's patch.
@@ -32,7 +32,7 @@
 **Q8 Time zone.** "yes in Ethiopia time" — every time shown in EAT (UTC+3), regardless of the phone's zone.
 
 **Q9 Security.** "don't worry about screenshots now, cuz the entire app will be screenshot and copy text protected with few exceptions. So leave this for later, cuz we will use advanced security measures, flagging suspicious activities during exam, disabling Ai tutor when exam is started, and strict warning and protection not to switch into other apps if the exam is running. And we'll have detailed flagging, and disqualification marks with its reason and ommiting from leaderboard."
-- Design effect: no `FLAG_SECURE` work in the competition stages. Build now only the HOOKS so security can be added later without a rewrite: `competition_entries.disqualified bool default false`, `disqualified_reason text`, `competition_flags (id, entry_id, kind, detail jsonb, created_at)`, a leaderboard that excludes disqualified rows, and one app-wide state `ExamLockdown.active` (true while a ranked exam runs) that the AI tutor and tool overlays can read later. New stage **C10 Integrity** (later, owner starts it) will add flagging of suspicious activity, strict app-switch warnings/protection, AI tutor disabling during the exam, disqualification flow with reasons and admin review UI.
+- Design effect: no `FLAG_SECURE` work in the competition stages. Build now only the HOOKS so security can be added later without a rewrite: `competition_entries.disqualified bool default false`, `disqualified_reason text`, `competition_flags (id, entry_id, kind, detail jsonb, created_at)`, a leaderboard that excludes disqualified rows, and one app-wide state `ExamLockdown.active` (true while a ranked exam runs) that the AI tutor and tool overlays can read later. New stage **C10 Integrity** (later) will add flagging of suspicious activity, strict app-switch warnings/protection, AI tutor disabling during the exam, disqualification flow with reasons and admin review UI.
 
 **Q10 After the contest.** "yes, the content production manual will be adjusted to use amazing explanations, and explain with Ai button as well. (Similar to the exam in the hub)."
 - Design effect: after `ends_at`, review shows correct answers + solutions and the same "Explain with AI" button the hub exams have. Contest questions therefore need a `solution` (the production manual will require it; the dashboard form should make it required). The AI tutor/Explain stays OFF while a ranked exam is running.
@@ -48,7 +48,7 @@
 - C8 Notifications: scheduled/targeted pushes per Q7.
 - C10 Integrity (NEW, later): see Q9.
 
-## 3. Still open (ask the owner; defaults in brackets are what the agent proposes)
+## 3. Questions A to G (all ACCEPTED as defaults by the owner on 2026-10-14; defaults in brackets)
 
 A. Practice mode only after the window ends, never during it? [yes; during the live window students can only take the ranked attempt]
 B. Cumulative points: how are they earned (for example fixed points per rank, or points from the score), and where does the student see their total? [admin sets points per contest; total shown in Account]
@@ -60,4 +60,4 @@ G. Who sees the leaderboard: every signed-in student, or only people who took th
 
 ## 4. Owner answers to section 3 (append, dated, in the owner's words)
 
-- (none yet)
+- 2026-10-14: "Questions A-G are accepted as default. So it becomes your task. Start and execute all the plan one at a time (the task associated with the refresh button to trophy and completion.... Etc. No other task, remove any other tasks. Cuz they're all done (or archive them), what we have in hand is building the competition space." => A to G = the bracketed defaults above. Execute stages C1 to C10 in order, one at a time; old tasks archived (`docs/archive/README.md`).
