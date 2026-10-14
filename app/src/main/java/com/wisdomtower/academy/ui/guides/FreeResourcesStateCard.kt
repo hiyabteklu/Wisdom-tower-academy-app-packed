@@ -41,6 +41,7 @@ fun FreeResourcesStateCard(heading: String?, message: String) {
                 fontFamily = PlusJakartaSansFontFamily,
                 fontSize = 16.sp,
                 lineHeight = 25.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color(0xFFCBD5E1)
             )
         }
