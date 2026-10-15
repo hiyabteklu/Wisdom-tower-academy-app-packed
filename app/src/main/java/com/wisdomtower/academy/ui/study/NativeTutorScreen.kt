@@ -9,6 +9,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -63,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.wisdomtower.academy.data.competition.ExamLockdown
 import com.wisdomtower.academy.data.content.AiTutorRepository
 import com.wisdomtower.academy.data.content.TutorEvent
 import com.wisdomtower.academy.data.content.TutorMessage
@@ -125,6 +127,12 @@ private class TutorStreamHolder {
  * (white 4 to 8 percent fills and edges) and the chat list panel has a navy gradient with rounded left corners,
  * like the drawer. No layout or behaviour change.
  *
+ * C10 (session C10-C, owner decision 2026-10-15: "Ai tutor is prohibited, and calculator is allowed always"):
+ * while a RANKED competition exam is open (ExamLockdown.active) this screen draws nothing, shows a short notice and
+ * calls onBack, so EVERY caller is covered: the Learning tab and the global tool overlay of MainActivity.kt
+ * (the one that renders the tutor for the drawer row and website links). If the exam starts while the tutor is
+ * open, it closes the same way. The calculator is a different screen and is never blocked.
+ *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
 @Composable
@@ -133,6 +141,18 @@ fun NativeTutorScreen(
     modifier: Modifier = Modifier,
     courseContext: String? = null
 ) {
+    // C10 gate (owner decision 2026-10-15): no tutor while a ranked competition exam is open.
+    if (ExamLockdown.active) {
+        val gateContext = LocalContext.current
+        val gateBack by rememberUpdatedState(onBack)
+        LaunchedEffect(Unit) {
+            // The wording is the agent's (the owner only decided that the tutor is prohibited); change it if wanted.
+            Toast.makeText(gateContext, "AI Tutor is switched off while a ranked competition exam is open.", Toast.LENGTH_SHORT).show()
+            gateBack()
+        }
+        return
+    }
+
     // Same touch fix + quiet background as the notes, flashcards and quiz screens (see ShellPause.kt).
     PauseShellWhileShown()
 
