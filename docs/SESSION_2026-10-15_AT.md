@@ -7,19 +7,19 @@
 - I read the whole panel (code read). It calls the six admin functions of the contract with the admin's own session, treats every typed time as Ethiopia time (+03:00), and turns the database's error codes into plain sentences. Solutions are required by the database itself (error `bad_question_at_position_N`), which covers decision Q10.
 
 ## What I did
-- WEBSITE repo `main`, commit `f5f85bc`: `src/app/admin/page.tsx` now imports the panel, has a new tab "Competitions" (trophy icon, right after Push Broadcasts), tab ids and aliases `competitions`, `competition`, `contests`, `contest`, and renders the panel for it. Nothing else in the file changed (whole file resent, diff is the import, the `Trophy` icon import, the tab type, the tab list, the alias list, the tab entry and one render line). `[~]` Vercel build NOT seen, not opened in a browser.
+- WEBSITE repo `main`, commit `f5f85bc`: `src/app/admin/page.tsx` now imports the panel, has a new tab "Competitions" (trophy icon, right after Push Broadcasts), tab ids and aliases `competitions`, `competition`, `contests`, `contest`, and renders the panel for it. Nothing else in the file changed (whole file resent, diff is the import, the `Trophy` icon import, the tab type, the tab list, the alias list, the tab entry and one render line). `[~]` not opened in a browser by an agent.
 - Wrote `docs/COMPETITION_ADMIN_CHECKLIST.md` (plain words, for the owner).
 
-## UNSURE, hypotheses (no Supabase connector here; nothing below was checked against the live database)
-1. The panel lists entries with `from("competition_entries")` using the admin's session and reads names from `profiles`. The contract says students can SELECT only their own entries; it does not say that an admin SELECT policy exists on `competition_entries`. If there is none, the Entries list shows only the admin's own rows. CHECK with `select policyname, cmd, qual from pg_policies where tablename = 'competition_entries'`; if missing, add an admin SELECT policy (`private.is_admin()`) or an admin RPC.
-2. Column names used by the panel and NOT verified live: `competition_entries.mode`, `total_count`, `time_taken_ms`, `disqualified_reason`, `competitions.package_id`, `countdown_state`. Names were copied from the panel; the contract names `time_taken_ms` and the leaderboard names `total`. If a list is empty with an error, read the red message and fix the column.
-3. The page lets an admin in by email (`isAdminEmail`), the database by `private.is_admin()`. If the two lists differ, the screen opens but each action answers `admin_only`.
-4. The exam list reads `learning_resources` with `hub = exams`, `content_type = exam` and `meta->>durationMin` (shapes from `docs/CONTENT_SHAPES.md`); an unpublished exam is not offered (the table's public policy shows only published rows; admin can read all, so unpublished ones may appear too).
+## UPDATE (later in session AT, owner said the Supabase connector works and Vercel is green): hypotheses CHECKED with read-only SQL on the live project
+1. Admin read of entries: RESOLVED, no problem. Policy `compe_select_own` on `competition_entries` is `user_id = auth.uid() OR private.is_admin()`; `profiles_select_own_or_admin` is the same shape; `competitions` has `comp_admin_all`. So the Entries list and the student names work for an admin.
+2. Column names: RESOLVED, no problem. All of `mode`, `total_count`, `time_taken_ms`, `disqualified`, `disqualified_reason`, `submitted_at`, `status`, `score`, `user_id` exist on `competition_entries`, and `package_id`, `countdown_state`, `requires_package`, `prize_title`, `prize_details`, `points`, `ends_at`, `duration_min`, `audience`, `published` exist on `competitions`.
+3. Admin email list: RESOLVED for now. `private.is_admin()` reads `private.admin_emails` (2 rows) and the website's default list in `src/lib/admin.ts` has the same 2 addresses (code read); a different value of the Vercel variable `NEXT_PUBLIC_ADMIN_EMAILS` could add addresses the database does not know (not checked).
+4. Exam list: 69 exams in the hub, 68 published, and all 69 have a non-empty solution on every question (so none should be refused for a missing solution). The six admin functions exist. Live now: 2 contests (the owner-only TEST ones) and 16 entries, still there.
+STILL NOT DONE: the screen was never driven by a person; the actual admin RPC calls were not run from the website (needs the owner's admin login, so the owner does the first run by the checklist).
 
-## What the owner tests (after Vercel shows the commit Ready)
-Open the website admin console, tab "Competitions". Follow `docs/COMPETITION_ADMIN_CHECKLIST.md`. Use the existing owner-only TEST contests or a new one with the audience `owner-test`; real students must not see a test.
+## What the owner tests
+Open the website admin console, tab "Competitions" (`/admin?tab=competitions`). Follow `docs/COMPETITION_ADMIN_CHECKLIST.md`. Use the audience `owner-test`; real students must not see a test.
 
 ## Next, in order
-1. Owner: Vercel result of `f5f85bc` and `1f0e1b7`; open the tab and report any red message.
-2. Agent with the Supabase connector: check hypotheses 1 and 2, fix the policy or columns.
-3. C8 safe real-send test; C9; C10.
+1. Owner: first contest through the screen (audience `owner-test`) and report any red message.
+2. C8 safe real-send test; C9; C10. Test contests and entries stay until the owner says delete.
