@@ -1003,6 +1003,7 @@ fun MainScreen(
     var activeDrawerScreen by remember { mutableStateOf<String?>(null) }
     var activeStudyTool by remember { mutableStateOf<String?>(null) }
     var showNotifications by remember { mutableStateOf(false) } // P15-native-notifications
+    var notificationOpenId by remember { mutableStateOf<String?>(null) } // R6-notif-open
     var showCompetitions by remember { mutableStateOf(false) } // C4-competitions-trophy
     var webView: WebView? by remember { mutableStateOf(null) }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -1134,6 +1135,7 @@ fun MainScreen(
         activeGuideSlug = null
         activeDrawerScreen = null
         showNotifications = false // P15-native-notifications
+        notificationOpenId = null // R6-notif-open
         showCompetitions = false // C4-competitions-trophy
         closeToolOverlay()
         menuExpanded = false
@@ -1217,6 +1219,19 @@ fun MainScreen(
         softNavFallbackRunnable = null
 
         val targetUrl = url.trim()
+        // R6-notif-open: a link ending in /notifications opens the native notifications screen (reader when ?open=<id>)
+        val notifUri = try {
+            Uri.parse(targetUrl)
+        } catch (_: Exception) {
+            null
+        }
+        if (notifUri != null && notifUri.path.orEmpty().trimEnd('/').lowercase().endsWith("/notifications")) {
+            resetOverlays()
+            notificationOpenId = notifUri.getQueryParameter("open")
+            showNotifications = true
+            menuExpanded = false
+            return
+        }
         // C8-push-trophy: a push or notification link ending in /competitions opens the native trophy screen
         val competitionsPath = try {
             Uri.parse(targetUrl).path.orEmpty().trimEnd('/').lowercase()
@@ -3306,7 +3321,8 @@ fun MainScreen(
                 // P15-native-notifications: native notifications screen (bell)
                 if (showNotifications) {
                     NotificationsScreen(
-                        onBack = { showNotifications = false },
+                        onBack = { showNotifications = false; notificationOpenId = null }, // R6-notif-open
+                        openId = notificationOpenId,
                         onOpenUrl = handleGlobalNav,
                         onSignIn = {
                             resetOverlays()
