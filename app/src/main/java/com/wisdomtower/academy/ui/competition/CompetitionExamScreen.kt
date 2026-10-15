@@ -69,6 +69,8 @@ private val examSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default
 // Slice 2b (owner: we want LaTeX and KaTeX): the question and its choices are drawn by
 // CompetitionQuestionView, which shows them in the local KaTeX page assets/notes/competition.html.
 // Slice 4: while a ranked exam is open it raises ExamLockdown.active (C10 reads it, nothing does yet).
+// Session U (owner, 2026-10-15): the hub now shows this screen full screen (CompetitionFullScreen), and a
+// ranked exam shows one short red reminder line under the header.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionExamScreen(
@@ -202,6 +204,8 @@ fun CompetitionExamScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
                     .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -225,6 +229,16 @@ fun CompetitionExamScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
+                }
+
+                // Session U: one short red reminder while a ranked exam is open
+                if (state.isRanked) {
+                    Text(
+                        text = "! Cheating means disqualification. Do not leave this window.",
+                        color = ExamRed,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 // question numbers: filled = answered, outlined = current
