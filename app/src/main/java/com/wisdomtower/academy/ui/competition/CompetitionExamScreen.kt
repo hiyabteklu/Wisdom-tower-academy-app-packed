@@ -11,10 +11,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -34,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.data.competition.CompetitionError
@@ -71,8 +71,12 @@ private val examSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default
 // Slice 2b (owner: we want LaTeX and KaTeX): the question and its choices are drawn by
 // CompetitionQuestionView, which shows them in the local KaTeX page assets/notes/competition.html.
 // Slice 4: while a ranked exam is open it raises ExamLockdown.active (C10 reads it, nothing does yet).
-// Session U (owner, 2026-10-15): the hub now shows this screen full screen (CompetitionFullScreen), and a
-// ranked exam shows one short red reminder line under the header.
+// Session U (owner, 2026-10-15): the hub shows this screen full screen (CompetitionFullScreen).
+// Session V (owner, 2026-10-15, after the first phone test): the Previous, Next and Submit buttons were
+// pushed off the bottom of the screen. The full-screen dialog now lets the system fit it between the status
+// bar and the navigation bar, so this screen adds NO inset padding of its own. The look now follows the
+// app: a header card (question number, timer pill, progress bar), the small red reminder in a red box for
+// ranked exams, the question card, and a bottom bar card with three equal buttons.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionExamScreen(
@@ -203,43 +207,82 @@ fun CompetitionExamScreen(
                 ExamButton(label = "Back", filled = false, enabled = true, onClick = onExit)
             }
         } else {
+            val cardShape = RoundedCornerShape(16.dp)
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .statusBarsPadding()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // top: position and time left
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                // header card: position, time left, progress
+                val answeredCount = state.questionCount - state.unansweredCount
+                val fraction = if (state.questionCount > 0) answeredCount.toFloat() / state.questionCount.toFloat() else 0f
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(ExamCardBg, cardShape)
+                        .border(1.dp, Color.White.copy(alpha = 0.2f), cardShape)
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "Question " + (state.currentIndex + 1).toString() + " of " + state.questionCount.toString(),
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (remaining != null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
-                            text = CompetitionPhaseLogic.formatCountdown(remaining),
-                            color = if (remaining < 60_000L) ExamRed else ExamCyan,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
+                            text = "Question " + (state.currentIndex + 1).toString() + " of " + state.questionCount.toString(),
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (remaining != null) {
+                            val timerColor = if (remaining < 60_000L) ExamRed else ExamCyan
+                            Text(
+                                text = CompetitionPhaseLogic.formatCountdown(remaining),
+                                color = timerColor,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .border(1.dp, timerColor.copy(alpha = 0.6f), RoundedCornerShape(999.dp))
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(Color.White.copy(alpha = 0.12f))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(fraction)
+                                .height(4.dp)
+                                .background(ExamCyan)
                         )
                     }
+                    Text(
+                        text = answeredCount.toString() + " of " + state.questionCount.toString() + " answered",
+                        color = ExamMuted,
+                        fontSize = 11.sp
+                    )
                 }
 
-                // Session U: one short red reminder while a ranked exam is open
+                // one short red reminder while a ranked exam is open
                 if (state.isRanked) {
+                    val redShape = RoundedCornerShape(12.dp)
                     Text(
                         text = "! Cheating means disqualification. Do not leave this window.",
                         color = ExamRed,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(ExamRed.copy(alpha = 0.08f), redShape)
+                            .border(1.dp, ExamRed.copy(alpha = 0.5f), redShape)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     )
                 }
 
@@ -294,49 +337,82 @@ fun CompetitionExamScreen(
                     Text(text = shownError, color = ExamRed, fontSize = 12.sp)
                 }
 
-                // bottom: move and submit
-                if (submitting) {
-                    Text(
-                        text = if (timeUp) "Time is up. Submitting..." else "Submitting...",
-                        color = ExamCyan,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                } else if (confirming) {
-                    val left = state.unansweredCount
-                    Text(
-                        text = if (left > 0) "Submit now? " + left.toString() + " unanswered." else "Submit your answers?",
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ExamButton(label = "Keep going", filled = false, enabled = true, onClick = { confirming = false })
-                        ExamButton(label = "Submit", filled = true, enabled = true, onClick = {
-                            confirming = false
-                            doSubmit()
-                        })
-                    }
-                } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        ExamButton(
-                            label = "Previous",
-                            filled = false,
-                            enabled = state.currentIndex > 0,
-                            onClick = {
-                                state.previous()
-                                version += 1
-                            }
+                // bottom bar card: move and submit
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(ExamCardBg, cardShape)
+                        .border(1.dp, Color.White.copy(alpha = 0.2f), cardShape)
+                        .padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (submitting) {
+                        Text(
+                            text = if (timeUp) "Time is up. Submitting..." else "Submitting...",
+                            color = ExamCyan,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        ExamButton(
-                            label = "Next",
-                            filled = false,
-                            enabled = state.currentIndex < state.questionCount - 1,
-                            onClick = {
-                                state.next()
-                                version += 1
-                            }
+                    } else if (confirming) {
+                        val left = state.unansweredCount
+                        Text(
+                            text = if (left > 0) "Submit now? " + left.toString() + " unanswered." else "Submit your answers?",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        ExamButton(label = "Submit", filled = true, enabled = true, onClick = { confirming = true })
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ExamButton(
+                                label = "Keep going",
+                                filled = false,
+                                enabled = true,
+                                onClick = { confirming = false },
+                                modifier = Modifier.weight(1f)
+                            )
+                            ExamButton(
+                                label = "Submit",
+                                filled = true,
+                                enabled = true,
+                                onClick = {
+                                    confirming = false
+                                    doSubmit()
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    } else {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            ExamButton(
+                                label = "Previous",
+                                filled = false,
+                                enabled = state.currentIndex > 0,
+                                onClick = {
+                                    state.previous()
+                                    version += 1
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            ExamButton(
+                                label = "Next",
+                                filled = false,
+                                enabled = state.currentIndex < state.questionCount - 1,
+                                onClick = {
+                                    state.next()
+                                    version += 1
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            ExamButton(
+                                label = "Submit",
+                                filled = true,
+                                enabled = true,
+                                onClick = { confirming = true },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
@@ -345,16 +421,22 @@ fun CompetitionExamScreen(
 }
 
 @Composable
-private fun ExamButton(label: String, filled: Boolean, enabled: Boolean, onClick: () -> Unit) {
+private fun ExamButton(
+    label: String,
+    filled: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val shape = RoundedCornerShape(12.dp)
     val alpha = if (enabled) 1f else 0.4f
     Box(
-        modifier = Modifier
+        modifier = modifier
             .clip(shape)
             .background(if (filled) ExamCyan.copy(alpha = alpha) else ExamCardBg.copy(alpha = alpha))
             .border(1.dp, ExamCyan.copy(alpha = if (filled) 0f else 0.5f * alpha), shape)
             .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 18.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(

@@ -24,6 +24,8 @@ import org.json.JSONObject
 // exam: the screen sends the current question to it with window.setQuestion(...) and the page reports a tap with
 // WTBridge.onPick(index). Only the prompt, the choices and the chosen index go into the page, never an answer key.
 // The page has no network (blockNetworkLoads) and ignores every link.
+// Session V (owner, first phone test): the WebView background is now transparent (the page is too), so the
+// app's own background shows through instead of a flat dark slab behind the question card.
 // Status: written, not compiled, not seen on a device.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 
@@ -77,7 +79,7 @@ fun CompetitionQuestionView(
         modifier = modifier,
         factory = { ctx ->
             WebView(ctx).apply {
-                setBackgroundColor(0xFF0A101D.toInt())
+                setBackgroundColor(0)
                 settings.javaScriptEnabled = true
                 settings.allowFileAccess = true
                 settings.blockNetworkLoads = true

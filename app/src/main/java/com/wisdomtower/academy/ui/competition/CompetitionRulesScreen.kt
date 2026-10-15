@@ -10,9 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -37,11 +35,15 @@ private val RulesDarkText = Color(0xFF0A101D)
 
 // Session U (owner, 2026-10-15): the exam must open on a FULL screen (no top bar, no bottom bar) and the
 // student must first read a short red warning. Two parts live in this file:
-// 1. CompetitionFullScreen: a full-screen dialog that covers the whole phone screen, status bar and
-//    navigation bar included. The hub shows the rules page and the exam inside it (no MainActivity change).
-//    Back is handled by the content (BackHandler) and, as a backup, by onBack.
+// 1. CompetitionFullScreen: a full-screen dialog that covers the whole phone screen. The hub shows the rules
+//    page and the exam inside it (no MainActivity change). Back is handled by the content (BackHandler) and,
+//    as a backup, by onBack.
 // 2. CompetitionRulesScreen: the reading page before a RANKED attempt. Short red lines with an exclamation
 //    mark, in the owner's words. It replaces the small confirm line that used to sit on the hub card.
+// Session V (owner, first phone test): with decorFitsSystemWindows = false the dialog window sat BELOW the
+// status bar but was as tall as the whole screen, so the bottom buttons were pushed off the screen (evidence:
+// the screenshot, hypothesis for the cause). The dialog now keeps the default (the system fits it between the
+// status bar and the navigation bar) and the screens below add no inset padding of their own.
 // NOTE for the owner: the warning says the built-in system will flag the student. The flagging itself is
 // stage C10 and is NOT built yet, so today the text is a warning only.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
@@ -55,8 +57,7 @@ fun CompetitionFullScreen(
         properties = DialogProperties(
             dismissOnBackPress = true,
             dismissOnClickOutside = false,
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
+            usePlatformDefaultWidth = false
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -85,8 +86,6 @@ fun CompetitionRulesScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
                 .padding(horizontal = 18.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -136,12 +135,19 @@ fun CompetitionRulesScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                RulesButton(label = "Cancel", filled = false, enabled = !starting, onClick = onCancel)
+                RulesButton(
+                    label = "Cancel",
+                    filled = false,
+                    enabled = !starting,
+                    onClick = onCancel,
+                    modifier = Modifier.weight(1f)
+                )
                 RulesButton(
                     label = if (starting) "Starting..." else "I understand, start",
                     filled = true,
                     enabled = !starting,
-                    onClick = onStart
+                    onClick = onStart,
+                    modifier = Modifier.weight(2f)
                 )
             }
         }
@@ -159,11 +165,17 @@ private fun RulesLine(text: String) {
 }
 
 @Composable
-private fun RulesButton(label: String, filled: Boolean, enabled: Boolean, onClick: () -> Unit) {
+private fun RulesButton(
+    label: String,
+    filled: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val shape = RoundedCornerShape(12.dp)
     val alpha = if (enabled) 1f else 0.5f
     Box(
-        modifier = Modifier
+        modifier = modifier
             .clip(shape)
             .background(if (filled) RulesCyan.copy(alpha = alpha) else RulesCardBg)
             .border(1.dp, RulesCyan.copy(alpha = if (filled) 0f else 0.5f * alpha), shape)
