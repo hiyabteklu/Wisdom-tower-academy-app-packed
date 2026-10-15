@@ -261,6 +261,11 @@ fun AccountScreen(
                 CompetitionPointsCard()
             }
 
+            // ADMIN-entry: shown only for admins (database check); above the profile panel so Log Out stays last
+            item(key = "admin_entry") {
+                AdminEntryButton(userKey = userEmail, onOpen = { onNavigateToUrl("/admin") })
+            }
+
             item(key = "my_profile_panel") {
                 MyProfilePanel(
                     profile = currentProfile,
