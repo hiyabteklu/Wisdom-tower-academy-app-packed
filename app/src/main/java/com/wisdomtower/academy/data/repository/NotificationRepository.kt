@@ -3,6 +3,8 @@ package com.wisdomtower.academy.data.repository
 import android.content.Context
 import android.content.SharedPreferences
 import com.wisdomtower.academy.data.model.NativeNotificationItem
+import com.wisdomtower.academy.data.model.NotificationBlock
+import com.wisdomtower.academy.data.model.NotificationRun
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
@@ -65,6 +68,59 @@ object NotificationRepository {
     @Synchronized
     private fun isRead(id: String, serverRead: Boolean): Boolean = serverRead || readIds.contains(id)
 
+    // ---- Rich content (notifications v2, slice R4) ----------------------------------------------
+    // Shape written by the admin composer: metadata.content = { v: 1, blocks: [ ... ] }.
+    // Anything unknown or broken is skipped, so one bad block never hides the notification:
+    // an empty result means the reader shows title + body (old rows).
+
+    private fun parseRuns(arr: JSONArray?): List<NotificationRun> {
+        if (arr == null) return emptyList()
+        val out = mutableListOf<NotificationRun>()
+        for (i in 0 until arr.length()) {
+            val r = arr.optJSONObject(i) ?: continue
+            val text = r.optString("text", "")
+            if (text.isEmpty()) continue
+            out.add(NotificationRun(text = text, bold = r.optBoolean("b", false), highlight = r.optBoolean("hl", false)))
+        }
+        return out
+    }
+
+    private fun parseContent(item: JSONObject): List<NotificationBlock> {
+        return try {
+            // metadata normally arrives as an object; accept a JSON string too.
+            val meta: JSONObject? = item.optJSONObject("metadata")
+                ?: item.optString("metadata", "").takeIf { it.startsWith("{") }?.let { JSONObject(it) }
+            val content = meta?.optJSONObject("content") ?: return emptyList()
+            if (content.optInt("v", 1) != 1) return emptyList()
+            val blocks = content.optJSONArray("blocks") ?: return emptyList()
+            val out = mutableListOf<NotificationBlock>()
+            for (i in 0 until blocks.length()) {
+                val b = blocks.optJSONObject(i) ?: continue
+                when (b.optString("t", "")) {
+                    "title" -> b.optString("text", "").takeIf { it.isNotBlank() }?.let { out.add(NotificationBlock.Title(it)) }
+                    "subtitle" -> b.optString("text", "").takeIf { it.isNotBlank() }?.let { out.add(NotificationBlock.Subtitle(it)) }
+                    "p" -> parseRuns(b.optJSONArray("runs")).takeIf { it.isNotEmpty() }?.let { out.add(NotificationBlock.Paragraph(it)) }
+                    "callout" -> parseRuns(b.optJSONArray("runs")).takeIf { it.isNotEmpty() }?.let { out.add(NotificationBlock.Callout(it)) }
+                    "list" -> {
+                        val items = b.optJSONArray("items")
+                        val rows = mutableListOf<List<NotificationRun>>()
+                        if (items != null) {
+                            for (j in 0 until items.length()) {
+                                val runs = parseRuns(items.optJSONArray(j))
+                                if (runs.isNotEmpty()) rows.add(runs)
+                            }
+                        }
+                        if (rows.isNotEmpty()) out.add(NotificationBlock.Bullets(rows))
+                    }
+                    "divider" -> out.add(NotificationBlock.Divider)
+                }
+            }
+            out
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     fun refreshNotifications(userId: String? = null, email: String? = null) {
         if (_isRefreshing.value) return
         _isRefreshing.value = true
@@ -101,7 +157,8 @@ object NotificationRepository {
                                 target = item.optString("target", "all"),
                                 url = item.optString("url", "/learning"),
                                 createdAt = item.optString("createdAt", ""),
-                                read = isRead(id, item.optBoolean("read", false))
+                                read = isRead(id, item.optBoolean("read", false)),
+                                content = parseContent(item)
                             )
                         )
                     }
