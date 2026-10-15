@@ -3,7 +3,6 @@ package com.wisdomtower.academy.ui.competition
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,8 +44,10 @@ import com.wisdomtower.academy.data.competition.CompetitionResult
 import com.wisdomtower.academy.data.competition.LeaderboardResult
 import com.wisdomtower.academy.data.competition.LeaderboardRow
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
+import com.wisdomtower.academy.ui.theme.WisdomGlassBorder
+import com.wisdomtower.academy.ui.theme.WisdomGlassCard
+import com.wisdomtower.academy.ui.theme.WisdomGlassFill
 
-private val LbCardBg = Color(0xFF131F38)
 private val LbCyan = Color(0xFF22E0FF)
 private val LbMuted = Color(0xFF94A3B8)
 private val LbRed = Color(0xFFF87171)
@@ -62,6 +64,10 @@ private val LbBronze = Color(0xFFD97706)
 // sees their own row (rank, name, time, score) under the list as the extra row (E). A disqualified student sees a
 // message with the reason (F). Before the window closes the server says "not available" and this screen shows a
 // short notice. The screen is drawn inside the hub (top bar and bottom tabs of the app stay visible).
+// Session AK (owner, 2026-10-15): glass look like the other competition screens. No solid navy any more: the
+// trophy cards, the rows and the prize panel are see-through glass (WisdomGlassCard and the same white tints), the
+// buttons are CompetitionPillButton. The medal colours stay on the trophies, the rank chips and a soft edge.
+// Logic, texts and data are unchanged.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionLeaderboardScreen(
@@ -100,7 +106,11 @@ fun CompetitionLeaderboardScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                LbButton(label = "Back", filled = false, onClick = onBack)
+                CompetitionPillButton(
+                    label = "Back",
+                    onClick = onBack,
+                    modifier = Modifier.widthIn(min = 76.dp)
+                )
                 Spacer(modifier = Modifier.size(12.dp))
                 Text(
                     text = title,
@@ -117,7 +127,12 @@ fun CompetitionLeaderboardScreen(
                 Text(text = "Loading...", color = LbMuted, fontSize = 14.sp)
             } else if (res == null) {
                 Text(text = err ?: "The leaderboard could not be loaded.", color = LbRed, fontSize = 13.sp)
-                LbButton(label = "Try again", filled = true, onClick = { reloadKey += 1 })
+                CompetitionPillButton(
+                    label = "Try again",
+                    onClick = { reloadKey += 1 },
+                    modifier = Modifier.widthIn(min = 110.dp),
+                    emphasized = true
+                )
             } else if (res is LeaderboardResult.NotAvailable) {
                 Text(
                     text = "The leaderboard opens when the competition window closes.",
@@ -185,10 +200,10 @@ private fun LeaderboardBody(res: LeaderboardResult.Available) {
         if (others.isNotEmpty()) {
             val lastRank = others.last().rank
             val arrow = if (expanded) "\u25B4" else "\u25BE"
-            LbButton(
+            CompetitionPillButton(
                 label = "Ranks 4 to " + lastRank.toString() + "  " + arrow,
-                filled = false,
-                onClick = { expanded = !expanded }
+                onClick = { expanded = !expanded },
+                modifier = Modifier.fillMaxWidth()
             )
             if (expanded) {
                 for (row in others) {
@@ -207,24 +222,22 @@ private fun LeaderboardBody(res: LeaderboardResult.Available) {
         val prizeDetails = res.prizeDetails
         val points = res.points
         if (prizeTitle != null || prizeDetails != null || points != null) {
-            val shape = RoundedCornerShape(16.dp)
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(shape)
-                    .background(LbCardBg)
-                    .border(1.dp, Color.White.copy(alpha = 0.2f), shape)
-                    .padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                if (prizeTitle != null) {
-                    Text(text = prizeTitle, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
-                if (prizeDetails != null) {
-                    Text(text = prizeDetails, color = LbMuted, fontSize = 13.sp)
-                }
-                if (points != null) {
-                    Text(text = "Points: " + points.toString(), color = LbCyan, fontSize = 13.sp)
+            WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (prizeTitle != null) {
+                        Text(text = prizeTitle, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                    if (prizeDetails != null) {
+                        Text(text = prizeDetails, color = LbMuted, fontSize = 13.sp)
+                    }
+                    if (points != null) {
+                        Text(text = "Points: " + points.toString(), color = LbCyan, fontSize = 13.sp)
+                    }
                 }
             }
         }
@@ -304,8 +317,12 @@ private fun HeroTrophyCard(row: LeaderboardRow, highlight: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.28f), LbCardBg)))
-            .border(if (highlight) 3.dp else 2.dp, if (highlight) LbCyan else accent, shape)
+            .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.16f), WisdomGlassFill)))
+            .border(
+                if (highlight) 2.dp else 1.dp,
+                if (highlight) LbCyan else accent.copy(alpha = 0.5f),
+                shape
+            )
             .padding(horizontal = 14.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -337,8 +354,12 @@ private fun PodiumTrophyCard(row: LeaderboardRow, highlight: Boolean, modifier: 
     Column(
         modifier = modifier
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.24f), LbCardBg)))
-            .border(if (highlight) 3.dp else 2.dp, if (highlight) LbCyan else accent, shape)
+            .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.14f), WisdomGlassFill)))
+            .border(
+                if (highlight) 2.dp else 1.dp,
+                if (highlight) LbCyan else accent.copy(alpha = 0.5f),
+                shape
+            )
             .padding(horizontal = 10.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -366,61 +387,44 @@ private fun PodiumTrophyCard(row: LeaderboardRow, highlight: Boolean, modifier: 
 
 @Composable
 private fun LbRow(row: LeaderboardRow, highlight: Boolean) {
-    val shape = RoundedCornerShape(14.dp)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(LbCardBg)
-            .border(if (highlight) 2.dp else 1.dp, if (highlight) LbCyan else Color.White.copy(alpha = 0.2f), shape)
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    WisdomGlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 14.dp,
+        fill = if (highlight) LbCyan.copy(alpha = 0.06f) else WisdomGlassFill,
+        borderColor = if (highlight) LbCyan.copy(alpha = 0.7f) else WisdomGlassBorder,
+        borderWidth = if (highlight) 2.dp else 1.dp
     ) {
-        Text(
-            text = row.rank.toString(),
-            color = LbCyan,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.size(width = 34.dp, height = 22.dp)
-        )
-        Column(modifier = Modifier.weight(1f)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Text(
-                text = row.name,
-                color = Color.White,
-                fontSize = 14.sp,
+                text = row.rank.toString(),
+                color = LbCyan,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                modifier = Modifier.size(width = 34.dp, height = 22.dp)
             )
-            Text(text = "Time " + formatTaken(row.timeTakenMs), color = LbMuted, fontSize = 12.sp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = row.name,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(text = "Time " + formatTaken(row.timeTakenMs), color = LbMuted, fontSize = 12.sp)
+            }
+            Text(
+                text = row.score.toString() + " of " + row.total.toString(),
+                color = LbCyan,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
-        Text(
-            text = row.score.toString() + " of " + row.total.toString(),
-            color = LbCyan,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-private fun LbButton(label: String, filled: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(12.dp)
-    Box(
-        modifier = Modifier
-            .clip(shape)
-            .background(if (filled) LbCyan else LbCardBg)
-            .border(1.dp, LbCyan.copy(alpha = if (filled) 0f else 0.5f), shape)
-            .clickable { onClick() }
-            .padding(horizontal = 18.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            color = if (filled) LbDarkText else Color.White,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
