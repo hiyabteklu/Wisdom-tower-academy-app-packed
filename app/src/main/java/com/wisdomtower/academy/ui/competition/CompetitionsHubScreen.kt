@@ -89,6 +89,8 @@ private val DarkText = Color(0xFF0A101D)
 // Session P: a live contest this student cannot take part in (not in the audience, package missing, or
 // disqualified) shows one plain line saying why, instead of a card with no explanation. The wording is the
 // same as the repository's error messages.
+// Session Y (open item C of session X): the title of the contest that was started is passed to the exam
+// screen, so the score card of the exam window shows it. The title is the server's own value from the card.
 // The lockdown flag is raised by CompetitionExamScreen (C6 slice 4), not here.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
@@ -107,6 +109,8 @@ fun CompetitionsHubScreen(
     val markedIds = remember { mutableSetOf<String>() }
     // C6 slice 3: the running exam (null = none), the contest being started, the rules page
     var session by remember { mutableStateOf<CompetitionSession?>(null) }
+    // session Y: the title of the contest whose exam is open (empty when unknown)
+    var sessionTitle by remember { mutableStateOf("") }
     var startingId by remember { mutableStateOf<String?>(null) }
     var confirmId by remember { mutableStateOf<String?>(null) }
     var actionError by remember { mutableStateOf<String?>(null) }
@@ -173,6 +177,7 @@ fun CompetitionsHubScreen(
             val r = CompetitionRepository.start(id, ranked)
             if (r is CompetitionResult.Ok) {
                 confirmId = null
+                sessionTitle = contests.firstOrNull { it.id == id }?.title ?: ""
                 session = r.value
             } else if (r is CompetitionResult.Failed) {
                 confirmId = null
@@ -296,7 +301,8 @@ fun CompetitionsHubScreen(
                     session = null
                     reloadKey += 1
                 },
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                title = sessionTitle
             )
         }
     } else if (rulesFor != null) {
