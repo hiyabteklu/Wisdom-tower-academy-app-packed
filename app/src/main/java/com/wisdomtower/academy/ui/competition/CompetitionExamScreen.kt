@@ -1,22 +1,15 @@
 package com.wisdomtower.academy.ui.competition
 
+import android.annotation.SuppressLint
+import android.os.Handler
+import android.os.Looper
+import android.webkit.JavascriptInterface
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -26,72 +19,85 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.wisdomtower.academy.data.competition.CompetitionError
-import com.wisdomtower.academy.data.competition.CompetitionPhaseLogic
 import com.wisdomtower.academy.data.competition.CompetitionRepository
 import com.wisdomtower.academy.data.competition.CompetitionResult
 import com.wisdomtower.academy.data.competition.CompetitionRunnerState
 import com.wisdomtower.academy.data.competition.CompetitionSession
 import com.wisdomtower.academy.data.competition.ExamLockdown
 import com.wisdomtower.academy.data.competition.SubmitResult
-import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
-private val ExamCardBg = Color(0xFF131F38)
-private val ExamCyan = Color(0xFF22E0FF)
-private val ExamMuted = Color(0xFF94A3B8)
-private val ExamRed = Color(0xFFF87171)
-private val ExamDarkText = Color(0xFF0A101D)
+import org.json.JSONArray
+import org.json.JSONObject
 
 // A last autosave when the student leaves the screen must not be cancelled with the screen.
 private val examSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-// C6 slice 2: the native competition exam screen (ranked or practice), built on CompetitionRunnerState.
-// Reachable since slice 3: the hub cards open it with the Join / Resume / Practice buttons.
-// What it does: shows one question at a time with its choices, a row of question numbers, the time left
-// to the GLOBAL deadline (server-corrected clock), autosaves the answers a moment after each change and
-// every 10 seconds (saveAnswers), and submits when the student confirms or when the time reaches zero
-// (submit sends the latest answers; the server grades the saved ones if the deadline already passed).
-// ALREADY_SUBMITTED is handled as show-my-result: onFinished(null). Otherwise onFinished gets the result.
-// Leaving with the Back button does not stop the clock; the student can resume until the deadline.
-// Slice 2b (owner: we want LaTeX and KaTeX): the question and its choices are drawn by
-// CompetitionQuestionView, which shows them in the local KaTeX page assets/notes/competition.html.
-// Slice 4: while a ranked exam is open it raises ExamLockdown.active (C10 reads it, nothing does yet).
-// Session U (owner, 2026-10-15): the hub shows this screen full screen (CompetitionFullScreen).
-// Session V (owner, 2026-10-15, after the first phone test): the Previous, Next and Submit buttons were
-// pushed off the bottom of the screen. The full-screen dialog now lets the system fit it between the status
-// bar and the navigation bar, so this screen adds NO inset padding of its own. The look now follows the
-// app: a header card (question number, timer pill, progress bar), the small red reminder in a red box for
-// ranked exams, the question card, and a bottom bar card with three equal buttons.
+// C6 UI slice 1 (owner, 2026-10-15): the competition exam is now the SAME exam window as the hub.
+// The whole window (top bar with answered counter and countdown, question number pills, Flag, cross-out on every
+// choice, Prev / Next / Submit, the confirm dialog and the score card with the gauge) is the local page
+// assets/notes/competition_exam.html, a copy of the hub exam window (quiz.html) made for server grading.
+// This file is now only the host: it keeps the clock, the autosave, the lockdown flag and the server submit.
+// The page holds NO answer key. The page reports picks with WTBridge.onAnswers, asks for the grade with
+// WTBridge.onSubmit and gets the server score back through window.wtSubmitResult(...). The Done button of the page
+// calls WTBridge.onDone, which closes this screen through onFinished.
+// What stayed from before: the global deadline (server-corrected clock), autosave after each change and every
+// 10 seconds, forced submit when the server clock says time is up, ALREADY_SUBMITTED handled as onFinished(null),
+// Back keeps the clock running (the student can resume until the deadline).
+// Clipped buttons: the page has its own sticky bottom bar with safe-area padding and this screen adds no padding.
+// Status: written, not compiled, not seen on a device.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
+
+// Receives the calls from the page on a WebView thread and hands them to the main thread.
+private class ExamBridge(
+    private val onAnswersJson: (String) -> Unit,
+    private val onSubmitJson: (String) -> Unit,
+    private val onDoneCall: () -> Unit
+) {
+    private val main = Handler(Looper.getMainLooper())
+
+    @JavascriptInterface
+    fun onAnswers(json: String) {
+        main.post { onAnswersJson(json) }
+    }
+
+    @JavascriptInterface
+    fun onSubmit(json: String) {
+        main.post { onSubmitJson(json) }
+    }
+
+    @JavascriptInterface
+    fun onDone(json: String) {
+        main.post { onDoneCall() }
+    }
+}
+
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
 fun CompetitionExamScreen(
     session: CompetitionSession,
     onFinished: (SubmitResult?) -> Unit,
     onExit: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    title: String = ""
 ) {
     val state = remember(session.entryId) { CompetitionRunnerState(session) }
     var version by remember(session.entryId) { mutableIntStateOf(0) }
     var nowMs by remember { mutableLongStateOf(CompetitionRepository.serverNowMs()) }
-    var confirming by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
-    var errorText by remember { mutableStateOf<String?>(null) }
-    var saveFailed by remember { mutableStateOf(false) }
+    var submittedOk by remember { mutableStateOf(false) }
+    var submitResult by remember { mutableStateOf<SubmitResult?>(null) }
+    var pageReady by remember { mutableStateOf(false) }
+    val webRef = remember { arrayOfNulls<WebView>(1) }
     val scope = rememberCoroutineScope()
     val view = LocalView.current
 
@@ -121,19 +127,14 @@ fun CompetitionExamScreen(
         if (!state.hasUnsavedChanges()) return
         val snapshot = state.answersSnapshot()
         val saved = CompetitionRepository.saveAnswers(session.entryId, snapshot)
-        if (saved is CompetitionResult.Ok) {
-            state.markSaved(snapshot)
-            saveFailed = false
-        } else {
-            saveFailed = true
-        }
+        if (saved is CompetitionResult.Ok) state.markSaved(snapshot)
     }
 
     // autosave a moment after each change (the effect restarts on every change, so it waits for a pause)
     LaunchedEffect(version) {
-        if (state.hasUnsavedChanges() && !submitting) {
+        if (state.hasUnsavedChanges() && !submitting && !submittedOk) {
             delay(1200L)
-            if (!submitting) saveNow()
+            if (!submitting && !submittedOk) saveNow()
         }
     }
 
@@ -141,42 +142,114 @@ fun CompetitionExamScreen(
     LaunchedEffect(Unit) {
         while (true) {
             delay(10_000L)
-            if (!submitting) saveNow()
+            if (!submitting && !submittedOk) saveNow()
         }
     }
 
-    fun doSubmit() {
-        if (submitting) return
+    // the page sends its answers as { answers: { "<question index>": choice } }
+    fun applyPageAnswers(json: String) {
+        try {
+            val map = JSONObject(json).optJSONObject("answers") ?: return
+            val keys = map.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val index = key.toIntOrNull() ?: continue
+                val choice = map.optInt(key, -1)
+                val question = state.questions.getOrNull(index) ?: continue
+                if (choice >= 0) state.select(question.id, choice)
+            }
+            version += 1
+        } catch (e: Exception) {
+            // a malformed message from the page is ignored; the next pick sends the full state again
+        }
+    }
+
+    fun sendResultToPage(ok: Boolean, result: SubmitResult?, message: String?) {
+        val web = webRef[0] ?: return
+        val body = JSONObject()
+        body.put("ok", ok)
+        body.put("score", result?.score ?: JSONObject.NULL)
+        body.put("total", result?.total ?: JSONObject.NULL)
+        body.put("timeTakenMs", result?.timeTakenMs ?: JSONObject.NULL)
+        if (message != null) body.put("message", message)
+        web.evaluateJavascript("window.wtSubmitResult(" + JSONObject.quote(body.toString()) + ");", null)
+    }
+
+    fun handleSubmit(json: String) {
+        if (submitting || submittedOk) return
+        applyPageAnswers(json)
         submitting = true
-        errorText = null
         scope.launch {
             val r = CompetitionRepository.submit(session.entryId, state.answersSnapshot())
             if (r is CompetitionResult.Ok) {
-                onFinished(r.value)
+                submitResult = r.value
+                submittedOk = true
+                sendResultToPage(true, r.value, null)
             } else if (r is CompetitionResult.Failed) {
                 if (r.error == CompetitionError.ALREADY_SUBMITTED) {
-                    onFinished(null)
+                    submitResult = null
+                    submittedOk = true
+                    sendResultToPage(true, null, null)
                 } else {
-                    errorText = r.message
-                    submitting = false
+                    sendResultToPage(false, null, r.message)
                 }
             }
+            submitting = false
         }
     }
 
-    // time is up: submit by itself; if that fails (offline) try again every 3 seconds
+    val latestAnswers by rememberUpdatedState<(String) -> Unit> { json -> applyPageAnswers(json) }
+    val latestSubmit by rememberUpdatedState<(String) -> Unit> { json -> handleSubmit(json) }
+    val latestDone by rememberUpdatedState<() -> Unit> { onFinished(submitResult) }
+    val bridge = remember {
+        ExamBridge(
+            onAnswersJson = { json -> latestAnswers(json) },
+            onSubmitJson = { json -> latestSubmit(json) },
+            onDoneCall = { latestDone() }
+        )
+    }
+
+    // send the questions to the page once it is loaded (no answer keys, only prompt and choices)
+    LaunchedEffect(pageReady) {
+        val web = webRef[0]
+        if (pageReady && web != null) {
+            val questions = JSONArray()
+            for (q in state.questions) {
+                val choices = JSONArray()
+                for (c in q.choices) choices.put(c)
+                questions.put(JSONObject().put("prompt", q.prompt).put("choices", choices))
+            }
+            val meta = JSONObject().put("questions", questions)
+            val initial = JSONObject()
+            for (i in state.questions.indices) {
+                val chosen = state.answerFor(state.questions[i].id)
+                if (chosen != null) initial.put(i.toString(), chosen)
+            }
+            val options = JSONObject().put("title", title).put("ranked", state.isRanked).put("initial", initial)
+            val left = state.remainingMs(CompetitionRepository.serverNowMs())
+            if (left != null) options.put("remainingMs", left)
+            web.evaluateJavascript(
+                "window.setQuiz(" + JSONObject.quote(meta.toString()) + ", " + JSONObject.quote(options.toString()) + ");",
+                null
+            )
+        }
+    }
+
+    // time is up on the SERVER clock: ask the page to submit (it also submits by its own countdown)
     val timeUp = state.isRanked && state.isTimeUp(nowMs)
-    LaunchedEffect(timeUp, submitting) {
-        if (timeUp && !submitting) {
-            if (errorText != null) delay(3000L)
-            doSubmit()
+    LaunchedEffect(timeUp, pageReady) {
+        val web = webRef[0]
+        if (timeUp && pageReady && web != null) {
+            web.evaluateJavascript("window.wtForceSubmit();", null)
         }
     }
 
+    // Back: the page closes its own dialog first; otherwise save and leave (the clock keeps running)
     BackHandler(enabled = true) {
-        if (!submitting) {
-            if (confirming) {
-                confirming = false
+        val web = webRef[0]
+        val leave = {
+            if (submittedOk) {
+                onFinished(submitResult)
             } else {
                 val snapshot = state.answersSnapshot()
                 if (state.hasUnsavedChanges()) {
@@ -185,265 +258,43 @@ fun CompetitionExamScreen(
                 onExit()
             }
         }
-    }
-
-    // reading version here makes the screen redraw after every answer or move
-    val question = if (version >= 0) state.currentQuestion() else null
-    val remaining = state.remainingMs(nowMs)
-
-    Box(modifier = modifier.fillMaxSize()) {
-        AtmosphereBackground(modifier = Modifier.fillMaxSize())
-
-        if (question == null) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(text = "This competition has no questions to show.", color = ExamMuted, fontSize = 14.sp)
-                Spacer(modifier = Modifier.size(12.dp))
-                ExamButton(label = "Back", filled = false, enabled = true, onClick = onExit)
-            }
+        if (web == null) {
+            leave()
         } else {
-            val cardShape = RoundedCornerShape(16.dp)
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // header card: position, time left, progress
-                val answeredCount = state.questionCount - state.unansweredCount
-                val fraction = if (state.questionCount > 0) answeredCount.toFloat() / state.questionCount.toFloat() else 0f
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(ExamCardBg, cardShape)
-                        .border(1.dp, Color.White.copy(alpha = 0.2f), cardShape)
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Question " + (state.currentIndex + 1).toString() + " of " + state.questionCount.toString(),
-                            color = Color.White,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (remaining != null) {
-                            val timerColor = if (remaining < 60_000L) ExamRed else ExamCyan
-                            Text(
-                                text = CompetitionPhaseLogic.formatCountdown(remaining),
-                                color = timerColor,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier
-                                    .border(1.dp, timerColor.copy(alpha = 0.6f), RoundedCornerShape(999.dp))
-                                    .padding(horizontal = 12.dp, vertical = 4.dp)
-                            )
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(999.dp))
-                            .background(Color.White.copy(alpha = 0.12f))
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(fraction)
-                                .height(4.dp)
-                                .background(ExamCyan)
-                        )
-                    }
-                    Text(
-                        text = answeredCount.toString() + " of " + state.questionCount.toString() + " answered",
-                        color = ExamMuted,
-                        fontSize = 11.sp
-                    )
-                }
-
-                // one short red reminder while a ranked exam is open
-                if (state.isRanked) {
-                    val redShape = RoundedCornerShape(12.dp)
-                    Text(
-                        text = "! Cheating means disqualification. Do not leave this window.",
-                        color = ExamRed,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(ExamRed.copy(alpha = 0.08f), redShape)
-                            .border(1.dp, ExamRed.copy(alpha = 0.5f), redShape)
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    )
-                }
-
-                // question numbers: filled = answered, outlined = current
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(state.questionCount) { i ->
-                        val answered = state.isAnswered(i)
-                        val current = i == state.currentIndex
-                        val shape = RoundedCornerShape(10.dp)
-                        Box(
-                            modifier = Modifier
-                                .size(34.dp)
-                                .clip(shape)
-                                .background(if (answered) ExamCyan.copy(alpha = 0.25f) else ExamCardBg)
-                                .border(1.dp, if (current) ExamCyan else Color.White.copy(alpha = 0.2f), shape)
-                                .clickable(enabled = !submitting) {
-                                    state.goTo(i)
-                                    version += 1
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = (i + 1).toString(), color = Color.White, fontSize = 12.sp)
-                        }
-                    }
-                }
-
-                // the question and its choices, with math, in the local KaTeX page
-                CompetitionQuestionView(
-                    questionId = question.id,
-                    prompt = question.prompt,
-                    choices = question.choices,
-                    selected = state.answerFor(question.id),
-                    enabled = !submitting,
-                    onPick = { index ->
-                        state.select(question.id, index)
-                        version += 1
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                )
-
-                if (saveFailed) {
-                    Text(
-                        text = "Your latest answers are not saved yet. Trying again.",
-                        color = ExamRed,
-                        fontSize = 12.sp
-                    )
-                }
-                val shownError = errorText
-                if (shownError != null) {
-                    Text(text = shownError, color = ExamRed, fontSize = 12.sp)
-                }
-
-                // bottom bar card: move and submit
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(ExamCardBg, cardShape)
-                        .border(1.dp, Color.White.copy(alpha = 0.2f), cardShape)
-                        .padding(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (submitting) {
-                        Text(
-                            text = if (timeUp) "Time is up. Submitting..." else "Submitting...",
-                            color = ExamCyan,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    } else if (confirming) {
-                        val left = state.unansweredCount
-                        Text(
-                            text = if (left > 0) "Submit now? " + left.toString() + " unanswered." else "Submit your answers?",
-                            color = Color.White,
-                            fontSize = 14.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ExamButton(
-                                label = "Keep going",
-                                filled = false,
-                                enabled = true,
-                                onClick = { confirming = false },
-                                modifier = Modifier.weight(1f)
-                            )
-                            ExamButton(
-                                label = "Submit",
-                                filled = true,
-                                enabled = true,
-                                onClick = {
-                                    confirming = false
-                                    doSubmit()
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    } else {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ExamButton(
-                                label = "Previous",
-                                filled = false,
-                                enabled = state.currentIndex > 0,
-                                onClick = {
-                                    state.previous()
-                                    version += 1
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            ExamButton(
-                                label = "Next",
-                                filled = false,
-                                enabled = state.currentIndex < state.questionCount - 1,
-                                onClick = {
-                                    state.next()
-                                    version += 1
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            ExamButton(
-                                label = "Submit",
-                                filled = true,
-                                enabled = true,
-                                onClick = { confirming = true },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
+            web.evaluateJavascript("window.wtBack();") { answer ->
+                if (answer != "true") leave()
             }
         }
     }
-}
 
-@Composable
-private fun ExamButton(
-    label: String,
-    filled: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val shape = RoundedCornerShape(12.dp)
-    val alpha = if (enabled) 1f else 0.4f
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .background(if (filled) ExamCyan.copy(alpha = alpha) else ExamCardBg.copy(alpha = alpha))
-            .border(1.dp, ExamCyan.copy(alpha = if (filled) 0f else 0.5f * alpha), shape)
-            .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            color = if (filled) ExamDarkText else Color.White.copy(alpha = alpha),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold
+    Box(modifier = modifier.fillMaxSize()) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    setBackgroundColor(0xFF0A101D.toInt())
+                    settings.javaScriptEnabled = true
+                    settings.allowFileAccess = true
+                    settings.blockNetworkLoads = true
+                    settings.domStorageEnabled = false
+                    addJavascriptInterface(bridge, "WTBridge")
+                    webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView, url: String?) {
+                            pageReady = true
+                        }
+
+                        // the page never navigates away; ignore every link tap
+                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = true
+                    }
+                    webRef[0] = this
+                    loadUrl("file:///android_asset/notes/competition_exam.html")
+                }
+            },
+            onRelease = {
+                it.removeJavascriptInterface("WTBridge")
+                if (webRef[0] === it) webRef[0] = null
+                it.destroy()
+            }
         )
     }
 }
