@@ -2,7 +2,6 @@ package com.wisdomtower.academy.ui.competition
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +28,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,6 +44,7 @@ import com.wisdomtower.academy.data.competition.CompetitionSummary
 import com.wisdomtower.academy.data.competition.CountdownKind
 import com.wisdomtower.academy.data.competition.SubmitResult
 import com.wisdomtower.academy.ui.study.ScreenBackButton
+import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -53,12 +52,10 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-private val CardBg = Color(0xFF131F38)
 private val CyanAccent = Color(0xFF22E0FF)
 private val LiveGreen = Color(0xFF22C55E)
 private val MutedText = Color(0xFF94A3B8)
 private val ErrorRed = Color(0xFFF87171)
-private val DarkText = Color(0xFF0A101D)
 
 // C5 slice 1: the competitions hub opened by the trophy button (list of contests with phase badge,
 // live countdown, start and end time in Ethiopia time). Data comes only from the server through
@@ -91,6 +88,9 @@ private val DarkText = Color(0xFF0A101D)
 // same as the repository's error messages.
 // Session Y (open item C of session X): the title of the contest that was started is passed to the exam
 // screen, so the score card of the exam window shows it. The title is the server's own value from the card.
+// Session AH (owner, 2026-10-15, phone test): the contest card is a glass card (WisdomGlassCard) instead of a
+// solid navy box, and the card buttons are CompetitionPillButton (round ends, no bright solid colour, one
+// line of text). The Review label no longer wraps into two lines because the buttons share the row evenly.
 // The lockdown flag is raised by CompetitionExamScreen (C6 slice 4), not here.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
@@ -374,7 +374,6 @@ private fun CompetitionCard(
     onOpenLeaderboard: () -> Unit,
     onOpenReview: () -> Unit
 ) {
-    val shape = RoundedCornerShape(18.dp)
     val badge = if (display.phase == CompetitionPhase.PAUSED) {
         "Postponed by admin"
     } else {
@@ -386,172 +385,164 @@ private fun CompetitionCard(
         else -> MutedText
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(CardBg, shape)
-            .border(1.dp, Color.White.copy(alpha = 0.2f), shape)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    // Session AH: see-through glass card, same call shape as the Account screen uses
+    WisdomGlassCard(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 24.dp
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (isNew) {
-                Box(
-                    modifier = Modifier
-                        .size(10.dp)
-                        .background(CyanAccent, CircleShape)
-                )
-            }
-            Text(
-                text = summary.title,
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
-            if (badge.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (isNew) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(CyanAccent, CircleShape)
+                    )
+                }
                 Text(
-                    text = badge,
-                    color = badgeColor,
-                    fontSize = 11.sp,
+                    text = summary.title,
+                    color = Color.White,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .border(1.dp, badgeColor.copy(alpha = 0.6f), RoundedCornerShape(999.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                    modifier = Modifier.weight(1f)
+                )
+                if (badge.isNotEmpty()) {
+                    Text(
+                        text = badge,
+                        color = badgeColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .border(1.dp, badgeColor.copy(alpha = 0.6f), RoundedCornerShape(999.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            val description = summary.description
+            if (!description.isNullOrBlank()) {
+                Text(text = description, color = MutedText, fontSize = 13.sp)
+            }
+
+            Text(
+                text = summary.questionCount.toString() + " questions  \u2022  " + summary.durationMin.toString() + " min",
+                color = Color(0xFFE2E8F0),
+                fontSize = 12.sp
+            )
+
+            if (display.countdownKind != CountdownKind.NONE) {
+                val lead = if (display.countdownKind == CountdownKind.STARTS_IN) "Starts in " else "Ends in "
+                Text(
+                    text = lead + CompetitionPhaseLogic.formatCountdown(display.countdownMs),
+                    color = CyanAccent,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
-        }
 
-        val description = summary.description
-        if (!description.isNullOrBlank()) {
-            Text(text = description, color = MutedText, fontSize = 13.sp)
-        }
+            Text(text = "Starts: " + formatEat(summary.startsAtMs), color = MutedText, fontSize = 12.sp)
+            Text(text = "Ends: " + formatEat(summary.endsAtMs), color = MutedText, fontSize = 12.sp)
 
-        Text(
-            text = summary.questionCount.toString() + " questions  \u2022  " + summary.durationMin.toString() + " min",
-            color = Color(0xFFE2E8F0),
-            fontSize = 12.sp
-        )
+            if (display.action == CompetitionAction.SUBMITTED) {
+                Text(text = "Submitted", color = LiveGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+            if (display.action == CompetitionAction.BLOCKED) {
+                Text(
+                    text = blockedText(display.blockedReason),
+                    color = ErrorRed,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
-        if (display.countdownKind != CountdownKind.NONE) {
-            val lead = if (display.countdownKind == CountdownKind.STARTS_IN) "Starts in " else "Ends in "
-            Text(
-                text = lead + CompetitionPhaseLogic.formatCountdown(display.countdownMs),
-                color = CyanAccent,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            // C6 slice 3: the buttons. Join opens the rules page first (the ranked attempt cannot be restarted).
+            val primaryLabel: String? = when (display.action) {
+                CompetitionAction.JOIN -> "Join"
+                CompetitionAction.RESUME -> "Resume"
+                CompetitionAction.PRACTICE -> "Practice"
+                else -> null
+            }
+            val showSecondaryPractice = display.action != CompetitionAction.PRACTICE &&
+                display.canPractice && summary.practiceAvailable
+            // C7 slice 2: the leaderboard of an ended contest (decision G: everyone in the audience)
+            val showLeaderboard = display.canViewLeaderboard && summary.canEnter
+            // C7 slice 3: the review, only for a student who has a ranked attempt in an ended contest
+            val showReview = display.action == CompetitionAction.VIEW_RESULT
 
-        Text(text = "Starts: " + formatEat(summary.startsAtMs), color = MutedText, fontSize = 12.sp)
-        Text(text = "Ends: " + formatEat(summary.endsAtMs), color = MutedText, fontSize = 12.sp)
-
-        if (display.action == CompetitionAction.SUBMITTED) {
-            Text(text = "Submitted", color = LiveGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-        if (display.action == CompetitionAction.BLOCKED) {
-            Text(
-                text = blockedText(display.blockedReason),
-                color = ErrorRed,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        // C6 slice 3: the buttons. Join opens the rules page first (the ranked attempt cannot be restarted).
-        val primaryLabel: String? = when (display.action) {
-            CompetitionAction.JOIN -> "Join"
-            CompetitionAction.RESUME -> "Resume"
-            CompetitionAction.PRACTICE -> "Practice"
-            else -> null
-        }
-        val showSecondaryPractice = display.action != CompetitionAction.PRACTICE &&
-            display.canPractice && summary.practiceAvailable
-        // C7 slice 2: the leaderboard of an ended contest (decision G: everyone in the audience)
-        val showLeaderboard = display.canViewLeaderboard && summary.canEnter
-        // C7 slice 3: the review, only for a student who has a ranked attempt in an ended contest
-        val showReview = display.action == CompetitionAction.VIEW_RESULT
-
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (primaryLabel != null) {
-                CardButton(
-                    label = if (starting && display.action != CompetitionAction.JOIN) "Starting..." else primaryLabel,
-                    filled = true,
-                    enabled = !busy,
-                    onClick = {
-                        when (display.action) {
-                            CompetitionAction.JOIN -> onAskJoin()
-                            CompetitionAction.RESUME -> onStart(true)
-                            else -> onStart(false)
-                        }
+            // Session AH: pill buttons that share the row evenly, so none of the labels wraps
+            if (primaryLabel != null || showSecondaryPractice || showLeaderboard || showReview) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (primaryLabel != null) {
+                        CompetitionPillButton(
+                            label = if (starting && display.action != CompetitionAction.JOIN) "Starting..." else primaryLabel,
+                            emphasized = true,
+                            enabled = !busy,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                when (display.action) {
+                                    CompetitionAction.JOIN -> onAskJoin()
+                                    CompetitionAction.RESUME -> onStart(true)
+                                    else -> onStart(false)
+                                }
+                            }
+                        )
                     }
-                )
+                    if (showSecondaryPractice) {
+                        CompetitionPillButton(
+                            label = if (starting) "Starting..." else "Practice",
+                            emphasized = false,
+                            enabled = !busy,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onStart(false) }
+                        )
+                    }
+                    if (showLeaderboard) {
+                        CompetitionPillButton(
+                            label = "Leaderboard",
+                            emphasized = display.action == CompetitionAction.VIEW_RESULT,
+                            enabled = !busy,
+                            modifier = Modifier.weight(1f),
+                            onClick = onOpenLeaderboard
+                        )
+                    }
+                    if (showReview) {
+                        CompetitionPillButton(
+                            label = "Review",
+                            emphasized = false,
+                            enabled = !busy,
+                            modifier = Modifier.weight(1f),
+                            onClick = onOpenReview
+                        )
+                    }
+                }
             }
-            if (showSecondaryPractice) {
-                CardButton(
-                    label = if (starting) "Starting..." else "Practice",
-                    filled = false,
-                    enabled = !busy,
-                    onClick = { onStart(false) }
-                )
-            }
-            if (showLeaderboard) {
-                CardButton(
-                    label = "Leaderboard",
-                    filled = display.action == CompetitionAction.VIEW_RESULT,
-                    enabled = !busy,
-                    onClick = onOpenLeaderboard
-                )
-            }
-            if (showReview) {
-                CardButton(
-                    label = "Review",
-                    filled = false,
-                    enabled = !busy,
-                    onClick = onOpenReview
-                )
-            }
-        }
 
-        // prize and points arrive from the server only after the window ended; shown exactly as sent
-        val prizeTitle = summary.prizeTitle
-        if (!prizeTitle.isNullOrBlank()) {
-            Text(text = prizeTitle, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            val prizeDetails = summary.prizeDetails
-            if (!prizeDetails.isNullOrBlank()) {
-                Text(text = prizeDetails, color = MutedText, fontSize = 12.sp)
+            // prize and points arrive from the server only after the window ended; shown exactly as sent
+            val prizeTitle = summary.prizeTitle
+            if (!prizeTitle.isNullOrBlank()) {
+                Text(text = prizeTitle, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                val prizeDetails = summary.prizeDetails
+                if (!prizeDetails.isNullOrBlank()) {
+                    Text(text = prizeDetails, color = MutedText, fontSize = 12.sp)
+                }
+            }
+            val points = summary.points
+            if (points != null) {
+                Text(text = points.toString() + " points", color = CyanAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
-        val points = summary.points
-        if (points != null) {
-            Text(text = points.toString() + " points", color = CyanAccent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-private fun CardButton(label: String, filled: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(12.dp)
-    val alpha = if (enabled) 1f else 0.5f
-    Box(
-        modifier = Modifier
-            .clip(shape)
-            .background(if (filled) CyanAccent.copy(alpha = alpha) else CardBg)
-            .border(1.dp, CyanAccent.copy(alpha = if (filled) 0f else 0.5f * alpha), shape)
-            .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            color = if (filled) DarkText else Color.White.copy(alpha = alpha),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
