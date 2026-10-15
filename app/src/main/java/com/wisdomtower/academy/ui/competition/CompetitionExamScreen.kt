@@ -24,6 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.wisdomtower.academy.data.competition.CompetitionError
 import com.wisdomtower.academy.data.competition.CompetitionRepository
 import com.wisdomtower.academy.data.competition.CompetitionResult
@@ -54,6 +57,9 @@ private val examSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default
 // 10 seconds, forced submit when the server clock says time is up, ALREADY_SUBMITTED handled as onFinished(null),
 // Back keeps the clock running (the student can resume until the deadline).
 // Clipped buttons: the page has its own sticky bottom bar with safe-area padding and this screen adds no padding.
+// C10 slice 2 (session C10-B): while a RANKED exam is open, leaving the app (activity stop) is recorded for the
+// admin with CompetitionRepository.reportFlag (app_background when the app leaves, app_foreground with the time
+// away when it comes back). It only records; it never blocks, warns or disqualifies. Failures are ignored.
 // Status: written, not compiled, not seen on a device.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 
@@ -100,6 +106,7 @@ fun CompetitionExamScreen(
     val webRef = remember { arrayOfNulls<WebView>(1) }
     val scope = rememberCoroutineScope()
     val view = LocalView.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // keep the screen on while the exam is open
     DisposableEffect(Unit) {
@@ -113,6 +120,31 @@ fun CompetitionExamScreen(
         onDispose {
             if (state.isRanked) ExamLockdown.leave()
         }
+    }
+
+    // C10: record leaving the app during a RANKED exam (record only, never blocks the student)
+    DisposableEffect(lifecycleOwner, session.entryId) {
+        var leftAtMs = 0L
+        val observer = LifecycleEventObserver { _, event ->
+            if (state.isRanked && !submittedOk) {
+                if (event == Lifecycle.Event.ON_STOP) {
+                    leftAtMs = CompetitionRepository.serverNowMs()
+                    val detail = JSONObject().put("at_ms", leftAtMs)
+                    examSaveScope.launch {
+                        CompetitionRepository.reportFlag(session.entryId, "app_background", detail)
+                    }
+                } else if (event == Lifecycle.Event.ON_START && leftAtMs > 0L) {
+                    val awayMs = CompetitionRepository.serverNowMs() - leftAtMs
+                    leftAtMs = 0L
+                    val detail = JSONObject().put("away_ms", awayMs)
+                    examSaveScope.launch {
+                        CompetitionRepository.reportFlag(session.entryId, "app_foreground", detail)
+                    }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     // clock, once per second, server-corrected
