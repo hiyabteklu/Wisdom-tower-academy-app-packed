@@ -70,10 +70,13 @@ private val DarkText = Color(0xFF0A101D)
 // server through CompetitionRepository.markSeen, so the dot is gone the next time the hub opens.
 // A failed markSeen call is simply tried again on the next 30 second reload.
 // C6 slice 3: Join, Resume and Practice buttons. They call CompetitionRepository.start and then show
-// CompetitionExamScreen inside this same screen (so MainActivity needs no change). Join asks for a
-// confirmation first, because the ranked attempt cannot be restarted (decision C). Resume starts at once.
-// Practice is offered only when the server says it is available (after the window ended, decision A).
+// CompetitionExamScreen (so MainActivity needs no change). Resume starts at once.
+// Practice is offered only when the server says it is available (after the window ends, decision A).
 // After the exam a short line says it was submitted; a practice score is shown only as the server sent it.
+// Session U (owner, 2026-10-15): Join no longer asks with one line on the card. It opens the full-screen
+// rules page (CompetitionRulesScreen) and only its Start button calls start (the ranked attempt cannot be
+// restarted, decision C). The exam itself is now shown full screen too (CompetitionFullScreen: a dialog that
+// covers the top bar and the bottom bar), instead of inside the hub.
 // C7 slice 2: a Leaderboard button on every ended contest the student may enter (decision G). It opens
 // CompetitionLeaderboardScreen inside this same screen.
 // C7 slice 3: a Review button on an ended contest where the student has a ranked attempt. It opens
@@ -97,7 +100,7 @@ fun CompetitionsHubScreen(
     var freshIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     // ids the server already confirmed as seen
     val markedIds = remember { mutableSetOf<String>() }
-    // C6 slice 3: the running exam (null = the list is shown), the contest being started, the join question
+    // C6 slice 3: the running exam (null = the list is shown), the contest being started, the rules page
     var session by remember { mutableStateOf<CompetitionSession?>(null) }
     var startingId by remember { mutableStateOf<String?>(null) }
     var confirmId by remember { mutableStateOf<String?>(null) }
@@ -159,14 +162,15 @@ fun CompetitionsHubScreen(
     fun startContest(id: String, ranked: Boolean) {
         if (startingId != null) return
         startingId = id
-        confirmId = null
         actionError = null
         notice = null
         scope.launch {
             val r = CompetitionRepository.start(id, ranked)
             if (r is CompetitionResult.Ok) {
+                confirmId = null
                 session = r.value
             } else if (r is CompetitionResult.Failed) {
+                confirmId = null
                 actionError = r.message
                 reloadKey += 1
             }
@@ -177,21 +181,8 @@ fun CompetitionsHubScreen(
     val active = session
     val board = leaderboardOf
     val reviewing = reviewOf
-    if (active != null) {
-        CompetitionExamScreen(
-            session = active,
-            onFinished = { result ->
-                session = null
-                notice = finishedNotice(result)
-                reloadKey += 1
-            },
-            onExit = {
-                session = null
-                reloadKey += 1
-            },
-            modifier = Modifier.fillMaxSize()
-        )
-    } else if (board != null) {
+    val rulesFor = contests.firstOrNull { it.id == confirmId }
+    if (board != null) {
         CompetitionLeaderboardScreen(
             competitionId = board.id,
             title = board.title,
@@ -271,14 +262,12 @@ fun CompetitionsHubScreen(
                                 isNew = contestId in freshIds,
                                 busy = startingId != null,
                                 starting = startingId == contestId,
-                                confirming = confirmId == contestId,
                                 onStart = { ranked -> startContest(contestId, ranked) },
                                 onAskJoin = {
                                     actionError = null
                                     notice = null
                                     confirmId = contestId
                                 },
-                                onCancelJoin = { confirmId = null },
                                 onOpenLeaderboard = {
                                     actionError = null
                                     notice = null
@@ -294,6 +283,46 @@ fun CompetitionsHubScreen(
                     }
                 }
             }
+        }
+    }
+
+    // Session U: the exam and the rules page cover the whole screen (top bar and bottom bar included)
+    if (active != null) {
+        CompetitionFullScreen(
+            onBack = {
+                session = null
+                reloadKey += 1
+            }
+        ) {
+            CompetitionExamScreen(
+                session = active,
+                onFinished = { result ->
+                    session = null
+                    notice = finishedNotice(result)
+                    reloadKey += 1
+                },
+                onExit = {
+                    session = null
+                    reloadKey += 1
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    } else if (rulesFor != null) {
+        CompetitionFullScreen(
+            onBack = {
+                if (startingId == null) confirmId = null
+            }
+        ) {
+            CompetitionRulesScreen(
+                title = rulesFor.title,
+                questionCount = rulesFor.questionCount,
+                durationMin = rulesFor.durationMin,
+                starting = startingId != null,
+                onStart = { startContest(rulesFor.id, true) },
+                onCancel = { confirmId = null },
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
@@ -325,10 +354,8 @@ private fun CompetitionCard(
     isNew: Boolean,
     busy: Boolean,
     starting: Boolean,
-    confirming: Boolean,
     onStart: (Boolean) -> Unit,
     onAskJoin: () -> Unit,
-    onCancelJoin: () -> Unit,
     onOpenLeaderboard: () -> Unit,
     onOpenReview: () -> Unit
 ) {
@@ -420,7 +447,7 @@ private fun CompetitionCard(
             )
         }
 
-        // C6 slice 3: the buttons. Join asks first (the ranked attempt cannot be restarted).
+        // C6 slice 3: the buttons. Join opens the rules page first (the ranked attempt cannot be restarted).
         val primaryLabel: String? = when (display.action) {
             CompetitionAction.JOIN -> "Join"
             CompetitionAction.RESUME -> "Resume"
@@ -434,61 +461,44 @@ private fun CompetitionCard(
         // C7 slice 3: the review, only for a student who has a ranked attempt in an ended contest
         val showReview = display.action == CompetitionAction.VIEW_RESULT
 
-        if (confirming && display.action == CompetitionAction.JOIN) {
-            Text(
-                text = "Start your ranked attempt? It cannot be restarted.",
-                color = Color.White,
-                fontSize = 13.sp
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                CardButton(label = "Cancel", filled = false, enabled = !busy, onClick = onCancelJoin)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (primaryLabel != null) {
                 CardButton(
-                    label = if (starting) "Starting..." else "Start",
+                    label = if (starting && display.action != CompetitionAction.JOIN) "Starting..." else primaryLabel,
                     filled = true,
                     enabled = !busy,
-                    onClick = { onStart(true) }
+                    onClick = {
+                        when (display.action) {
+                            CompetitionAction.JOIN -> onAskJoin()
+                            CompetitionAction.RESUME -> onStart(true)
+                            else -> onStart(false)
+                        }
+                    }
                 )
             }
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (primaryLabel != null) {
-                    CardButton(
-                        label = if (starting && display.action != CompetitionAction.JOIN) "Starting..." else primaryLabel,
-                        filled = true,
-                        enabled = !busy,
-                        onClick = {
-                            when (display.action) {
-                                CompetitionAction.JOIN -> onAskJoin()
-                                CompetitionAction.RESUME -> onStart(true)
-                                else -> onStart(false)
-                            }
-                        }
-                    )
-                }
-                if (showSecondaryPractice) {
-                    CardButton(
-                        label = if (starting) "Starting..." else "Practice",
-                        filled = false,
-                        enabled = !busy,
-                        onClick = { onStart(false) }
-                    )
-                }
-                if (showLeaderboard) {
-                    CardButton(
-                        label = "Leaderboard",
-                        filled = display.action == CompetitionAction.VIEW_RESULT,
-                        enabled = !busy,
-                        onClick = onOpenLeaderboard
-                    )
-                }
-                if (showReview) {
-                    CardButton(
-                        label = "Review",
-                        filled = false,
-                        enabled = !busy,
-                        onClick = onOpenReview
-                    )
-                }
+            if (showSecondaryPractice) {
+                CardButton(
+                    label = if (starting) "Starting..." else "Practice",
+                    filled = false,
+                    enabled = !busy,
+                    onClick = { onStart(false) }
+                )
+            }
+            if (showLeaderboard) {
+                CardButton(
+                    label = "Leaderboard",
+                    filled = display.action == CompetitionAction.VIEW_RESULT,
+                    enabled = !busy,
+                    onClick = onOpenLeaderboard
+                )
+            }
+            if (showReview) {
+                CardButton(
+                    label = "Review",
+                    filled = false,
+                    enabled = !busy,
+                    onClick = onOpenReview
+                )
             }
         }
 
