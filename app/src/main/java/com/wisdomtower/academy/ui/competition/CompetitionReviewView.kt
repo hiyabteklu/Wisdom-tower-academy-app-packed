@@ -1,6 +1,9 @@
 package com.wisdomtower.academy.ui.competition
 
 import android.annotation.SuppressLint
+import android.os.Handler
+import android.os.Looper
+import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -9,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
@@ -18,11 +22,16 @@ import org.json.JSONObject
 // C7 slice 3: shows ONE reviewed competition question (prompt, choices with the correct one marked, the student's
 // own pick, the solution), LaTeX and KaTeX included, in the local page assets/notes/competition_review.html.
 // One WebView is kept for the whole review: the screen sends the current question with window.setReview(...).
-// The page has no taps and no bridge, no network (blockNetworkLoads) and ignores every link.
+// The page has no network (blockNetworkLoads) and ignores every link.
 // The correct answer and the solution only reach this view after the server closed the window (the server
 // refuses competition_review before that).
 // C7 slice 4: the optional explanation parameter is the text of an AI explanation (empty when there is none);
 // the page shows it in its own block, math rendered.
+// Session AJ (owner, 2026-10-15): the page now holds the hub's two buttons (Official solution and Explain with
+// AI) in one row and tells this view two things through a small bridge named WTReview: swipe (left = next,
+// right = previous) and explain. canExplain says whether the Explain button is drawn at all (false while a ranked
+// exam is running), explaining says the AI answer is on its way. The bridge calls come on a background thread,
+// so they are handed to the main thread before the screen's lambdas run.
 // Status: written, not compiled, not seen on a device.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @SuppressLint("SetJavaScriptEnabled")
@@ -35,12 +44,18 @@ fun CompetitionReviewView(
     chosen: Int?,
     solution: String,
     modifier: Modifier = Modifier,
-    explanation: String = ""
+    explanation: String = "",
+    canExplain: Boolean = false,
+    explaining: Boolean = false,
+    onSwipe: (Boolean) -> Unit = {},
+    onExplain: () -> Unit = {}
 ) {
     val webRef = remember { arrayOfNulls<WebView>(1) }
     var pageReady by remember { mutableStateOf(false) }
+    val swipeNow = rememberUpdatedState(onSwipe)
+    val explainNow = rememberUpdatedState(onExplain)
 
-    val payload = remember(questionId, prompt, choices, correct, chosen, solution, explanation) {
+    val payload = remember(questionId, prompt, choices, correct, chosen, solution, explanation, canExplain, explaining) {
         val list = JSONArray()
         for (choice in choices) list.put(choice)
         JSONObject()
@@ -51,6 +66,8 @@ fun CompetitionReviewView(
             .put("chosen", chosen ?: -1)
             .put("solution", solution)
             .put("explanation", explanation)
+            .put("canExplain", canExplain)
+            .put("explaining", explaining)
             .toString()
     }
 
@@ -71,6 +88,13 @@ fun CompetitionReviewView(
                 settings.allowFileAccess = true
                 settings.blockNetworkLoads = true
                 settings.domStorageEnabled = false
+                addJavascriptInterface(
+                    ReviewBridge(
+                        onSwipe = { next -> swipeNow.value(next) },
+                        onExplain = { explainNow.value() }
+                    ),
+                    "WTReview"
+                )
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String?) {
                         pageReady = true
@@ -88,4 +112,22 @@ fun CompetitionReviewView(
             it.destroy()
         }
     )
+}
+
+// What the review page can tell the app. JavaScript calls arrive on a background thread.
+private class ReviewBridge(
+    private val onSwipe: (Boolean) -> Unit,
+    private val onExplain: () -> Unit
+) {
+    private val main = Handler(Looper.getMainLooper())
+
+    @JavascriptInterface
+    fun swipe(direction: String) {
+        main.post { onSwipe(direction == "next") }
+    }
+
+    @JavascriptInterface
+    fun explain(unused: String) {
+        main.post { onExplain() }
+    }
 }

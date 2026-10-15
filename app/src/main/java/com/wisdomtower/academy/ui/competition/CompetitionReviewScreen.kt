@@ -1,9 +1,6 @@
 package com.wisdomtower.academy.ui.competition
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,7 +22,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,11 +37,9 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
-private val RvCardBg = Color(0xFF131F38)
 private val RvCyan = Color(0xFF22E0FF)
 private val RvMuted = Color(0xFF94A3B8)
 private val RvRed = Color(0xFFF87171)
-private val RvDarkText = Color(0xFF0A101D)
 
 // C7 slice 3: review of the student's own ranked attempt after the window closed. Loads
 // CompetitionRepository.review (the server refuses it earlier, the plain message is shown), then shows one
@@ -56,6 +49,10 @@ private val RvDarkText = Color(0xFF0A101D)
 // the quiz page sends (mode question, text, question, choices, studentAnswer, correctAnswer, solution). The answer
 // is kept per question for this screen only (nothing is stored) and is shown in the review page with math rendered.
 // The button is not shown while ExamLockdown.active is true (a ranked exam is running).
+// Session AJ (owner, 2026-10-15): the review follows the hub's review look. The two hub buttons (Official
+// solution, Explain with AI) now live inside the page in ONE row, the solution is closed when a question opens,
+// the separate native Explain button is gone, and a slide left or right moves to the next or previous question
+// (the page calls onSwipe). Previous and Next are pill buttons in one row, Back is a pill too.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionReviewScreen(
@@ -97,7 +94,7 @@ fun CompetitionReviewScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                RvButton(label = "Back", filled = false, enabled = true, onClick = onBack)
+                CompetitionPillButton(label = "Back", onClick = onBack, modifier = Modifier.size(width = 76.dp, height = 40.dp))
                 Spacer(modifier = Modifier.size(12.dp))
                 Text(
                     text = title,
@@ -114,7 +111,12 @@ fun CompetitionReviewScreen(
                 Text(text = "Loading...", color = RvMuted, fontSize = 14.sp)
             } else if (res == null) {
                 Text(text = err ?: "The review could not be loaded.", color = RvRed, fontSize = 13.sp)
-                RvButton(label = "Try again", filled = true, enabled = true, onClick = { reloadKey += 1 })
+                CompetitionPillButton(
+                    label = "Try again",
+                    onClick = { reloadKey += 1 },
+                    emphasized = true,
+                    modifier = Modifier.size(width = 120.dp, height = 40.dp)
+                )
             } else if (res.questions.isEmpty()) {
                 Text(text = "There are no questions to review.", color = RvMuted, fontSize = 14.sp)
             } else {
@@ -146,22 +148,19 @@ fun CompetitionReviewScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
-                    explanation = explanations[q.id] ?: ""
-                )
-                if (!ExamLockdown.active) {
-                    val busy = explainingId != null
-                    val explainLabel = if (explainingId == q.id) {
-                        "Explaining..."
-                    } else if (explanations.containsKey(q.id)) {
-                        "Explain again"
-                    } else {
-                        "Explain with AI"
-                    }
-                    RvButton(
-                        label = explainLabel,
-                        filled = false,
-                        enabled = !busy,
-                        onClick = {
+                    explanation = explanations[q.id] ?: "",
+                    // the Explain button is not drawn while a ranked exam is running
+                    canExplain = !ExamLockdown.active,
+                    explaining = explainingId == q.id,
+                    onSwipe = { next ->
+                        if (next) {
+                            if (position < questions.size - 1) index = position + 1
+                        } else {
+                            if (position > 0) index = position - 1
+                        }
+                    },
+                    onExplain = {
+                        if (explainingId == null && !ExamLockdown.active) {
                             val asked = q
                             scope.launch {
                                 explainingId = asked.id
@@ -170,20 +169,24 @@ fun CompetitionReviewScreen(
                                 explainingId = null
                             }
                         }
-                    )
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    RvButton(
+                    }
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    CompetitionPillButton(
                         label = "Previous",
-                        filled = false,
                         enabled = position > 0,
-                        onClick = { index = position - 1 }
+                        onClick = { index = position - 1 },
+                        modifier = Modifier.weight(1f)
                     )
-                    RvButton(
+                    CompetitionPillButton(
                         label = "Next",
-                        filled = true,
+                        emphasized = true,
                         enabled = position < questions.size - 1,
-                        onClick = { index = position + 1 }
+                        onClick = { index = position + 1 },
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -207,26 +210,4 @@ private fun buildExplainPayload(q: ReviewQuestion): String {
         .put("correctAnswer", right)
         .put("solution", q.solution)
         .toString()
-}
-
-@Composable
-private fun RvButton(label: String, filled: Boolean, enabled: Boolean, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(12.dp)
-    val alpha = if (enabled) 1f else 0.4f
-    Box(
-        modifier = Modifier
-            .clip(shape)
-            .background(if (filled) RvCyan.copy(alpha = alpha) else RvCardBg)
-            .border(1.dp, RvCyan.copy(alpha = if (filled) 0f else 0.5f * alpha), shape)
-            .clickable(enabled = enabled) { onClick() }
-            .padding(horizontal = 18.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            color = if (filled) RvDarkText else Color.White.copy(alpha = alpha),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
 }
