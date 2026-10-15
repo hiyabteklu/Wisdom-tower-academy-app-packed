@@ -75,12 +75,17 @@ private val DarkText = Color(0xFF0A101D)
 // After the exam a short line says it was submitted; a practice score is shown only as the server sent it.
 // Session U (owner, 2026-10-15): Join no longer asks with one line on the card. It opens the full-screen
 // rules page (CompetitionRulesScreen) and only its Start button calls start (the ranked attempt cannot be
-// restarted, decision C). The exam itself is now shown full screen too (CompetitionFullScreen: a dialog that
-// covers the top bar and the bottom bar), instead of inside the hub.
-// C7 slice 2: a Leaderboard button on every ended contest the student may enter (decision G). It opens
-// CompetitionLeaderboardScreen inside this same screen.
-// C7 slice 3: a Review button on an ended contest where the student has a ranked attempt. It opens
-// CompetitionReviewScreen inside this same screen (correct answers and solutions, math rendered).
+// restarted, decision C). The exam itself is shown full screen too (CompetitionFullScreen).
+// Session W (owner, 2026-10-15, phone test): the Leaderboard and Review screens showed only a flicker of the
+// Packages page. Cause (code read): MainActivity mounts this hub as an overlay with a background and a high
+// zIndex, but this screen gave that modifier only to the contest LIST. The leaderboard, the review (and the
+// exam in the first test) were drawn with a plain fillMaxSize, so they sat behind the Packages screen.
+// Now the list is always the base of this screen and the exam, the rules page, the leaderboard and the
+// review are each shown through CompetitionFullScreen, a separate window that does not depend on the
+// layering of MainActivity.
+// C7 slice 2: a Leaderboard button on every ended contest the student may enter (decision G).
+// C7 slice 3: a Review button on an ended contest where the student has a ranked attempt
+// (correct answers and solutions, math rendered).
 // Session P: a live contest this student cannot take part in (not in the audience, package missing, or
 // disqualified) shows one plain line saying why, instead of a card with no explanation. The wording is the
 // same as the repository's error messages.
@@ -100,7 +105,7 @@ fun CompetitionsHubScreen(
     var freshIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     // ids the server already confirmed as seen
     val markedIds = remember { mutableSetOf<String>() }
-    // C6 slice 3: the running exam (null = the list is shown), the contest being started, the rules page
+    // C6 slice 3: the running exam (null = none), the contest being started, the rules page
     var session by remember { mutableStateOf<CompetitionSession?>(null) }
     var startingId by remember { mutableStateOf<String?>(null) }
     var confirmId by remember { mutableStateOf<String?>(null) }
@@ -182,111 +187,97 @@ fun CompetitionsHubScreen(
     val board = leaderboardOf
     val reviewing = reviewOf
     val rulesFor = contests.firstOrNull { it.id == confirmId }
-    if (board != null) {
-        CompetitionLeaderboardScreen(
-            competitionId = board.id,
-            title = board.title,
-            onBack = { leaderboardOf = null },
-            modifier = Modifier.fillMaxSize()
-        )
-    } else if (reviewing != null) {
-        CompetitionReviewScreen(
-            competitionId = reviewing.id,
-            title = reviewing.title,
-            onBack = { reviewOf = null },
-            modifier = Modifier.fillMaxSize()
-        )
-    } else {
-        Column(modifier = modifier) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ScreenBackButton(onClick = onBack)
-                Text(
-                    text = "Competitions",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
 
-            val shownNotice = notice
-            if (shownNotice != null) {
-                Text(
-                    text = shownNotice,
-                    color = LiveGreen,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
-                )
-            }
-            val shownError = actionError
-            if (shownError != null) {
-                Text(
-                    text = shownError,
-                    color = ErrorRed,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
-                )
-            }
+    // the base of this screen: the list of contests (this is the part MainActivity layers on top of the tabs)
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            ScreenBackButton(onClick = onBack)
+            Text(
+                text = "Competitions",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 14.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                if (loading && contests.isEmpty()) {
-                    CircularProgressIndicator(color = CyanAccent, strokeWidth = 3.dp)
-                } else if (contests.isEmpty()) {
-                    Text(
-                        text = errorText ?: "No competitions right now.",
-                        color = MutedText,
-                        fontSize = 14.sp
-                    )
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(rows, key = { it.first.id }) { row ->
-                            val contestId = row.first.id
-                            CompetitionCard(
-                                summary = row.first,
-                                display = row.second,
-                                isNew = contestId in freshIds,
-                                busy = startingId != null,
-                                starting = startingId == contestId,
-                                onStart = { ranked -> startContest(contestId, ranked) },
-                                onAskJoin = {
-                                    actionError = null
-                                    notice = null
-                                    confirmId = contestId
-                                },
-                                onOpenLeaderboard = {
-                                    actionError = null
-                                    notice = null
-                                    leaderboardOf = row.first
-                                },
-                                onOpenReview = {
-                                    actionError = null
-                                    notice = null
-                                    reviewOf = row.first
-                                }
-                            )
-                        }
+        val shownNotice = notice
+        if (shownNotice != null) {
+            Text(
+                text = shownNotice,
+                color = LiveGreen,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
+            )
+        }
+        val shownError = actionError
+        if (shownError != null) {
+            Text(
+                text = shownError,
+                color = ErrorRed,
+                fontSize = 13.sp,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            if (loading && contests.isEmpty()) {
+                CircularProgressIndicator(color = CyanAccent, strokeWidth = 3.dp)
+            } else if (contests.isEmpty()) {
+                Text(
+                    text = errorText ?: "No competitions right now.",
+                    color = MutedText,
+                    fontSize = 14.sp
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(rows, key = { it.first.id }) { row ->
+                        val contestId = row.first.id
+                        CompetitionCard(
+                            summary = row.first,
+                            display = row.second,
+                            isNew = contestId in freshIds,
+                            busy = startingId != null,
+                            starting = startingId == contestId,
+                            onStart = { ranked -> startContest(contestId, ranked) },
+                            onAskJoin = {
+                                actionError = null
+                                notice = null
+                                confirmId = contestId
+                            },
+                            onOpenLeaderboard = {
+                                actionError = null
+                                notice = null
+                                leaderboardOf = row.first
+                            },
+                            onOpenReview = {
+                                actionError = null
+                                notice = null
+                                reviewOf = row.first
+                            }
+                        )
                     }
                 }
             }
         }
     }
 
-    // Session U: the exam and the rules page cover the whole screen (top bar and bottom bar included)
+    // The exam, the rules page, the leaderboard and the review each cover the whole screen in their own window
     if (active != null) {
         CompetitionFullScreen(
             onBack = {
@@ -321,6 +312,24 @@ fun CompetitionsHubScreen(
                 starting = startingId != null,
                 onStart = { startContest(rulesFor.id, true) },
                 onCancel = { confirmId = null },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    } else if (board != null) {
+        CompetitionFullScreen(onBack = { leaderboardOf = null }) {
+            CompetitionLeaderboardScreen(
+                competitionId = board.id,
+                title = board.title,
+                onBack = { leaderboardOf = null },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    } else if (reviewing != null) {
+        CompetitionFullScreen(onBack = { reviewOf = null }) {
+            CompetitionReviewScreen(
+                competitionId = reviewing.id,
+                title = reviewing.title,
+                onBack = { reviewOf = null },
                 modifier = Modifier.fillMaxSize()
             )
         }
