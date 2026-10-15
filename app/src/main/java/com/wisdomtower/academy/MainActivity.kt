@@ -1003,6 +1003,7 @@ fun MainScreen(
     var activeDrawerScreen by remember { mutableStateOf<String?>(null) }
     var activeStudyTool by remember { mutableStateOf<String?>(null) }
     var showNotifications by remember { mutableStateOf(false) } // P15-native-notifications
+    var adminConsoleUrl by remember { mutableStateOf<String?>(null) } // ADMIN-host
     var notificationOpenId by remember { mutableStateOf<String?>(null) } // R6-notif-open
     var showCompetitions by remember { mutableStateOf(false) } // C4-competitions-trophy
     var webView: WebView? by remember { mutableStateOf(null) }
@@ -1137,6 +1138,7 @@ fun MainScreen(
         showNotifications = false // P15-native-notifications
         notificationOpenId = null // R6-notif-open
         showCompetitions = false // C4-competitions-trophy
+        adminConsoleUrl = null // ADMIN-host
         closeToolOverlay()
         menuExpanded = false
     }
@@ -1305,7 +1307,8 @@ fun MainScreen(
         }
         // ADMIN-entry: the website admin console opens in the in-app overlay (the page and its API re-check admin rights)
         if (notifUri != null && notifUri.path.orEmpty().trimEnd('/').lowercase().endsWith("/admin")) {
-            openToolOverlay(targetUrl, "Admin Console")
+            // ADMIN-host: the admin page is hosted by AdminConsoleScreen between the bars, not by the tool overlay
+            adminConsoleUrl = if (targetUrl.startsWith("http")) targetUrl else "https://www.wisdom-tower-academy.live" + (if (targetUrl.startsWith("/")) "" else "/") + targetUrl
             return
         }
         if (targetUrl.contains("/checkout")) {
@@ -3320,6 +3323,23 @@ fun MainScreen(
                             .fillMaxSize()
                             .background(WisdomNavy)
                             .zIndex(17f)
+                    )
+                }
+
+                // ADMIN-host: Admin Console in its own WebView, between the top bar and the bottom navigation
+                val adminUrlNow = adminConsoleUrl
+                if (adminUrlNow != null) {
+                    com.wisdomtower.academy.ui.admin.AdminConsoleScreen(
+                        url = adminUrlNow,
+                        onClose = { adminConsoleUrl = null },
+                        onLeaveToApp = { link ->
+                            adminConsoleUrl = null
+                            navigateTo(link)
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(WisdomNavy)
+                            .zIndex(18f)
                     )
                 }
 
