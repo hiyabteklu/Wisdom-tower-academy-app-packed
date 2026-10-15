@@ -1,5 +1,6 @@
 package com.wisdomtower.academy.ui.learning
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -59,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.wisdomtower.academy.data.competition.ExamLockdown
 import com.wisdomtower.academy.data.model.StudentIdGenerator
 import com.wisdomtower.academy.data.model.UserProfile
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
@@ -93,6 +95,13 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
  *
  * GLASS (2026-10-13, owner request, docs/GLASS_PLAN.md area 2): the header card, the guest banner, the Study Tools
  * card (and its tiles) and the empty-curriculum card use the see-through glass look of the Targets screen.
+ *
+ * C10 (session C10-C, owner decision 2026-10-15: "Ai tutor is prohibited, and calculator is allowed always"):
+ * while a RANKED competition exam is open (ExamLockdown.active) the native AI Tutor does not open from the tile or
+ * from a request made elsewhere (drawer row, website links go through NativeToolRequests.requestTutor), a short
+ * notice is shown instead, and a tutor that was already open is closed. The calculator is never blocked.
+ * Status: written, not compiled, not seen on a device. The website pop-up path (onOpenTool with tool=tutor) is a
+ * fallback that no tile uses any more; MainActivity.kt routes every tutor link here through requestTutor.
  *
  * Header:
  * - Scholar Avatar, Full Name ("Scholar" when the name is unknown, as on the website), Student Folio (WTA-XXXX), User Email
@@ -167,6 +176,7 @@ fun LearningScreen(
     onSelectCourse: (NativePackage) -> Unit = {},
     onNavigateToUrl: (String) -> Unit = {}
 ) {
+    val toolContext = LocalContext.current
     // Native AI tutor (N10): the "AI Tutor" tile shows it in place of this screen; Back returns here.
     var tutorOpen by remember { mutableStateOf(false) }
     // Native calculator (P8): the "Calculator" tile and requests from outside show it in place of this screen
@@ -257,12 +267,21 @@ fun LearningScreen(
         return
     }
     BackHandler(enabled = tutorOpen) { tutorOpen = false }
-    // Requests from outside this screen (drawer, website links): open the native tutor as well (P7)
+    // Requests from outside this screen (drawer, website links): open the native tutor as well (P7).
+    // C10: not while a RANKED competition exam is open; a notice is shown instead.
     LaunchedEffect(NativeToolRequests.pendingTutor) {
         if (NativeToolRequests.pendingTutor) {
             NativeToolRequests.pendingTutor = false
-            tutorOpen = true
+            if (ExamLockdown.active) {
+                showTutorBlockedNotice(toolContext)
+            } else {
+                tutorOpen = true
+            }
         }
+    }
+    // C10: a ranked exam started while the tutor was open underneath: close it
+    LaunchedEffect(ExamLockdown.active) {
+        if (ExamLockdown.active) tutorOpen = false
     }
     if (tutorOpen) {
         NativeTutorScreen(onBack = { tutorOpen = false }, modifier = modifier)
@@ -495,7 +514,11 @@ fun LearningScreen(
                                                 } else if (tile.key == "calculator") {
                                                     calculatorOpen = true
                                                 } else if (tile.key == "tutor") {
-                                                    tutorOpen = true
+                                                    if (ExamLockdown.active) {
+                                                        showTutorBlockedNotice(toolContext)
+                                                    } else {
+                                                        tutorOpen = true
+                                                    }
                                                 } else if (tile.key == "analytics") {
                                                     statusOpen = true
                                                 } else {
@@ -624,6 +647,12 @@ fun LearningScreen(
             }
         }
     }
+}
+
+// C10: plain notice shown when the AI Tutor is asked for while a RANKED competition exam is open.
+// The wording is the agent's (the owner only decided that the tutor is prohibited); change it if the owner wants other words.
+private fun showTutorBlockedNotice(context: android.content.Context) {
+    Toast.makeText(context, "AI Tutor is switched off while a ranked competition exam is open.", Toast.LENGTH_SHORT).show()
 }
 
 @Composable
