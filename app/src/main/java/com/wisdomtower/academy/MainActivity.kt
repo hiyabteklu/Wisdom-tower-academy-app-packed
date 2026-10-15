@@ -1217,6 +1217,18 @@ fun MainScreen(
         softNavFallbackRunnable = null
 
         val targetUrl = url.trim()
+        // C8-push-trophy: a push or notification link ending in /competitions opens the native trophy screen
+        val competitionsPath = try {
+            Uri.parse(targetUrl).path.orEmpty().trimEnd('/').lowercase()
+        } catch (_: Exception) {
+            ""
+        }
+        if (competitionsPath.endsWith("/competitions")) {
+            resetOverlays()
+            showCompetitions = true
+            menuExpanded = false
+            return
+        }
         // U1 Option A: study tools open as a global overlay without changing tabs or clearing workspace
         if (targetUrl.contains("/learning") && targetUrl.contains("tool=tutor")) {
             activeStudyTool = "tutor"
@@ -1809,7 +1821,9 @@ fun MainScreen(
 
         resetOverlays()
 
-        if (pathPart == "/about" || pathPart.endsWith("/about")) {
+        if (pathPart.trimEnd('/').lowercase().endsWith("/competitions")) { // C8-push-trophy
+            showCompetitions = true
+        } else if (pathPart == "/about" || pathPart.endsWith("/about")) {
             activeDrawerScreen = "about"
         } else if (pathPart == "/contact" || pathPart.endsWith("/contact")) {
             activeDrawerScreen = "contact"
