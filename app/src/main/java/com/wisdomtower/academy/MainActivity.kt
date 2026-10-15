@@ -1303,6 +1303,11 @@ fun MainScreen(
             selectedIndex = 3
             return
         }
+        // ADMIN-entry: the website admin console opens in the in-app overlay (the page and its API re-check admin rights)
+        if (notifUri != null && notifUri.path.orEmpty().trimEnd('/').lowercase().endsWith("/admin")) {
+            openToolOverlay(targetUrl, "Admin Console")
+            return
+        }
         if (targetUrl.contains("/checkout")) {
             openToolOverlay(targetUrl, "Package Checkout")
             return
