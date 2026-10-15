@@ -20,11 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.zIndex
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 
 private val RulesCardBg = Color(0xFF131F38)
@@ -32,18 +32,21 @@ private val RulesCyan = Color(0xFF22E0FF)
 private val RulesMuted = Color(0xFF94A3B8)
 private val RulesRed = Color(0xFFF87171)
 private val RulesDarkText = Color(0xFF0A101D)
+private val RulesNavy = Color(0xFF0A101D)
 
-// Session U (owner, 2026-10-15): the exam must open on a FULL screen (no top bar, no bottom bar) and the
-// student must first read a short red warning. Two parts live in this file:
-// 1. CompetitionFullScreen: a full-screen dialog that covers the whole phone screen. The hub shows the rules
-//    page and the exam inside it (no MainActivity change). Back is handled by the content (BackHandler) and,
-//    as a backup, by onBack.
+// Session U (owner, 2026-10-15): the student must first read a short red warning before a ranked attempt.
+// Two parts live in this file:
+// 1. CompetitionFullScreen: the cover the hub puts over its list for the rules page, the exam, the
+//    leaderboard and the review. Back is handled by the content (BackHandler).
 // 2. CompetitionRulesScreen: the reading page before a RANKED attempt. Short red lines with an exclamation
-//    mark, in the owner's words. It replaces the small confirm line that used to sit on the hub card.
-// Session V (owner, first phone test): with decorFitsSystemWindows = false the dialog window sat BELOW the
-// status bar but was as tall as the whole screen, so the bottom buttons were pushed off the screen (evidence:
-// the screenshot, hypothesis for the cause). The dialog now keeps the default (the system fits it between the
-// status bar and the navigation bar) and the screens below add no inset padding of their own.
+//    mark, in the owner's words.
+// Session X (owner, 2026-10-15): "keep the app's bottom navigation and top navigation, do not hide them".
+// CompetitionFullScreen is no longer a Dialog (a dialog is its own window and covers the whole phone, bars
+// included). It is now a plain box drawn inside the hub's own place in MainActivity: that place is the area
+// between the top bar and the bottom navigation, so both bars stay visible and nothing is clipped by them.
+// The box has an opaque background and the same zIndex (17) that MainActivity gives the hub, and it takes
+// all taps so the list below cannot be touched. Hypothesis (not seen on a device): the overlay layering that
+// failed in session W is fixed by this background and zIndex.
 // NOTE for the owner: the warning says the built-in system will flag the student. The flagging itself is
 // stage C10 and is NOT built yet, so today the text is a warning only.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
@@ -52,17 +55,17 @@ fun CompetitionFullScreen(
     onBack: () -> Unit,
     content: @Composable () -> Unit
 ) {
-    Dialog(
-        onDismissRequest = onBack,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = false,
-            usePlatformDefaultWidth = false
-        )
+    // the content handles Back itself; this is only the backup
+    BackHandler(enabled = true) { onBack() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(RulesNavy)
+            .zIndex(17f)
+            .pointerInput(Unit) { }
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            content()
-        }
+        content()
     }
 }
 
