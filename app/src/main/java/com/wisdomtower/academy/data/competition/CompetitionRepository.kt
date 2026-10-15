@@ -179,6 +179,25 @@ object CompetitionRepository {
     suspend fun myPoints(): CompetitionResult<MyPoints> =
         rpc("get_my_competition_points", JSONObject()) { body, _ -> CompetitionParsers.parsePoints(JSONObject(body)) }
 
+    /**
+     * C10 slice 2: records an integrity flag for a RANKED attempt that is still running (database function
+     * `report_competition_flag`, `docs/sql/competitions_v3_c10_flags.sql`). [kind] is one of app_background,
+     * app_foreground, overlay_open, copy_attempt, other. It only records: nothing is blocked or disqualified
+     * here, an admin reviews flags. Callers must ignore a failure; the exam never waits for this call.
+     */
+    suspend fun reportFlag(
+        entryId: String,
+        kind: String,
+        detail: JSONObject = JSONObject()
+    ): CompetitionResult<Unit> {
+        if (!isUuid(entryId)) return failed(CompetitionError.BAD_INPUT)
+        val args = JSONObject()
+            .put("p_entry_id", entryId)
+            .put("p_kind", kind)
+            .put("p_detail", detail)
+        return rpc("report_competition_flag", args) { _, _ -> Unit }
+    }
+
     // ---------- error text ----------
 
     /**
