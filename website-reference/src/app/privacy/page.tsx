@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     "Institutional privacy policy governing student data protection, academic telemetry, encryption standards, and digital records at Wisdom Tower Academy.",
 };
 
-const LAST_REVISED = "28 September 2026";
+const LAST_REVISED = "12 October 2026";
 const EFFECTIVE_PERIOD = "Academic Year 2026/2027";
 
 export default function PrivacyPage() {
@@ -281,7 +281,11 @@ export default function PrivacyPage() {
               <ul className="list-disc pl-5 space-y-2">
                 <li><strong>Right to Inspect:</strong> View all saved profile details, active package enrollments, and quiz histories inside My Learning and Account Settings.</li>
                 <li><strong>Right to Rectify:</strong> Update your name, phone number, and study preferences at any time.</li>
-                <li><strong>Right to Erasure (Right to Be Forgotten):</strong> Request the permanent deletion of your profile and historical records upon completing your studies.</li>
+                <li>
+                  <strong>Right to Erasure (Right to Be Forgotten):</strong> Delete your account and personal data yourself at any time from the{" "}
+                  <Link href="/delete-account" className="text-cyan-300 hover:underline">account deletion page</Link>{" "}
+                  or, in the Android app, from Settings &gt; Security. Records of verified payments are kept as described in section 9.
+                </li>
                 <li><strong>Right to Opt-Out:</strong> Toggle off optional leaderboard visibility to keep your score progress completely private.</li>
               </ul>
             </div>

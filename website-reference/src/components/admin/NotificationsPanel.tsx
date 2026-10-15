@@ -2,83 +2,40 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-  Bell,
-  Send,
   Smartphone,
-  CheckCircle2,
-  AlertCircle,
   Trash2,
   ExternalLink,
   RefreshCw,
-  Layers,
-  BookOpen,
-  Info,
   Radio,
-  User,
   Clock,
 } from "lucide-react";
 import type { NotificationItem, NotificationType } from "@/lib/notifications";
+import { supabase } from "@/lib/supabase";
+import ScheduledNotificationsPanel, { type ScheduledRowV2 } from "./ScheduledNotificationsPanel";
+import NotificationComposerV2 from "./NotificationComposerV2";
 
-type Preset = {
-  label: string;
-  type: NotificationType;
-  title: string;
-  body: string;
-  url: string;
-};
-
-const PRESETS: Preset[] = [
-  {
-    label: "New Material Release",
-    type: "material",
-    title: "New Lecture Notes & Question Bank Released",
-    body: "Fresh chapter summaries and practice questions are now published in your track.",
-    url: "/learning",
-  },
-  {
-    label: "Model Exam Solutions",
-    type: "material",
-    title: "Official Model Exam Step-by-Step Solutions Ready",
-    body: "Worked solutions with AI explanation support have just been added to the Exam Hub.",
-    url: "/learning",
-  },
-  {
-    label: "Admin Announcement",
-    type: "admin",
-    title: "Important Academy Academic Update",
-    body: "Please review the updated syllabus milestones and study planner recommendations.",
-    url: "/learning",
-  },
-  {
-    label: "Full Access Active",
-    type: "general",
-    title: "Full Scholar Access is Active",
-    body: "Explore all learning tracks, solved questions, and exams with your account.",
-    url: "/packages",
-  },
-];
-
+/**
+ * Admin Notifications tab.
+ * 2026-10-15 (notifications v2): R3-b2 replaced the four-preset form by `NotificationComposerV2`;
+ * R3-b4 moved scheduling into the composer (step 5 "When") and made the scheduled list editable:
+ * pressing Edit on a waiting row loads it into the composer. History and the FCM guide are unchanged
+ * apart from a badge for the `contest` type.
+ */
 export default function NotificationsPanel() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
-  const [feedback, setFeedback] = useState<{
-    type: "success" | "error" | "info";
-    message: string;
-  } | null>(null);
-
-  // Form state
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [type, setType] = useState<NotificationType>("material");
-  const [targetType, setTargetType] = useState<"all" | "user">("all");
-  const [targetUser, setTargetUser] = useState("");
-  const [url, setUrl] = useState("/learning");
+  const [editRow, setEditRow] = useState<ScheduledRowV2 | null>(null);
+  const [scheduleRefresh, setScheduleRefresh] = useState(0);
 
   const loadNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/notifications?admin=true");
+      // Listing every notification is admin-only: send the signed-in admin's access token.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const res = await fetch("/api/notifications?admin=true", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
       const data = await res.json();
       if (data.ok && Array.isArray(data.notifications)) {
         setNotifications(data.notifications);
@@ -94,82 +51,18 @@ export default function NotificationsPanel() {
     void loadNotifications();
   }, [loadNotifications]);
 
-  function applyPreset(p: Preset) {
-    setTitle(p.title);
-    setBody(p.body);
-    setType(p.type);
-    setUrl(p.url);
-    setTargetType("all");
-  }
-
-  async function handleSend(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim() || !body.trim()) {
-      setFeedback({ type: "error", message: "Please fill in title and message." });
-      return;
-    }
-
-    setSending(true);
-    setFeedback(null);
-
-    try {
-      const target = targetType === "all" ? "all" : targetUser.trim();
-      const res = await fetch("/api/notifications/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          body: body.trim(),
-          type,
-          target: target || "all",
-          url: url.trim() || "/learning",
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        setFeedback({
-          type: "error",
-          message: data.error || "Failed to send notification.",
-        });
-      } else {
-        const fcm = data.fcm || {};
-        let fcmNote = "";
-        if (fcm.skipped) {
-          fcmNote = "Saved to DB & Web (FCM push queued or credentials pending).";
-        } else {
-          fcmNote = `Pushed via FCM to ${fcm.sentCount || 0} device(s).`;
-        }
-
-        setFeedback({
-          type: "success",
-          message: `Notification published! ${fcmNote}`,
-        });
-
-        // Reset form
-        setTitle("");
-        setBody("");
-        setUrl("/learning");
-        setTargetUser("");
-
-        // Refresh list
-        void loadNotifications();
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Network error";
-      setFeedback({ type: "error", message: msg });
-    } finally {
-      setSending(false);
-    }
-  }
-
   async function handleDelete(id: string) {
     try {
-      await fetch(`/api/notifications?id=${encodeURIComponent(id)}`, {
+      // Deleting is admin-only: send the signed-in admin's access token.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const res = await fetch(`/api/notifications?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      if (res.ok) {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+      }
     } catch {
       /* ignore */
     }
@@ -181,6 +74,8 @@ export default function NotificationsPanel() {
         return "bg-sky-500/15 text-sky-300 border-sky-400/30";
       case "admin":
         return "bg-amber-500/15 text-amber-300 border-amber-400/30";
+      case "contest":
+        return "bg-orange-500/15 text-orange-300 border-orange-400/30";
       case "payment":
         return "bg-emerald-500/15 text-emerald-300 border-emerald-400/30";
       default:
@@ -203,7 +98,7 @@ export default function NotificationsPanel() {
             Push Notifications & Announcements
           </h2>
           <p className="text-xs sm:text-sm text-wisdom-muted mt-1">
-            Publish real-time announcements, content releases, and study alerts directly to the Android app and website.
+            Publish real-time announcements, content releases, and contest alerts directly to the Android app and website.
           </p>
         </div>
 
@@ -218,181 +113,16 @@ export default function NotificationsPanel() {
         </button>
       </div>
 
-      {/* Quick Presets */}
-      <div>
-        <p className="text-xs font-bold uppercase tracking-wider text-wisdom-muted mb-3 flex items-center gap-1.5">
-          <Bell className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Quick Broadcast Presets</span>
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {PRESETS.map((p) => (
-            <button
-              key={p.label}
-              type="button"
-              onClick={() => applyPreset(p)}
-              className="text-left p-3.5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] hover:border-sky-400/40 transition-all cursor-pointer group"
-            >
-              <span className="text-xs font-bold text-white group-hover:text-sky-300 block mb-1">
-                {p.label}
-              </span>
-              <span className="text-[11px] text-wisdom-muted line-clamp-2 block leading-relaxed">
-                {p.title}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Composer v2 (send now, schedule, edit a waiting row) */}
+      <NotificationComposerV2
+        editRow={editRow}
+        onEditDone={() => setEditRow(null)}
+        onSent={() => void loadNotifications()}
+        onScheduled={() => setScheduleRefresh((n) => n + 1)}
+      />
 
-      {/* Compose Form */}
-      <form
-        onSubmit={handleSend}
-        className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#0c1626] to-[#070e1a] p-5 sm:p-7 shadow-xl space-y-5"
-      >
-        <div className="flex items-center gap-2 border-b border-white/8 pb-4">
-          <div className="p-2 rounded-xl bg-sky-500/15 border border-sky-400/30 text-sky-300">
-            <Send className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-white">Create New Notification</h3>
-            <p className="text-[11px] text-wisdom-muted">
-              Stores in database, displays on /notifications, and triggers Android system notification.
-            </p>
-          </div>
-        </div>
-
-        {feedback && (
-          <div
-            className={`p-4 rounded-2xl border text-xs sm:text-sm flex items-start gap-2.5 ${
-              feedback.type === "success"
-                ? "bg-emerald-500/10 border-emerald-400/30 text-emerald-300"
-                : feedback.type === "error"
-                ? "bg-rose-500/10 border-rose-400/30 text-rose-300"
-                : "bg-sky-500/10 border-sky-400/30 text-sky-300"
-            }`}
-          >
-            {feedback.type === "success" ? (
-              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            )}
-            <span>{feedback.message}</span>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Title */}
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-xs font-semibold text-slate-300">
-              Notification Title <span className="text-rose-400">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Chapter 4 Physics Lecture Notes Published"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#050b14] border border-white/12 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
-            />
-          </div>
-
-          {/* Body */}
-          <div className="space-y-1.5 md:col-span-2">
-            <label className="text-xs font-semibold text-slate-300">
-              Message Body <span className="text-rose-400">*</span>
-            </label>
-            <textarea
-              required
-              rows={3}
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Short description visible on lockscreen / notifications list..."
-              className="w-full px-4 py-2.5 rounded-xl bg-[#050b14] border border-white/12 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 transition-colors resize-none"
-            />
-          </div>
-
-          {/* Type */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">Category / Type</label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as NotificationType)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#050b14] border border-white/12 text-sm text-white focus:outline-none focus:border-sky-400 transition-colors"
-            >
-              <option value="material">Material Release (Books, Notes, Exams)</option>
-              <option value="admin">Admin Announcement</option>
-              <option value="payment">Payment & Access Update</option>
-              <option value="general">General Notification</option>
-            </select>
-          </div>
-
-          {/* Deep Link URL */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-300">
-              Deep Link / Target Path
-            </label>
-            <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="/learning or /academy/freshman"
-              className="w-full px-4 py-2.5 rounded-xl bg-[#050b14] border border-white/12 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
-            />
-          </div>
-
-          {/* Target Audience */}
-          <div className="space-y-2 md:col-span-2 pt-1">
-            <label className="text-xs font-semibold text-slate-300">Target Audience</label>
-            <div className="flex flex-wrap gap-4">
-              <label className="inline-flex items-center gap-2 cursor-pointer text-xs sm:text-sm text-white">
-                <input
-                  type="radio"
-                  name="targetType"
-                  checked={targetType === "all"}
-                  onChange={() => setTargetType("all")}
-                  className="accent-sky-400"
-                />
-                <span>Broadcast to All Scholars (Recommended)</span>
-              </label>
-
-              <label className="inline-flex items-center gap-2 cursor-pointer text-xs sm:text-sm text-white">
-                <input
-                  type="radio"
-                  name="targetType"
-                  checked={targetType === "user"}
-                  onChange={() => setTargetType("user")}
-                  className="accent-sky-400"
-                />
-                <span>Specific User ID or Email</span>
-              </label>
-            </div>
-
-            {targetType === "user" && (
-              <div className="pt-2">
-                <input
-                  type="text"
-                  required
-                  value={targetUser}
-                  onChange={(e) => setTargetUser(e.target.value)}
-                  placeholder="Enter user UUID or user email address"
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#050b14] border border-white/12 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-400 transition-colors"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Submit */}
-        <div className="pt-3 flex justify-end">
-          <button
-            type="submit"
-            disabled={sending}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 font-bold text-sm shadow-lg shadow-sky-500/20 transition-all cursor-pointer disabled:opacity-50"
-          >
-            <Send className="w-4 h-4" />
-            <span>{sending ? "Broadcasting..." : "Publish & Send Push"}</span>
-          </button>
-        </div>
-      </form>
+      {/* Scheduled notifications: list, edit, cancel */}
+      <ScheduledNotificationsPanel refreshKey={scheduleRefresh} onEdit={setEditRow} />
 
       {/* History Table */}
       <div className="rounded-3xl border border-white/10 bg-[#08101e] p-5 sm:p-6 shadow-xl">

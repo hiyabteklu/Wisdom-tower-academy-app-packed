@@ -1,6 +1,6 @@
 # Website reference snapshot (READ-ONLY)
-Source: hiyabteklu/Wisdom-tower-academy @ 4ca878b986e3875d3e3d448b9eabad8fe597bdd2
-Synced: 2026-10-11T14:50:54Z
+Source: hiyabteklu/Wisdom-tower-academy @ 42ba977bda41ca4ddcb6220eba5271d104fb1014
+Synced: 2026-10-15T11:08:09Z
 
 Rules for agents:
 - Reference copy of the live website code. NOT part of the app build.

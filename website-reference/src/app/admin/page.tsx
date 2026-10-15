@@ -18,6 +18,7 @@ import LocksPanel from "@/components/admin/LocksPanel";
 import AccessGrantsPanel from "@/components/admin/AccessGrantsPanel";
 import DatabaseHubPanel from "@/components/admin/DatabaseHubPanel";
 import NotificationsPanel from "@/components/admin/NotificationsPanel";
+import CompetitionsAdminPanel from "@/components/admin/CompetitionsAdminPanel";
 import BrandLoader from "@/components/BrandLoader";
 import {
   LogOut,
@@ -40,11 +41,13 @@ import {
   Sliders,
   CheckCircle2,
   Bell,
+  Trophy,
 } from "lucide-react";
 
 type AcademyTab =
   | "overview"
   | "notifications"
+  | "competitions"
   | "users"
   | "payments"
   | "grants"
@@ -58,6 +61,7 @@ type AcademyTab =
 const VALID_TABS: AcademyTab[] = [
   "overview",
   "notifications",
+  "competitions",
   "users",
   "payments",
   "grants",
@@ -75,6 +79,10 @@ const TAB_ALIASES: Record<string, AcademyTab> = {
   overview: "overview",
   notifications: "notifications",
   notification: "notifications",
+  competitions: "competitions",
+  competition: "competitions",
+  contests: "competitions",
+  contest: "competitions",
   users: "users",
   user: "users",
   payments: "payments",
@@ -228,6 +236,7 @@ function AdminDashboardInner() {
         icon: Bell,
         badgeColor: "bg-sky-500/20 text-sky-300 border-sky-400/40",
       },
+      { id: "competitions", label: "Competitions", icon: Trophy },
       {
         id: "users",
         label: "Scholars & Users",
@@ -403,6 +412,7 @@ function AdminDashboardInner() {
         <section className="rounded-3xl border border-white/10 bg-wisdom-card/40 p-4 sm:p-6 lg:p-7 shadow-2xl min-h-[60vh] backdrop-blur-sm">
           {academyTab === "overview" && <AnalyticsPanel />}
           {academyTab === "notifications" && <NotificationsPanel />}
+          {academyTab === "competitions" && <CompetitionsAdminPanel />}
           {academyTab === "users" && <UsersPanel adminEmail={user.email || undefined} />}
           {academyTab === "payments" && user.email && <PaymentsPanel adminEmail={user.email} />}
           {academyTab === "grants" && user.email && <AccessGrantsPanel adminEmail={user.email} />}

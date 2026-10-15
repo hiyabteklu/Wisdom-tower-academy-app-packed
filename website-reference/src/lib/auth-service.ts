@@ -3,27 +3,29 @@ import { authEmailFromIdentifier } from "@/lib/authIdentity";
 import { applyDefaultPackagesForLevel } from "@/lib/academic-levels";
 import type { User } from "@supabase/supabase-js";
 
+/**
+ * Scholar sign-in / sign-up.
+ *
+ * 2026-10-12: the local-only fake login was removed (WEBSITE_CHANGES.md section 1 of the app repo).
+ * Every account is now a REAL Supabase account: sign-in only succeeds with a real Supabase session,
+ * sign-up creates the account through /api/auth/register and then signs in for real. Nothing is
+ * invented locally any more (no `wta_` ids, no empty tokens, no password in localStorage).
+ * The local directory helpers below are kept only because they are exported; login and register
+ * do not use them.
+ */
+
 export interface ScholarAccount {
   id: string;
   email: string;
   phone: string | null;
   fullName: string;
   educationLevel: string;
-  passwordHash: string; // Base64 encoded simple hash for local credential verification
+  passwordHash: string; // legacy field of the old local directory
   createdAt: string;
 }
 
 const STORAGE_SCHOLARS_KEY = "wt_scholar_directory_v2";
 const STORAGE_AUTH_SESSION_KEY = "wt-academy-auth-v1";
-
-function hashPassword(pwd: string): string {
-  if (typeof window === "undefined") return pwd;
-  try {
-    return btoa(unescape(encodeURIComponent(pwd)));
-  } catch {
-    return pwd;
-  }
-}
 
 export function getLocalScholarAccounts(): ScholarAccount[] {
   if (typeof window === "undefined") return [];
@@ -101,7 +103,7 @@ export function findLocalScholar(
               phone: u.phone || parsedPhone,
               fullName: u.user_metadata?.full_name || "Student Scholar",
               educationLevel: u.user_metadata?.education_level || "Freshman",
-              passwordHash: "", // Will allow login or set on first entry
+              passwordHash: "",
               createdAt: u.created_at || new Date().toISOString(),
             };
             saveLocalScholarAccount(recovered);
@@ -118,8 +120,11 @@ export function findLocalScholar(
 }
 
 /**
- * Creates and writes a Supabase-compatible session directly to localStorage
- * so that supabase.auth.getSession(), AccountPage, Settings, and Learning immediately recognize the active session.
+ * Writes a Supabase-compatible session to localStorage so supabase.auth.getSession(), the Account page,
+ * Settings and Learning recognise the active session.
+ *
+ * Only a REAL Supabase token is ever stored. Without one this function does nothing (no fake session,
+ * no empty tokens). A synthetic token makes PostgREST answer 401 "No suitable key or wrong key type".
  */
 export function persistScholarSession(
   account: {
@@ -138,25 +143,24 @@ export function persistScholarSession(
 ) {
   if (typeof window === "undefined") return;
 
-  const nowSec = Math.floor(Date.now() / 1000);
-  const expSec = realTokens?.expires_at ?? nowSec + 60 * 60 * 24 * 30; // 30 days
-
-  // Use real JWT token from Supabase Auth if available.
-  // CRITICAL: NEVER invent synthetic HMAC signatures (e.g. btoa("sig_...")) as that triggers
-  // PostgREST 401 "No suitable key or wrong key type" on every database query.
   const hasValidRealToken =
     typeof realTokens?.access_token === "string" &&
     realTokens.access_token.split(".").length === 3 &&
     !realTokens.access_token.includes("sig_") &&
     !realTokens.access_token.includes("c2lnX");
 
-  const accessToken = hasValidRealToken ? realTokens!.access_token! : "";
+  if (!hasValidRealToken) return;
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const expiresIn = realTokens?.expires_in ?? 60 * 60;
+  const expSec = realTokens?.expires_at ?? nowSec + expiresIn;
+  const accessToken = realTokens!.access_token!;
   const refreshToken = realTokens?.refresh_token || "";
 
   const sessionPayload = {
     access_token: accessToken,
     token_type: "bearer",
-    expires_in: realTokens?.expires_in ?? 60 * 60 * 24 * 30,
+    expires_in: expiresIn,
     expires_at: expSec,
     refresh_token: refreshToken,
     user: {
@@ -197,18 +201,15 @@ export function persistScholarSession(
     };
     window.localStorage.setItem(profileKey, JSON.stringify(cachedProfile));
 
-    // Only set session in Supabase if we have a real, cryptographically valid token
-    if (hasValidRealToken) {
-      try {
-        supabase.auth
-          .setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          })
-          .catch(() => {});
-      } catch {
-        /* ignore */
-      }
+    try {
+      supabase.auth
+        .setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
+        .catch(() => {});
+    } catch {
+      /* ignore */
     }
 
     // Notify all app listeners
@@ -225,8 +226,51 @@ export type AuthResult = {
   message?: string;
 };
 
+const NETWORK_MESSAGE =
+  "Could not reach the server. Please check your internet connection and try again.";
+
+/** Turns a Supabase sign-in error into a plain message. Supabase gives the same answer for an unknown account and a wrong password. */
+function describeSignInError(error: {
+  message?: string;
+  status?: number;
+  name?: string;
+}): AuthResult {
+  const msg = (error.message || "").toLowerCase();
+  const status = error.status ?? 0;
+
+  if (msg.includes("email not confirmed")) {
+    return {
+      success: false,
+      code: "generic_error",
+      message:
+        "Your email is not confirmed yet. Please confirm it from the email we sent, then sign in.",
+    };
+  }
+  if (status === 429 || msg.includes("rate limit") || msg.includes("too many")) {
+    return {
+      success: false,
+      code: "generic_error",
+      message: "Too many attempts. Please wait a moment and try again.",
+    };
+  }
+  if (
+    error.name === "AuthRetryableFetchError" ||
+    status === 0 ||
+    status >= 500 ||
+    msg.includes("failed to fetch") ||
+    msg.includes("network")
+  ) {
+    return { success: false, code: "generic_error", message: NETWORK_MESSAGE };
+  }
+  return {
+    success: false,
+    code: "invalid_credentials",
+    message: "Incorrect email/phone or password. Please try again.",
+  };
+}
+
 /**
- * Perform scholar login with dual Supabase + resilient local fallback
+ * Scholar login against Supabase only. Success means a real Supabase session exists.
  */
 export async function loginScholar(
   identifier: string,
@@ -255,92 +299,49 @@ export async function loginScholar(
     };
   }
 
-  // 1. Try Supabase if configured
-  if (isSupabaseConfigured()) {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: authEmail,
-        password,
-      });
+  if (!isSupabaseConfigured()) {
+    return {
+      success: false,
+      code: "generic_error",
+      message: "Sign in is temporarily unavailable. Please try again later.",
+    };
+  }
 
-      if (!error && data?.session?.user) {
-        // Also sync to local account directory
-        const user = data.session.user;
-        const education =
-          (user.user_metadata?.education_level as string) || "Freshman";
-        persistScholarSession(
-          {
-            id: user.id,
-            email: user.email || authEmail,
-            fullName:
-              (user.user_metadata?.full_name as string) || "Student Scholar",
-            educationLevel: education,
-            phone: phoneNum || (user.user_metadata?.phone as string) || null,
-          },
-          {
-            access_token: data.session.access_token,
-            refresh_token: data.session.refresh_token,
-            expires_at: data.session.expires_at,
-            expires_in: data.session.expires_in,
-          }
-        );
-        return { success: true, user: user as unknown as Partial<User> };
-      }
-    } catch {
-      /* Fallback to local scholar directory */
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: authEmail,
+      password,
+    });
+
+    if (error || !data?.session?.user) {
+      return describeSignInError(error ?? {});
     }
-  }
 
-  // 2. Check local scholar directory
-  const localScholar = findLocalScholar(cleanId);
-  if (!localScholar) {
-    return {
-      success: false,
-      code: "user_not_found",
-      message: "No account found with this email or phone number.",
-    };
-  }
-
-  const hashed = hashPassword(password);
-  if (!localScholar.passwordHash) {
-    localScholar.passwordHash = hashed;
-    saveLocalScholarAccount(localScholar);
-  } else if (
-    localScholar.passwordHash !== hashed &&
-    localScholar.passwordHash !== password
-  ) {
-    return {
-      success: false,
-      code: "invalid_credentials",
-      message: "Incorrect password. Please try again.",
-    };
-  }
-
-  // Credentials matched!
-  persistScholarSession({
-    id: localScholar.id,
-    email: localScholar.email,
-    fullName: localScholar.fullName,
-    educationLevel: localScholar.educationLevel,
-    phone: localScholar.phone,
-  });
-
-  return {
-    success: true,
-    user: {
-      id: localScholar.id,
-      email: localScholar.email,
-      user_metadata: {
-        full_name: localScholar.fullName,
-        education_level: localScholar.educationLevel,
-        phone: localScholar.phone,
+    const user = data.session.user;
+    persistScholarSession(
+      {
+        id: user.id,
+        email: user.email || authEmail,
+        fullName: (user.user_metadata?.full_name as string) || "Student Scholar",
+        educationLevel: (user.user_metadata?.education_level as string) || "Freshman",
+        phone: phoneNum || (user.user_metadata?.phone as string) || null,
       },
-    },
-  };
+      {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
+        expires_in: data.session.expires_in,
+      }
+    );
+    return { success: true, user: user as unknown as Partial<User> };
+  } catch {
+    return { success: false, code: "generic_error", message: NETWORK_MESSAGE };
+  }
 }
 
 /**
- * Register scholar with dual Supabase + instant local persistence
+ * Registers a scholar: creates the real Supabase account through the server route, then signs in
+ * for real. Never creates a local-only account.
  */
 export async function registerScholar(params: {
   fullName: string;
@@ -365,114 +366,87 @@ export async function registerScholar(params: {
     };
   }
 
-  // Check if account already exists locally
-  const existing = findLocalScholar(cleanId);
-  if (existing) {
+  if (!isSupabaseConfigured()) {
     return {
       success: false,
-      code: "user_already_exists",
-      message: "An account with this email or phone number already exists.",
+      code: "generic_error",
+      message: "Sign up is temporarily unavailable. Please try again later.",
     };
   }
 
-  const scholarId = `wta_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-  const newAccount: ScholarAccount = {
-    id: scholarId,
-    email: authEmail,
-    phone: phoneNum,
-    fullName: fullName.trim() || "Student Scholar",
-    educationLevel,
-    passwordHash: hashPassword(password),
-    createdAt: new Date().toISOString(),
-  };
+  const cleanName = fullName.trim() || "Student Scholar";
 
-  let sessionTokens:
-    | {
-        access_token?: string;
-        refresh_token?: string;
-        expires_at?: number;
-        expires_in?: number;
-      }
-    | undefined = undefined;
+  try {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: authEmail,
+        password,
+        fullName: cleanName,
+        educationLevel,
+        phone: phoneNum,
+      }),
+    });
+    const json = (await res.json().catch(() => null)) as
+      | { error?: string; code?: string }
+      | null;
 
-  // Try server-side or Supabase sign-up in background/best-effort
-  if (isSupabaseConfigured()) {
-    try {
-      await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: authEmail,
-          password,
-          fullName: newAccount.fullName,
-          educationLevel,
-          phone: phoneNum,
-        }),
-      }).catch(() => null);
-
-      await supabase.auth
-        .signUp({
-          email: authEmail,
-          password,
-          options: {
-            data: {
-              full_name: newAccount.fullName,
-              education_level: educationLevel,
-              phone: phoneNum,
-            },
-          },
-        })
-        .catch(() => null);
-
-      // Attempt immediate sign in to obtain real JWT tokens from Supabase Auth
-      const { data: signInData } = await supabase.auth
-        .signInWithPassword({
-          email: authEmail,
-          password,
-        })
-        .catch(() => ({ data: null }));
-
-      if (signInData?.session?.access_token) {
-        sessionTokens = {
-          access_token: signInData.session.access_token,
-          refresh_token: signInData.session.refresh_token,
-          expires_at: signInData.session.expires_at,
-          expires_in: signInData.session.expires_in,
+    if (!res.ok) {
+      if (res.status === 409 || json?.code === "user_already_exists") {
+        return {
+          success: false,
+          code: "user_already_exists",
+          message: "An account with this email or phone number already exists.",
         };
       }
-    } catch {
-      /* ignore */
+      return {
+        success: false,
+        code: "generic_error",
+        message: json?.error || "Could not create the account. Please try again.",
+      };
     }
-  }
 
-  // Save scholar account locally
-  saveLocalScholarAccount(newAccount);
+    // Sign in for real to get the Supabase session.
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: authEmail,
+      password,
+    });
 
-  // Set active session in localStorage
-  persistScholarSession(
-    {
-      id: newAccount.id,
-      email: newAccount.email,
-      fullName: newAccount.fullName,
-      educationLevel: newAccount.educationLevel,
-      phone: newAccount.phone,
-    },
-    sessionTokens
-  );
+    if (error || !data?.session?.user) {
+      const msg = (error?.message || "").toLowerCase();
+      return {
+        success: false,
+        code: "generic_error",
+        message: msg.includes("email not confirmed")
+          ? "Account created. Please confirm your email from the message we sent, then sign in."
+          : "Your account was created. Please sign in with it.",
+      };
+    }
 
-  // Apply default My Learning packages based on the academic level!
-  applyDefaultPackagesForLevel(educationLevel);
-
-  return {
-    success: true,
-    user: {
-      id: newAccount.id,
-      email: newAccount.email,
-      user_metadata: {
-        full_name: newAccount.fullName,
-        education_level: newAccount.educationLevel,
-        phone: newAccount.phone,
+    const user = data.session.user;
+    persistScholarSession(
+      {
+        id: user.id,
+        email: user.email || authEmail,
+        fullName: (user.user_metadata?.full_name as string) || cleanName,
+        educationLevel:
+          (user.user_metadata?.education_level as string) || educationLevel,
+        phone: phoneNum,
       },
-    },
-  };
+      {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at,
+        expires_in: data.session.expires_in,
+      }
+    );
+
+    // Apply default My Learning packages based on the academic level.
+    applyDefaultPackagesForLevel(educationLevel);
+
+    return { success: true, user: user as unknown as Partial<User> };
+  } catch {
+    return { success: false, code: "generic_error", message: NETWORK_MESSAGE };
+  }
 }

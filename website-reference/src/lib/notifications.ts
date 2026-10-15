@@ -2,7 +2,9 @@ import { supabase } from "@/lib/supabase";
 import { createServiceClient } from "@/lib/supabase-server";
 import { sendFcmPushToTokens, type FcmPushPayload } from "@/lib/firebase-admin";
 
-export type NotificationType = "material" | "admin" | "payment" | "general";
+// 2026-10-15 (notifications v2, R2): "contest" added. The three categories of the owner's order are
+// admin (announcement), material and contest; "payment" and "general" stay for old rows.
+export type NotificationType = "material" | "admin" | "payment" | "general" | "contest";
 
 export type NotificationItem = {
   id: string;
@@ -146,7 +148,20 @@ export async function getDeviceTokensForTarget(target: string): Promise<string[]
 }
 
 /**
+ * Where a notification opens when the sender gave no url (notifications v2):
+ * announcement -> its reading view in the app's notification list, contest -> the trophy screen,
+ * anything else -> the learning page (the old default).
+ */
+function defaultUrlFor(type: NotificationType, id: string): string {
+  if (type === "admin") return `/notifications?open=${id}`;
+  if (type === "contest") return "/competitions";
+  return "/learning";
+}
+
+/**
  * Create a new notification and trigger FCM push to target devices.
+ * `url` omitted = automatic (see defaultUrlFor). Callers that must keep the old behaviour pass
+ * an explicit url (the legacy send and dispatch paths pass "/learning").
  */
 export async function createAndPushNotification(params: {
   title: string;
@@ -169,14 +184,15 @@ export async function createAndPushNotification(params: {
   const target = params.target || "all";
   const id = `notif_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const createdAt = new Date().toISOString();
+  const type: NotificationType = params.type || "general";
 
   const notification: NotificationItem = {
     id,
     title: params.title.trim(),
     body: params.body.trim(),
-    type: params.type || "general",
+    type,
     target,
-    url: params.url?.trim() || "/learning",
+    url: params.url?.trim() || defaultUrlFor(type, id),
     createdAt,
     createdBy: params.createdBy,
     metadata: params.metadata,
@@ -211,6 +227,7 @@ export async function createAndPushNotification(params: {
   }
 
   // 3. Fetch device tokens and send FCM push
+  // The push never carries the rich content (FCM data limit is 4 KB): only title, plain preview, type, id and url.
   const targetTokens = await getDeviceTokensForTarget(target);
   const fcmPayload: FcmPushPayload = {
     title: notification.title,
@@ -241,13 +258,41 @@ export async function createAndPushNotification(params: {
   };
 }
 
+function rowToItem(row: Record<string, unknown>): NotificationItem {
+  return {
+    id: String(row.id),
+    title: String(row.title),
+    body: String(row.body),
+    type: (row.type as NotificationType) || "general",
+    target: String(row.target || "all"),
+    url: row.url ? String(row.url) : "/learning",
+    createdAt: String(row.created_at || new Date().toISOString()),
+    createdBy: row.created_by ? String(row.created_by) : undefined,
+    metadata: (row.metadata as Record<string, unknown> | null) || {},
+    read: false,
+  };
+}
+
+// Targeted notices of these types may be read with only a user id / e-mail in the query (the app does not
+// send a token yet). Anything else targeted at one student (payment, general) needs a verified token.
+const PUBLIC_TARGETED_TYPES: NotificationType[] = ["admin", "material", "contest"];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_RE = /^[^\s,()"']+@[^\s,()"']+$/;
+
 /**
  * List notifications for the current student.
  * Returns notifications where target is "all" OR matches the user's ID/email.
+ *
+ * 2026-10-15 (notifications v2): rows addressed to ONE student (audience sends create one row per student)
+ * are invisible to the public key because of row security, so the server reads with the service client
+ * for the matching user id / e-mail. `verified` = the caller proved who they are with an access token
+ * (see api/notifications GET); without it only admin / material / contest rows are returned for a
+ * targeted student, never payment or general ones.
  */
 export async function listNotificationsForUser(
   userId?: string | null,
-  email?: string | null
+  email?: string | null,
+  verified = false
 ): Promise<NotificationItem[]> {
   const map = new Map<string, NotificationItem>();
 
@@ -264,37 +309,46 @@ export async function listNotificationsForUser(
 
   // Query Supabase
   try {
-    const client = supabase;
-    const { data, error } = await client
-      .from("notifications")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50);
+    let rows: Record<string, unknown>[] | null = null;
 
-    if (!error && Array.isArray(data)) {
-      data.forEach((row) => {
-        const item: NotificationItem = {
-          id: String(row.id),
-          title: String(row.title),
-          body: String(row.body),
-          type: (row.type as NotificationType) || "general",
-          target: String(row.target || "all"),
-          url: row.url ? String(row.url) : "/learning",
-          createdAt: String(row.created_at || new Date().toISOString()),
-          createdBy: row.created_by ? String(row.created_by) : undefined,
-          metadata: row.metadata || {},
-          read: false,
-        };
-
-        if (
-          item.target === "all" ||
-          (userId && item.target === userId) ||
-          (email && item.target.toLowerCase() === email.toLowerCase())
-        ) {
-          map.set(item.id, item);
-        }
-      });
+    const service = createServiceClient();
+    const safeUserId = userId && UUID_RE.test(userId) ? userId : null;
+    const safeEmail = email && EMAIL_RE.test(email) ? email : null;
+    if (service && (safeUserId || safeEmail)) {
+      const filters = ["target.eq.all"];
+      if (safeUserId) filters.push(`target.eq.${safeUserId}`);
+      if (safeEmail) filters.push(`target.ilike.${safeEmail}`);
+      const { data, error } = await service
+        .from("notifications")
+        .select("*")
+        .or(filters.join(","))
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (!error && Array.isArray(data)) rows = data as Record<string, unknown>[];
     }
+
+    if (!rows) {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (!error && Array.isArray(data)) rows = data as Record<string, unknown>[];
+    }
+
+    (rows ?? []).forEach((row) => {
+      const item = rowToItem(row);
+      if (item.target === "all") {
+        map.set(item.id, item);
+        return;
+      }
+      const isMine =
+        (!!userId && item.target === userId) ||
+        (!!email && item.target.toLowerCase() === email.toLowerCase());
+      if (isMine && (verified || PUBLIC_TARGETED_TYPES.includes(item.type))) {
+        map.set(item.id, item);
+      }
+    });
   } catch {
     /* fallback to memory items */
   }
