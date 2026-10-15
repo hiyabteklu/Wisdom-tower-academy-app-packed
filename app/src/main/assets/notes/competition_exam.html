@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="katex/katex.min.css">
+<link rel="stylesheet" href="richtext.css">
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; padding: 0; background: #0a101d; }
+  body { color: #cbd5e1; font: 15px/1.55 -apple-system, Roboto, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+  #root { display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; padding: 6px 10px 0; max-width: 680px; margin: 0 auto; overflow-wrap: anywhere; }
+  button { font-family: inherit; cursor: pointer; }
+  .msg { text-align: center; color: #94a3b8; padding: 40px 0; font-size: .9rem; }
+
+  .top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 6px; border: 1px solid rgba(255,255,255,.1); background: rgba(10,16,29,.7); border-radius: 10px; padding: 4px 8px; font-size: .75rem; margin-bottom: 8px; }
+  .tl, .tr { display: flex; align-items: center; gap: 8px; }
+  .st { font-weight: 800; }
+  .st.wh { color: rgba(255,255,255,.9); font-weight: 600; }
+  .timer { font: 800 .75rem/1 ui-monospace, Menlo, monospace; padding: 4px 7px; border-radius: 7px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.1); color: #a7f3d0; }
+  .timer.warn { color: #fda4af; border-color: rgba(251,113,133,.4); }
+  .warn-line { flex: none; margin-bottom: 8px; border: 1px solid rgba(248,113,113,.5); background: rgba(248,113,113,.08); color: #f87171; font-size: .72rem; font-weight: 800; padding: 6px 10px; border-radius: 10px; }
+
+  .pills { flex: none; display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 6px; margin-bottom: 8px; padding-bottom: 2px; scrollbar-width: none; }
+  .pills::-webkit-scrollbar { display: none; }
+  .pill { flex: 0 0 30px; position: relative; width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,.15); background: transparent; color: #94a3b8; font-size: .75rem; font-weight: 800; padding: 0; }
+  .pill.cur { border-color: #fbbf24; background: rgba(245,158,11,.2); color: #fef3c7; }
+  .pill.flg { border-color: rgba(251,146,60,.5); background: rgba(249,115,22,.1); color: #fed7aa; }
+  .pill.ans { border-color: rgba(34,211,238,.5); background: rgba(6,182,212,.1); color: #a5f3fc; }
+  .pill i { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; border-radius: 50%; background: #fb923c; }
+
+  .qcard { flex: none; border: 1px solid rgba(255,255,255,.12); border-radius: 16px; padding: 14px; background: linear-gradient(160deg, #131f38, #0e172a 60%, #0a101d); }
+  .qhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .qn { font-size: .75rem; font-weight: 600; color: #94a3b8; }
+  .flag { border: 1px solid rgba(255,255,255,.12); background: transparent; color: #94a3b8; font-size: .75rem; font-weight: 800; padding: 5px 10px; border-radius: 8px; }
+  .flag.on { border-color: rgba(251,146,60,.5); background: rgba(249,115,22,.15); color: #fed7aa; }
+  .prompt { color: #fff; font-weight: 700; margin-bottom: 12px; font-family: var(--wt-content-font-family, "WT Tinos", serif); font-style: var(--wt-content-font-style, italic); font-size: var(--wt-content-size-question, 17px); line-height: var(--wt-content-line-question, 26px); }
+  .prompt .study-p { margin: 0 0 .5em; }
+  .crow { position: relative; display: flex; align-items: center; margin-bottom: 8px; }
+  .choice { width: 100%; text-align: left; display: flex; align-items: baseline; gap: 8px; padding: 10px 40px 10px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.03); color: rgba(255,255,255,.9); font-size: .85rem; font-weight: 600; }
+  .choice .cl { color: #fcd34d; font-weight: 800; flex: none; font-style: normal; }
+  .choice .ct { min-width: 0; flex: 1; font-family: var(--wt-content-font-family, "WT Tinos", serif); font-style: var(--wt-content-font-style, italic); font-size: var(--wt-content-size-option, 16px); line-height: var(--wt-content-line-option, 24px); }
+  .choice.sel { border-color: #22d3ee; background: rgba(6,182,212,.2); color: #fff; font-weight: 800; }
+  .choice.elim { border-color: rgba(255,255,255,.05); background: rgba(0,0,0,.4); color: #64748b; opacity: .5; text-decoration: line-through; }
+  .xbtn { position: absolute; right: 6px; width: 28px; height: 28px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #64748b; font-size: .7rem; opacity: .6; padding: 0; }
+  .xbtn.on { background: rgba(244,63,94,.2); color: #fda4af; border-color: rgba(251,113,133,.4); opacity: 1; }
+
+  .nav { flex: none; margin-top: auto; position: sticky; bottom: 0; background: #0a101d; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 8px; }
+  .btn { font: 700 .85rem/1 -apple-system, Roboto, sans-serif; padding: 11px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.12); background: transparent; color: #e2e8f0; }
+  .btn:disabled { opacity: .4; }
+  .btn.amber { background: #f59e0b; border-color: #f59e0b; color: #0a101d; }
+  .btn.fin { margin-left: auto; border-color: rgba(52,211,153,.4); background: rgba(16,185,129,.15); color: #a7f3d0; }
+
+  .ovl { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 50; background: rgba(2,6,23,.82); display: flex; align-items: center; justify-content: center; padding: 14px; overflow-y: auto; }
+  .sheet { position: relative; width: 100%; max-width: 360px; box-sizing: border-box; border-radius: 24px; border: 1px solid rgba(255,255,255,.15); background: linear-gradient(180deg, #111a2e, #0c1426 60%, #080d19); padding: 20px; text-align: center; margin: auto; }
+  .sheet h3 { margin: 0 0 8px; font-size: 1.05rem; color: #fff; }
+  .sheet p { margin: 0 0 16px; font-size: .85rem; color: #94a3b8; }
+  .sheet .row { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn.go { background: #10b981; border-color: #10b981; color: #0a101d; font-weight: 800; }
+  .eyebrow { display: inline-block; padding: 3px 12px; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: #cbd5e1; font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  .rtitle { margin: 0 0 6px; font-size: .95rem; font-weight: 800; color: #fff; }
+  .gauge { position: relative; width: 112px; height: 112px; margin: 8px auto; }
+  .gauge svg { width: 112px; height: 112px; transform: rotate(-90deg); }
+  .gauge .mid { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .gauge .big { font-size: 1.9rem; font-weight: 900; color: #fff; line-height: 1; }
+  .gauge .of { font-size: .68rem; font-weight: 600; color: #cbd5e1; margin-top: 4px; }
+  .tier { margin: 0; font-size: .95rem; font-weight: 800; }
+  .cap { margin: 2px auto 14px; font-size: .75rem; color: #94a3b8; max-width: 280px; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .tile { border-radius: 12px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); padding: 8px 4px; }
+  .tile.g { border-color: rgba(52,211,153,.2); background: rgba(16,185,129,.1); }
+  .tile .k { font-size: .62rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #cbd5e1; }
+  .tile.g .k { color: #6ee7b7; }
+  .tile .v { margin: 2px 0 0; font-size: 1.1rem; font-weight: 900; color: #fff; }
+  .wide { display: block; width: 100%; box-sizing: border-box; margin-bottom: 8px; text-align: center; font-size: .78rem; padding: 10px 12px; }
+  .wide.cy { background: #22d3ee; border-color: #22d3ee; color: #020617; font-weight: 800; }
+  .xclose { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: #94a3b8; font-size: 1.1rem; padding: 0; }
+
+  .rhead { flex: none; border: 1px solid rgba(255,255,255,.12); border-radius: 12px; background: #0e172a; padding: 12px; margin-bottom: 10px; }
+  .rhead .sc { font-size: 1rem; font-weight: 800; color: #fff; }
+  .rhead .sub { margin: 4px 0 10px; font-size: .75rem; color: #94a3b8; }
+  .rhead .acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .mini { border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.05); color: #cbd5e1; font-size: .72rem; font-weight: 800; padding: 6px 10px; border-radius: 8px; }
+  .mini.score { background: #f59e0b; border-color: #f59e0b; color: #0a101d; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="katex/katex.min.js"></script>
+<script src="richtext.js"></script>
+<script>
+/*
+ * Competition exam window. It is the hub's exam window (assets/notes/quiz.html, exam mode) with the same look and
+ * the same controls: slim top bar with the answered counter and the countdown, a row of question numbers (tap to
+ * jump), a Flag button, a cross-out button on every choice, Prev / Next / Submit Exam, the "Submit this exam?"
+ * confirm and the score card with the gauge and the three tiles (Correct, Missed, Skipped).
+ * Differences, all on purpose:
+ *  - the page never holds an answer key. The app sends the questions without keys and the SERVER grades: after
+ *    "Submit & View Results" the page asks the app (WTBridge.onSubmit) and the app answers with
+ *    window.wtSubmitResult(jsonText) = { ok, score, total, timeTakenMs, message }.
+ *  - the countdown runs to the global end of the competition (options.remainingMs), not from the start of the page.
+ *  - answers are reported on every pick (WTBridge.onAnswers) so the app can autosave them.
+ * The app calls window.setQuiz(metaJsonText, optionsJsonText):
+ *   meta = { questions: [ { prompt, choices } ] }
+ *   options = { title, ranked (bool), remainingMs (number, only when there is a deadline), initial: { "<index>": choice } }
+ * Back to the app through window.WTBridge: onAnswers(json), onSubmit(json), onDone(json).
+ * window.wtBack() returns true when it handled Back (closes a dialog), false when the app should leave.
+ * window.wtForceSubmit() lets the app submit when the SERVER clock says the time is up.
+ */
+(function () {
+  var root = document.getElementById("root");
+  var Q = [], title = "", ranked = true;
+  var idx = 0, answers = {}, flagged = {}, eliminated = {};
+  var confirmOpen = false, submitting = false, submitted = false, submitErr = "", srv = null, resultOpen = false;
+  var hasTimer = false, deadline = 0, timerId = null, retryId = null;
+  var startX = null, startY = null;
+
+  function hasOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function R(t) { try { return window.WTRich.render(String(t == null ? "" : t)); } catch (e) { return esc(t); } }
+  function RI(t) { try { return window.WTRich.renderInline(String(t == null ? "" : t)); } catch (e) { return esc(t); } }
+  function cleanChoice(c) { return String(c == null ? "" : c).replace(/^[A-Da-d][.)]\s*/, "").replace(/[\r\n]+/g, " ").trim(); }
+  function letter(i) { return String.fromCharCode(65 + i); }
+  function send(name, obj) {
+    try { if (window.WTBridge && window.WTBridge[name]) window.WTBridge[name](JSON.stringify(obj)); } catch (e) {}
+  }
+
+  function counts() {
+    var attempted = 0, fl = 0, k;
+    for (k in answers) { if (hasOwn(answers, k) && answers[k] != null) attempted++; }
+    for (k in flagged) { if (hasOwn(flagged, k) && flagged[k]) fl++; }
+    return { attempted: attempted, skipped: Math.max(0, Q.length - attempted), flaggedCount: fl };
+  }
+
+  /* ---------- countdown ---------- */
+  function leftSec() { return Math.max(0, Math.ceil((deadline - Date.now()) / 1000)); }
+  function timerText() {
+    var l = leftSec(), h = Math.floor(l / 3600), m = Math.floor((l % 3600) / 60), s = l % 60;
+    return (h > 0 ? h + ":" + (m < 10 ? "0" : "") + m : String(m)) + ":" + (s < 10 ? "0" : "") + s;
+  }
+  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+  function tick() {
+    var l = leftSec(), el = document.getElementById("timer");
+    if (el) { el.textContent = timerText(); el.className = "timer" + (l < 60 ? " warn" : ""); }
+    if (l <= 0 && !submitted && !submitting && !submitErr) doSubmit();
+  }
+  function startTimer() {
+    stopTimer();
+    if (!hasTimer || submitted) return;
+    timerId = setInterval(tick, 1000);
+  }
+
+  /* ---------- submit (the server grades) ---------- */
+  function sendSubmit() { send("onSubmit", { answers: answers }); }
+  function doSubmit() {
+    if (submitted || submitting) return;
+    if (retryId) { clearTimeout(retryId); retryId = null; }
+    confirmOpen = false; submitting = true; submitErr = "";
+    draw();
+    sendSubmit();
+  }
+  window.wtSubmitResult = function (text) {
+    var r = null;
+    try { r = JSON.parse(text || "{}"); } catch (e) { r = { ok: false, message: "Unexpected answer. Please try again." }; }
+    submitting = false;
+    if (r && r.ok) {
+      submitted = true; srv = r; submitErr = ""; stopTimer(); resultOpen = true; draw();
+    } else {
+      submitErr = (r && r.message) ? String(r.message) : "Could not submit. Please try again.";
+      draw();
+      if (hasTimer && leftSec() <= 0) {
+        retryId = setTimeout(function () { retryId = null; if (!submitted && !submitting) { submitting = true; submitErr = ""; draw(); sendSubmit(); } }, 3000);
+      }
+    }
+  };
+  window.wtForceSubmit = function () {
+    if (submitted || submitting || submitErr) return false;
+    doSubmit();
+    return true;
+  };
+
+  /* ---------- actions ---------- */
+  function goTo(i) {
+    if (i < 0 || i >= Q.length || submitted || submitting) return;
+    idx = i; draw(); window.scrollTo(0, 0);
+  }
+  function pick(ci) {
+    if (submitted || submitting) return;
+    if (eliminated[idx] && eliminated[idx][ci]) eliminated[idx][ci] = false;
+    answers[idx] = ci;
+    draw();
+    send("onAnswers", { answers: answers });
+  }
+  function toggleElim(ci) {
+    if (!eliminated[idx]) eliminated[idx] = {};
+    eliminated[idx][ci] = !eliminated[idx][ci];
+    draw();
+  }
+
+  /* ---------- views ---------- */
+  function topBar(c) {
+    var left = '<span class="st wh">' + c.attempted + "/" + Q.length + " Answered" + (c.skipped > 0 ? " \u00B7 " + c.skipped + " left" : "") + "</span>";
+    var right = "";
+    if (hasTimer && !submitted) right = '<span id="timer" class="timer' + (leftSec() < 60 ? " warn" : "") + '">' + timerText() + "</span>";
+    return '<div class="top"><div class="tl">' + left + '</div><div class="tr">' + right + "</div></div>";
+  }
+
+  function pills() {
+    var h = '<div class="pills">', i, answered, isFl, cls;
+    for (i = 0; i < Q.length; i++) {
+      answered = answers[i] != null; isFl = !!flagged[i];
+      cls = "pill";
+      if (i === idx) cls += " cur";
+      else if (isFl) cls += " flg";
+      else if (answered) cls += " ans";
+      h += '<button class="' + cls + '" data-act="pill" data-i="' + i + '">' + (i + 1) + (isFl ? "<i></i>" : "") + "</button>";
+    }
+    return h + "</div>";
+  }
+
+  function questionCard() {
+    var q = Q[idx];
+    var h = '<div class="qcard"><div class="qhead"><div><span class="qn">Question ' + (idx + 1) + " of " + Q.length + '</span></div><button class="flag' +
+      (flagged[idx] ? " on" : "") + '" data-act="flag">' + (flagged[idx] ? "Flagged" : "Flag") + "</button></div>";
+    h += '<div class="prompt">' + R(q.prompt) + "</div>";
+    var ci, selected, elim, cls;
+    for (ci = 0; ci < q.choices.length; ci++) {
+      selected = answers[idx] === ci; elim = !!(eliminated[idx] && eliminated[idx][ci]);
+      cls = "choice";
+      if (selected) cls += " sel";
+      else if (elim) cls += " elim";
+      h += '<div class="crow"><button class="' + cls + '" data-act="pick" data-ci="' + ci + '"><span class="cl">' + letter(ci) +
+        '.</span><span class="ct">' + RI(cleanChoice(q.choices[ci])) + '</span></button>' +
+        '<button class="xbtn' + (elim ? " on" : "") + '" data-act="elim" data-ci="' + ci + '" aria-label="' + (elim ? "Restore choice" : "Cross out choice") + '"><s>ab</s></button></div>';
+    }
+    return h + "</div>";
+  }
+
+  function navBar() {
+    return '<div class="nav"><button class="btn" data-act="prev"' + (idx === 0 ? " disabled" : "") + '>\u2039 Prev</button>' +
+      '<button class="btn amber" data-act="next"' + (idx >= Q.length - 1 ? " disabled" : "") + '>Next \u203A</button>' +
+      '<button class="btn fin" data-act="finish">' + (ranked ? "Submit Exam" : "Finish Practice") + "</button></div>";
+  }
+
+  function confirmDialog(c) {
+    return '<div class="ovl"><div class="sheet"><h3>' + (ranked ? "Submit this exam?" : "Finish this practice?") + "</h3><p>Answered " + c.attempted + " of " + Q.length +
+      " \u00B7 Skipped " + c.skipped + (c.flaggedCount > 0 ? " \u00B7 Flagged " + c.flaggedCount : "") +
+      '</p><div class="row"><button class="btn" data-act="keep">Keep Going</button><button class="btn go" data-act="confirm">Submit &amp; View Results</button></div></div></div>';
+  }
+
+  function busyDialog() {
+    if (submitErr) {
+      return '<div class="ovl"><div class="sheet"><h3>Could not submit</h3><p>' + esc(submitErr) +
+        '</p><div class="row"><button class="btn go" data-act="retry">Try again</button></div></div></div>';
+    }
+    return '<div class="ovl"><div class="sheet"><h3>Submitting...</h3><p>Please wait.</p></div></div>';
+  }
+
+  function tier(pct) {
+    if (pct >= 90) return { label: "Mastery Level", color: "#10b981", cap: "Outstanding! You demonstrated rock-solid mastery of these questions." };
+    if (pct >= 75) return { label: "Strong Performance", color: "#06b6d4", cap: "Great effort! A few targeted reviews will get you to top scores." };
+    if (pct >= 50) return { label: "Good Progress", color: "#38bdf8", cap: "Solid start. Reviewing the missed questions will quickly boost your score." };
+    return { label: "Practice Reinforcement", color: "#06b6d4", cap: "Keep practicing! Step-by-step solutions below will help you master every question." };
+  }
+
+  function hasScore() { return !!(srv && typeof srv.score === "number" && typeof srv.total === "number"); }
+  function fmtTaken(ms) {
+    var s = Math.floor(Number(ms) / 1000), m = Math.floor(s / 60);
+    s = s % 60;
+    return m + ":" + (s < 10 ? "0" : "") + s;
+  }
+
+  var CIRC = 2 * Math.PI * 48;
+  function resultModal(c) {
+    if (!hasScore()) {
+      return '<div class="ovl"><div class="sheet"><span class="eyebrow">Submitted</span><p class="cap">Your answers were already submitted.</p>' +
+        '<button class="btn wide cy" data-act="done">Done</button></div></div>';
+    }
+    var total = srv.total > 0 ? srv.total : Q.length, score = srv.score;
+    var pct = total ? Math.round((score / total) * 100) : 0, t = tier(pct);
+    var wrong = Math.max(0, c.attempted - score), skipped = Math.max(0, total - c.attempted);
+    var note = ranked ? "The leaderboard opens when the competition window ends." : "";
+    return '<div class="ovl"><div class="sheet"><button class="xclose" data-act="rclose" aria-label="Close">\u2715</button>' +
+      '<span class="eyebrow">' + (ranked ? "Exam Result" : "Practice Completed") + "</span>" +
+      (title ? '<p class="rtitle">' + esc(title) + "</p>" : "") +
+      '<div class="gauge"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" stroke="rgba(255,255,255,.08)" stroke-width="8" fill="transparent"></circle>' +
+      '<circle id="gcirc" cx="60" cy="60" r="48" stroke="' + t.color + '" stroke-width="8" stroke-linecap="round" fill="transparent" stroke-dasharray="' + CIRC + '" stroke-dashoffset="' + CIRC + '"></circle></svg>' +
+      '<div class="mid"><span class="big" id="gpct">0%</span><span class="of">' + score + " of " + total + " Correct</span></div></div>" +
+      '<p class="tier" style="color:' + t.color + '">' + t.label + '</p><p class="cap">' + t.cap + "</p>" +
+      (typeof srv.timeTakenMs === "number" ? '<p class="cap">Time used ' + fmtTaken(srv.timeTakenMs) + "</p>" : "") +
+      '<div class="tiles"><div class="tile g"><div class="k">Correct</div><p class="v">' + score + '</p></div><div class="tile"><div class="k">Missed</div><p class="v">' + wrong +
+      '</p></div><div class="tile"><div class="k">Skipped</div><p class="v">' + skipped + "</p></div></div>" +
+      (note ? '<p class="cap">' + note + "</p>" : "") +
+      '<button class="btn wide cy" data-act="done">Done</button></div></div>';
+  }
+
+  function animateGauge() {
+    if (!hasScore()) return;
+    var total = srv.total > 0 ? srv.total : Q.length;
+    var pct = total ? Math.round((srv.score / total) * 100) : 0, t0 = Date.now();
+    function step() {
+      var circ = document.getElementById("gcirc"), txt = document.getElementById("gpct");
+      if (!circ || !txt) return;
+      var p = Math.min(1, (Date.now() - t0) / 700), e = 1 - Math.pow(1 - p, 3), v = Math.round(e * pct);
+      txt.textContent = v + "%";
+      circ.setAttribute("stroke-dashoffset", String(CIRC - (v / 100) * CIRC));
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function doneCard() {
+    var line = hasScore() ? "Score: " + srv.score + "/" + (srv.total > 0 ? srv.total : Q.length) : "Your answers were submitted.";
+    return '<div class="rhead"><div><span class="sc">Submitted</span></div><p class="sub">' + esc(line) + '</p><div class="acts">' +
+      (hasScore() ? '<button class="mini score" data-act="scorecard">Score Card</button>' : "") +
+      '<button class="mini" data-act="done">Done</button></div></div>';
+  }
+
+  function draw() {
+    if (!Q.length) { root.innerHTML = '<p class="msg">No questions yet.</p>'; return; }
+    var c = counts(), h = topBar(c);
+    if (ranked && !submitted) h += '<div class="warn-line">! Cheating means disqualification. Do not leave this window.</div>';
+    if (!submitted) h += pills() + questionCard() + navBar();
+    else h += doneCard();
+    if (confirmOpen) h += confirmDialog(c);
+    if (submitting || submitErr) h += busyDialog();
+    if (resultOpen) h += resultModal(c);
+    root.innerHTML = h;
+    if (resultOpen) animateGauge();
+    var curPill = root.querySelector(".pill.cur");
+    if (curPill && curPill.scrollIntoView) {
+      try { curPill.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }); } catch (_) {}
+    }
+  }
+
+  /* ---------- events ---------- */
+  root.addEventListener("click", function (e) {
+    var el = e.target;
+    while (el && el !== root && !(el.getAttribute && el.getAttribute("data-act"))) el = el.parentNode;
+    if (!el || el === root) return;
+    var act = el.getAttribute("data-act");
+    if (act === "pick") pick(Number(el.getAttribute("data-ci")));
+    else if (act === "elim") toggleElim(Number(el.getAttribute("data-ci")));
+    else if (act === "flag") { flagged[idx] = !flagged[idx]; draw(); }
+    else if (act === "prev") goTo(idx - 1);
+    else if (act === "next") goTo(idx + 1);
+    else if (act === "pill") goTo(Number(el.getAttribute("data-i")));
+    else if (act === "finish") { confirmOpen = true; draw(); }
+    else if (act === "keep") { confirmOpen = false; draw(); }
+    else if (act === "confirm") doSubmit();
+    else if (act === "retry") { if (retryId) { clearTimeout(retryId); retryId = null; } submitErr = ""; submitting = true; draw(); sendSubmit(); }
+    else if (act === "rclose") { resultOpen = false; draw(); }
+    else if (act === "scorecard") { resultOpen = true; draw(); }
+    else if (act === "done") send("onDone", {});
+  });
+
+  document.addEventListener("touchstart", function (e) {
+    var t = e.touches[0]; startX = t.clientX; startY = t.clientY;
+  }, { passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (startX == null) return;
+    var t = e.changedTouches[0], dx = t.clientX - startX, dy = t.clientY - startY;
+    startX = null; startY = null;
+    if (submitted || submitting || confirmOpen || resultOpen) return;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx < 0 && idx < Q.length - 1) goTo(idx + 1);
+    else if (dx > 0 && idx > 0) goTo(idx - 1);
+  }, { passive: true });
+
+  window.wtBack = function () {
+    if (submitting) return true;
+    if (resultOpen) { resultOpen = false; draw(); return true; }
+    if (confirmOpen) { confirmOpen = false; draw(); return true; }
+    return false;
+  };
+
+  window.setQuiz = function (metaText, optText) {
+    try {
+      var meta = JSON.parse(metaText || "{}"), opt = JSON.parse(optText || "{}");
+      title = opt.title || ""; ranked = opt.ranked !== false;
+      var list = Array.isArray(meta.questions) ? meta.questions : [];
+      Q = list.map(function (q) {
+        q = q || {};
+        return { prompt: q.prompt, choices: Array.isArray(q.choices) ? q.choices : [] };
+      });
+      idx = 0; answers = {}; flagged = {}; eliminated = {};
+      confirmOpen = false; submitting = false; submitted = false; submitErr = ""; srv = null; resultOpen = false;
+      var k, n, v, init = opt.initial || {};
+      for (k in init) {
+        if (!hasOwn(init, k)) continue;
+        n = Number(k); v = Number(init[k]);
+        if (isFinite(n) && isFinite(v) && n >= 0 && n < Q.length && v >= 0 && v < Q[n].choices.length) answers[n] = v;
+      }
+      hasTimer = typeof opt.remainingMs === "number" && isFinite(opt.remainingMs);
+      if (hasTimer) deadline = Date.now() + Math.max(0, opt.remainingMs);
+      startTimer(); draw();
+    } catch (e) {
+      root.innerHTML = '<p class="msg">Could not display this exam.</p>';
+    }
+  };
+})();
+</script>
+</body>
+</html>
