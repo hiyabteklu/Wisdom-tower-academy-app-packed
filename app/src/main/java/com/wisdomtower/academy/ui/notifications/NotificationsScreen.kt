@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Icon
@@ -50,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.data.auth.AuthStateManager
 import com.wisdomtower.academy.data.model.NativeNotificationItem
+import com.wisdomtower.academy.data.model.NotificationCategory
 import com.wisdomtower.academy.data.repository.NotificationRepository
 import com.wisdomtower.academy.ui.theme.WisdomAccentSky
 import com.wisdomtower.academy.ui.theme.WisdomCyan
@@ -69,17 +71,18 @@ import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
  * GLASS (2026-10-13, docs/GLASS_PLAN.md area 4): the notice rows, the guest notice, the loading skeleton and the
  * empty state use the see-through glass look of the Targets screen. An unread notice is a little brighter
  * (white 6%) than a read one (white 2%).
+ *
+ * NOTIFICATIONS V2 (docs/NOTIFICATIONS_V2_PLAN.md, slice R5): three categories only (announcement,
+ * material release, contest). Tap rules: an announcement opens the full-screen reading view in place
+ * (NotificationReaderScreen, no navigation); a material release goes to its url; a contest opens the
+ * trophy screen (/competitions). Old general/payment rows count as announcements.
+ * [openId] lets a push open the reader for one notification (wired in slice R6).
  */
 private enum class NoticeFilter(val label: String) {
     All("All"),
     Material("Material Releases"),
-    Admin("Announcements")
-}
-
-private fun categoryOf(item: NativeNotificationItem): String = when (item.type) {
-    "material" -> "material"
-    "admin" -> "admin"
-    else -> "general"
+    Admin("Announcements"),
+    Contest("Contests")
 }
 
 @Composable
@@ -87,7 +90,8 @@ fun NotificationsScreen(
     onBack: () -> Unit,
     onOpenUrl: (String) -> Unit,
     onSignIn: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    openId: String? = null
 ) {
     val notices by NotificationRepository.notifications.collectAsState()
     val unreadCount by NotificationRepository.unreadCount.collectAsState()
@@ -96,19 +100,37 @@ fun NotificationsScreen(
     val currentUser by AuthStateManager.currentUser.collectAsState()
     val isLoggedIn by AuthStateManager.isLoggedIn.collectAsState()
     var filter by remember { mutableStateOf(NoticeFilter.All) }
+    var openedId by remember(openId) { mutableStateOf(openId) }
 
     // Refresh every time the screen opens (the website refetches on open as well).
     LaunchedEffect(currentUser?.id) {
         NotificationRepository.refreshNotifications(currentUser?.id, currentUser?.email)
     }
 
+    // Opening the reader marks that notification as read.
+    LaunchedEffect(openedId) {
+        openedId?.let { NotificationRepository.markRead(it) }
+    }
+
     val sorted = remember(notices) { notices.sortedByDescending { it.createdAt } }
     val shown = remember(sorted, filter) {
         when (filter) {
             NoticeFilter.All -> sorted
-            NoticeFilter.Material -> sorted.filter { categoryOf(it) == "material" }
-            NoticeFilter.Admin -> sorted.filter { categoryOf(it) == "admin" }
+            NoticeFilter.Material -> sorted.filter { it.category == NotificationCategory.MATERIAL }
+            NoticeFilter.Admin -> sorted.filter { it.category == NotificationCategory.ADMIN }
+            NoticeFilter.Contest -> sorted.filter { it.category == NotificationCategory.CONTEST }
         }
+    }
+
+    // Reading view: full screen inside this section; back returns to the list.
+    val opened = openedId?.let { id -> notices.firstOrNull { it.id == id } }
+    if (opened != null) {
+        NotificationReaderScreen(
+            item = opened,
+            onBack = { openedId = null },
+            modifier = modifier
+        )
+        return
     }
 
     Column(
@@ -359,7 +381,12 @@ fun NotificationsScreen(
                             text = if (filter == NoticeFilter.All) {
                                 "You're all caught up! New content alerts will appear here."
                             } else {
-                                "No alerts found for category \"${if (filter == NoticeFilter.Material) "material" else "admin"}\"."
+                                val name = when (filter) {
+                                    NoticeFilter.Material -> "material"
+                                    NoticeFilter.Contest -> "contest"
+                                    else -> "admin"
+                                }
+                                "No alerts found for category \"$name\"."
                             },
                             color = WisdomMuted,
                             fontSize = 12.sp,
@@ -374,7 +401,14 @@ fun NotificationsScreen(
             items(shown, key = { it.id }) { n ->
                 NoticeRow(n, onClick = {
                     NotificationRepository.markRead(n.id)
-                    onOpenUrl(n.url)
+                    when (n.category) {
+                        // Announcement: read it right here, no navigation.
+                        NotificationCategory.ADMIN -> openedId = n.id
+                        // Contest: always the trophy screen.
+                        NotificationCategory.CONTEST -> onOpenUrl("/competitions")
+                        // Material release: the location the admin picked.
+                        NotificationCategory.MATERIAL -> onOpenUrl(n.url)
+                    }
                 })
             }
         }
@@ -383,15 +417,14 @@ fun NotificationsScreen(
 
 @Composable
 private fun NoticeRow(n: NativeNotificationItem, onClick: () -> Unit) {
-    val category = categoryOf(n)
-    val icon: ImageVector
-    val accent: Color
-    val label: String
-    when (category) {
-        "material" -> { icon = Icons.AutoMirrored.Filled.MenuBook; accent = Color(0xFF7DD3FC); label = "Material Release" }
-        "admin" -> { icon = Icons.Filled.Info; accent = Color(0xFFFCD34D); label = "Announcement" }
-        else -> { icon = Icons.Filled.Notifications; accent = WisdomAccentSky; label = "General" }
+    val category = n.category
+    val icon: ImageVector = when (category) {
+        NotificationCategory.MATERIAL -> Icons.AutoMirrored.Filled.MenuBook
+        NotificationCategory.ADMIN -> Icons.Filled.Info
+        NotificationCategory.CONTEST -> Icons.Filled.EmojiEvents
     }
+    val accent: Color = categoryAccent(category)
+    val label: String = categoryLabel(category)
     val dateText = n.createdAt.take(10)
 
     Row(
@@ -439,6 +472,7 @@ private fun NoticeRow(n: NativeNotificationItem, onClick: () -> Unit) {
                     text = n.body,
                     color = WisdomMuted,
                     fontSize = 12.sp,
+                    maxLines = 3,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
