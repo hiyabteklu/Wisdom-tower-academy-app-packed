@@ -111,10 +111,21 @@ Every slice: step 1 inspect the live code and write the real cause or the curren
 - **M11. Consistency pass.** One sweep: find any screen still without the kit, fix feel differences between screens, update the phone checklist. No new features.
 
 ## 7. Status table (update in the same commit as each slice)
+Corrected 2026-10-16 (session UI_AA): the old table said "M1 to M11 NOT STARTED", which was out of date. Real state, from the commit list of `main` and the `SESSION_2026-10-16_UI_*` logs. "CI not seen" = I (the agent) did not see a build result; the owner's rule is that written and pushed counts as done and he reports problems.
 | Slice | State |
 |---|---|
 | Plan | WRITTEN and pushed 2026-10-16 |
-| M1 to M11 | NOT STARTED |
+| M1 | Motion kit `WisdomMotion.kt` + Settings accordion patch APPLIED (PR #32 merged 2026-10-16 11:05 EAT). CI not seen |
+| M2 | Bottom nav pill patch APPLIED (PR #33, 11:09 EAT, marker `FloatingPillNav v2` per UI_Z). CI not seen |
+| M3 | Tab change transition patch APPLIED (PR #34, 11:24 EAT, `WisdomTabLayer`). CI not seen |
+| M4 | `WisdomReveal.kt` (`wisdomReveal`) written and used in `OpenCard.kt`, `HubItemListScreen.kt` and the competition hub and leaderboard (per UI_Z). Whether Home, Learning and Packages call it directly was NOT confirmed. Commits not looked up |
+| M5 | Screen push patch APPLIED (PR #35, 12:14 EAT, `WisdomPushLayer`). CI not seen |
+| M6 | Hub rows patch APPLIED (PR #36, 12:21 EAT). CI not seen |
+| M7 | Overlay motion patch APPLIED (PR #37, 12:29 EAT) and the bell-dot build fix M7b APPLIED (PR #38, 12:38 EAT; the first M7 version had a `RowScope.AnimatedVisibility` compile error). CI of PR #38 not seen |
+| M8 | Flashcards flip and swipe in `flashcards.html`, commit `0b10cfa` (12:32 EAT). CI not seen |
+| M9 | Slice 1 leaderboard motion, commit `bd08968`; slice 2 contest cards stagger in the hub, commit `decb8ac` (12:47 to 12:48 EAT). CI not seen |
+| M10 | Slice 1 quiz runner, commit `c34c056`; slice 2 competition exam window, commit `134d926` (12:53 to 13:00 EAT). CI not seen |
+| M11 | IN PROGRESS. Slice 1 (UI_Z, commit `707a8a8`): state audit + competition review page motion. Slice 2 (UI_AA): rules page entrance + this table. Open items: drawer screens, trophy shimmer, review frame and points card, dialogs in other files, phone check of Home / Learning / Packages (see `docs/SESSION_2026-10-16_UI_AA.md`) |
 
 ## 8. Owner decisions
 Nothing blocks M1 to M3. Defaults chosen by the planner (the owner can change them):

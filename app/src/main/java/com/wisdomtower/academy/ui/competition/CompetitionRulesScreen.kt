@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomGlassCard
+import com.wisdomtower.academy.ui.theme.wisdomReveal
 
 private val RulesMuted = Color(0xFF94A3B8)
 private val RulesRed = Color(0xFFF87171)
@@ -42,6 +43,9 @@ private val RulesNavy = Color(0xFF0A101D)
 // failed in session W is fixed by this background and zIndex.
 // Session AI (owner, 2026-10-15): the warning is a glass card with a soft red tint instead of a solid box,
 // and Cancel and Start are CompetitionPillButton (round, no bright solid colour). Text is unchanged.
+// Session UI_AA (M11 slice 2, 2026-10-16): the title, the questions-and-minutes line, the warning card and
+// the note rise in once with wisdomReveal (UI_MOTION_PLAN section 4). The Cancel and Start buttons are NOT
+// animated: they are the controls of the attempt and stay instant. Texts and logic are unchanged.
 // NOTE for the owner: the warning says the built-in system will flag the student. The flagging itself is
 // stage C10 and is NOT built yet, so today the text is a warning only.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
@@ -98,16 +102,20 @@ fun CompetitionRulesScreen(
                     text = title,
                     color = Color.White,
                     fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.wisdomReveal(key = "comp_rules_title_" + title, index = 0)
                 )
                 Text(
                     text = questionCount.toString() + " questions  \u2022  " + durationMin.toString() + " min",
                     color = Color(0xFFE2E8F0),
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    modifier = Modifier.wisdomReveal(key = "comp_rules_meta_" + title, index = 1)
                 )
 
                 WisdomGlassCard(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wisdomReveal(key = "comp_rules_card_" + title, index = 2),
                     cornerRadius = 24.dp,
                     fill = RulesRed.copy(alpha = 0.06f),
                     borderColor = RulesRed.copy(alpha = 0.30f)
@@ -129,7 +137,8 @@ fun CompetitionRulesScreen(
                 Text(
                     text = "Your ranked attempt cannot be restarted. The clock keeps running until the contest ends.",
                     color = RulesMuted,
-                    fontSize = 13.sp
+                    fontSize = 13.sp,
+                    modifier = Modifier.wisdomReveal(key = "comp_rules_note_" + title, index = 3)
                 )
             }
 
