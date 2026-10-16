@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.os.SystemClock
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
@@ -12,6 +13,7 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,6 +60,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -134,6 +139,13 @@ private class TutorStreamHolder {
  * (the one that renders the tutor for the drawer row and website links). If the exam starts while the tutor is
  * open, it closes the same way. The calculator is a different screen and is never blocked.
  *
+ * Custom background (owner request 2026-10-16: "the Ai tutor background looks to solid color and ugly ... custom
+ * background image ... a little smooth blur ... so texts overlay cleanly"): if the file
+ * `assets/backgrounds/tutor_bg.jpg` exists, it is drawn full screen (behind the toolbar, the chat and the message
+ * box) with a dark scrim, the chat WebView is made see-through and `tutor.html` gets the class `bgimg` (softer
+ * glass bubbles). If the file is missing or unreadable nothing changes: same opaque dark look as before. The blur
+ * is part of the picture itself (prepare it soft and dark), so scrolling costs nothing extra.
+ *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
 @Composable
@@ -159,6 +171,9 @@ fun NativeTutorScreen(
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    // Optional custom background picture (null when assets/backgrounds/tutor_bg.jpg is not there).
+    val backdrop = remember { loadTutorBackdrop(context) }
 
     val initial = remember {
         TutorSessionStore.load(context) ?: TutorSessionStore.newSession().let { listOf(it) to it.id }
@@ -427,6 +442,21 @@ fun NativeTutorScreen(
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
+        // Optional custom picture + dark scrim (keeps the text readable), drawn behind everything else.
+        if (backdrop != null) {
+            Image(
+                bitmap = backdrop,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(Color(0x66050A14), Color(0x99050A14))))
+            )
+        }
+
         Column(modifier = Modifier.fillMaxSize().imePadding()) {
             // Toolbar: back, Chats, title, New, clear (asks first)
             Row(
@@ -470,6 +500,7 @@ fun NativeTutorScreen(
                 TutorWebView(
                     bridge = bridge,
                     webRef = webRef,
+                    transparent = backdrop != null,
                     onReady = { pageReady = true },
                     onGone = { pageReady = false },
                     modifier = Modifier.fillMaxSize()
@@ -598,6 +629,18 @@ fun NativeTutorScreen(
     }
 }
 
+/**
+ * Reads `assets/backgrounds/tutor_bg.jpg` once. Returns null when the file is missing or cannot be decoded, so the
+ * screen keeps its normal look. No R.drawable reference on purpose: the build stays green whether or not the picture
+ * has been added to the repository yet.
+ */
+private fun loadTutorBackdrop(context: Context): ImageBitmap? =
+    try {
+        context.assets.open("backgrounds/tutor_bg.jpg").use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
+    } catch (e: Exception) {
+        null
+    }
+
 /** Receives the messages of `notes/tutor.html` (`window.WTBridge.*`), on a WebView thread. */
 private class TutorBridge(
     private val onSend: (String) -> Unit,
@@ -619,6 +662,7 @@ private class TutorBridge(
 private fun TutorWebView(
     bridge: Any,
     webRef: Array<WebView?>,
+    transparent: Boolean,
     onReady: () -> Unit,
     onGone: () -> Unit,
     modifier: Modifier
@@ -627,7 +671,8 @@ private fun TutorWebView(
         modifier = modifier,
         factory = { ctx ->
             WebView(ctx).apply {
-                setBackgroundColor(0xFF0A101D.toInt())
+                // See-through when a custom background picture is drawn behind the page (class "bgimg" below).
+                setBackgroundColor(if (transparent) android.graphics.Color.TRANSPARENT else 0xFF0A101D.toInt())
                 settings.javaScriptEnabled = true
                 settings.allowFileAccess = true
                 settings.blockNetworkLoads = true
@@ -635,6 +680,9 @@ private fun TutorWebView(
                 addJavascriptInterface(bridge, "WTBridge")
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String?) {
+                        if (transparent) {
+                            view.evaluateJavascript("document.documentElement.classList.add('bgimg');", null)
+                        }
                         onReady()
                     }
 
