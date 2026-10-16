@@ -80,6 +80,7 @@ import com.wisdomtower.academy.data.repository.AcademyRepository
 import com.wisdomtower.academy.data.repository.NotificationRepository
 import androidx.compose.runtime.collectAsState
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -244,6 +245,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.wisdomtower.academy.ui.theme.MyApplicationTheme
 import com.wisdomtower.academy.ui.theme.WisdomPushLayer
+import com.wisdomtower.academy.ui.theme.wisdomDialogEnter
+import com.wisdomtower.academy.ui.theme.wisdomStaggerIn
 import androidx.compose.ui.draw.shadow
 import kotlinx.coroutines.delay
 
@@ -797,6 +800,19 @@ class MainActivity : ComponentActivity() {
         val splash = installSplashScreen()
         var keepSplash = true
         splash.setKeepOnScreenCondition { keepSplash }
+        // M7-motion: the system splash fades and grows a little into the app instead of vanishing in one frame
+        splash.setOnExitAnimationListener(object : androidx.core.splashscreen.SplashScreen.OnExitAnimationListener {
+            override fun onSplashScreenExit(splashScreenViewProvider: androidx.core.splashscreen.SplashScreenViewProvider) {
+                splashScreenViewProvider.view.animate()
+                    .alpha(0f)
+                    .scaleX(1.06f)
+                    .scaleY(1.06f)
+                    .setDuration(260L)
+                    .setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
+                    .withEndAction { splashScreenViewProvider.remove() }
+                    .start()
+            }
+        })
         super.onCreate(savedInstanceState)
         AuthStateManager.init(this)
         NotificationRepository.init(this) // P15-native-notifications
@@ -2053,15 +2069,21 @@ fun MainScreen(
                                 BrandLogo(size = 34.dp)
                             }
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = if (activeStudyUrl != null) "Study Workspace" else "Wisdom Tower Academy",
-                                color = Color.White,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.2.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Crossfade(
+                                targetState = activeStudyUrl != null,
+                                animationSpec = tween(200),
+                                label = "topBarTitle"
+                            ) { inStudy ->
+                                Text(
+                                    text = if (inStudy) "Study Workspace" else "Wisdom Tower Academy",
+                                    color = Color.White,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.2.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
 
                         // Right: Small top-right timer indicator + Refresh + Notification Actions
@@ -2144,11 +2166,15 @@ fun MainScreen(
                                         tint = Accent,
                                         modifier = Modifier.size(22.dp)
                                     )
-                                    if (unreadNotifCount > 0) {
+                                    AnimatedVisibility(
+                                        visible = unreadNotifCount > 0,
+                                        modifier = Modifier.align(Alignment.TopEnd),
+                                        enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)) + fadeIn(tween(120)),
+                                        exit = scaleOut(tween(120)) + fadeOut(tween(120))
+                                    ) {
                                         Box(
                                             modifier = Modifier
                                                 .size(8.dp)
-                                                .align(Alignment.TopEnd)
                                                 .background(Color(0xFFEF4444), CircleShape)
                                         )
                                     }
@@ -3351,10 +3377,11 @@ fun MainScreen(
                 }
 
                 // P15-native-notifications: native notifications screen (bell)
-                if (showNotifications) {
+                // M7-motion: opens and closes with the shared push layer; the item is the open id ("" = list) so the screen keeps its content while it slides out
+                WisdomPushLayer(item = if (showNotifications) (notificationOpenId ?: "") else null, zIndexValue = 17f) { openIdNow ->
                     NotificationsScreen(
                         onBack = { showNotifications = false; notificationOpenId = null }, // R6-notif-open
-                        openId = notificationOpenId,
+                        openId = openIdNow.ifEmpty { null },
                         onOpenUrl = handleGlobalNav,
                         onSignIn = {
                             resetOverlays()
@@ -3921,8 +3948,8 @@ fun MainScreen(
         // Native Slide-In Side Menu (solid, anchored to left screen edge, brand only at top)
         AnimatedVisibility(
             visible = menuExpanded,
-            enter = fadeIn(tween(160)),
-            exit = fadeOut(tween(140)),
+            enter = fadeIn(tween(260)),
+            exit = fadeOut(tween(200)),
             modifier = Modifier.zIndex(150f)
         ) {
             BackHandler(enabled = menuExpanded) { menuExpanded = false }
@@ -3941,6 +3968,10 @@ fun MainScreen(
                     modifier = Modifier
                         .fillMaxHeight()
                         .width(270.dp)
+                        .animateEnterExit(
+                            enter = slideInHorizontally(tween(260, easing = FastOutSlowInEasing)) { -it },
+                            exit = slideOutHorizontally(tween(200, easing = FastOutSlowInEasing)) { -it }
+                        )
                         .background(
                             Brush.verticalGradient(
                                 listOf(Color(0xF2152238), Color(0xF20D1829))
@@ -4037,6 +4068,7 @@ fun MainScreen(
                             DrawerCompactRow(
                                 icon = Icons.Filled.AutoAwesome,
                                 label = "AI Tutor",
+                                index = 0,
                                 onClick = {
                                     menuExpanded = false
                                     navigateTo("https://www.wisdom-tower-academy.live/learning?tool=tutor")
@@ -4046,6 +4078,7 @@ fun MainScreen(
                             DrawerCompactRow(
                                 icon = Icons.Filled.Calculate,
                                 label = "Calculator",
+                                index = 1,
                                 onClick = {
                                     menuExpanded = false
                                     navigateTo("https://www.wisdom-tower-academy.live/learning?tool=calculator")
@@ -4055,6 +4088,7 @@ fun MainScreen(
                             DrawerCompactRow(
                                 icon = Icons.Filled.EditNote,
                                 label = "Notebook",
+                                index = 2,
                                 onClick = {
                                     menuExpanded = false
                                     navigateTo("https://www.wisdom-tower-academy.live/learning?tool=notes")
@@ -4064,6 +4098,7 @@ fun MainScreen(
                             DrawerCompactRow(
                                 icon = Icons.Filled.Timer,
                                 label = "Timer",
+                                index = 3,
                                 onClick = {
                                     menuExpanded = false
                                     navigateTo("https://www.wisdom-tower-academy.live/learning?tool=timer")
@@ -4073,6 +4108,7 @@ fun MainScreen(
                             DrawerCompactRow(
                                 icon = Icons.Filled.CalendarMonth,
                                 label = "Planner",
+                                index = 4,
                                 onClick = {
                                     menuExpanded = false
                                     navigateTo("https://www.wisdom-tower-academy.live/learning?tool=planner")
@@ -4091,6 +4127,7 @@ fun MainScreen(
                             DrawerCompactRow(
                                 icon = Icons.Filled.Refresh,
                                 label = "Refresh",
+                                index = 5,
                                 onClick = {
                                     menuExpanded = false
                                     performHardRefresh()
@@ -4115,10 +4152,11 @@ fun MainScreen(
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
                             )
 
-                            overflowMenuLinks.forEach { link ->
+                            overflowMenuLinks.forEachIndexed { linkIndex, link ->
                                 DrawerCompactRow(
                                     icon = link.icon,
                                     label = link.label,
+                                    index = 6 + linkIndex,
                                     onClick = {
                                         menuExpanded = false
                                         when (link.label) {
@@ -4566,7 +4604,8 @@ private fun FuturisticGearRings(
 private fun DrawerCompactRow(
     icon: ImageVector,
     label: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    index: Int = 0
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -4574,6 +4613,7 @@ private fun DrawerCompactRow(
 
     Row(
         modifier = Modifier
+            .wisdomStaggerIn(index)
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(if (isPressed) Color(0x2222E0FF) else Color.Transparent)
@@ -4643,6 +4683,7 @@ private fun TimerControlDialog(
             border = BorderStroke(1.dp, CardBorder),
             shadowElevation = 24.dp,
             modifier = Modifier
+                .wisdomDialogEnter()
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
