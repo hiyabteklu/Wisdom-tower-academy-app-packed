@@ -111,11 +111,17 @@ object SupabaseAccountClient {
             httpCode == 401 || code == "bad_jwt" || code == "session_not_found" || code.contains("jwt") ->
                 AccountCallResult.Failure(SESSION_EXPIRED, true)
 
+            // Must come BEFORE the weak-password check: Supabase's text for a repeated password is
+            // "New password should be different from the old password.", which also contains
+            // "password should be" and used to show "at least 6 characters" for a long password.
+            code == "same_password" || msg.contains("different from the old password") ->
+                AccountCallResult.Failure("Your new password can't be the same as your old one. Please choose a different password.")
+
+            code == "weak_password" && (msg.contains("weak") || msg.contains("guess") || msg.contains("pwned") || msg.contains("compromised")) ->
+                AccountCallResult.Failure("That password is too easy to guess. Please choose a stronger one.")
+
             code == "weak_password" || msg.contains("password should be") ->
                 AccountCallResult.Failure("Password must be at least 6 characters.")
-
-            code == "same_password" || msg.contains("different from the old password") ->
-                AccountCallResult.Failure("New password should be different from the old password.")
 
             httpCode == 429 || code.contains("rate_limit") ->
                 AccountCallResult.Failure("Too many attempts. Please wait a moment and try again.")
