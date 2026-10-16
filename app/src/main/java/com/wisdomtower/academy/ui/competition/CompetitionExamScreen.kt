@@ -10,6 +10,9 @@ import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -22,7 +25,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -34,6 +40,8 @@ import com.wisdomtower.academy.data.competition.CompetitionRunnerState
 import com.wisdomtower.academy.data.competition.CompetitionSession
 import com.wisdomtower.academy.data.competition.ExamLockdown
 import com.wisdomtower.academy.data.competition.SubmitResult
+import com.wisdomtower.academy.ui.theme.WisdomAccentRose
+import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -59,8 +67,10 @@ private val examSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default
 // Clipped buttons: the page has its own sticky bottom bar with safe-area padding and this screen adds no padding.
 // C10 slice 2 (session C10-B): while a RANKED exam is open, leaving the app (activity stop) is recorded for the
 // admin with CompetitionRepository.reportFlag (app_background when the app leaves, app_foreground with the time
-// away when it comes back). It only records; it never blocks, warns or disqualifies. Failures are ignored.
-// Status: written, not compiled, not seen on a device.
+// away when it comes back). Failures are ignored.
+// C10 slice 5 (owner decision Q9, strict warning): when the student comes back after leaving the app during a
+// RANKED exam, a warning dialog must be acknowledged. It does not stop the clock and does not disqualify; the
+// admin reviews the recorded flags. The wording of the warning is the agent's, not the owner's.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 
 // Receives the calls from the page on a WebView thread and hands them to the main thread.
@@ -103,6 +113,7 @@ fun CompetitionExamScreen(
     var submittedOk by remember { mutableStateOf(false) }
     var submitResult by remember { mutableStateOf<SubmitResult?>(null) }
     var pageReady by remember { mutableStateOf(false) }
+    var showAwayWarning by remember { mutableStateOf(false) }
     val webRef = remember { arrayOfNulls<WebView>(1) }
     val scope = rememberCoroutineScope()
     val view = LocalView.current
@@ -122,7 +133,7 @@ fun CompetitionExamScreen(
         }
     }
 
-    // C10: record leaving the app during a RANKED exam (record only, never blocks the student)
+    // C10: record leaving the app during a RANKED exam, and warn the student when they come back
     DisposableEffect(lifecycleOwner, session.entryId) {
         var leftAtMs = 0L
         val observer = LifecycleEventObserver { _, event ->
@@ -140,6 +151,7 @@ fun CompetitionExamScreen(
                     examSaveScope.launch {
                         CompetitionRepository.reportFlag(session.entryId, "app_foreground", detail)
                     }
+                    showAwayWarning = true
                 }
             }
         }
@@ -326,6 +338,36 @@ fun CompetitionExamScreen(
                 it.removeJavascriptInterface("WTBridge")
                 if (webRef[0] === it) webRef[0] = null
                 it.destroy()
+            }
+        )
+    }
+
+    // C10 slice 5: strict warning after the student came back from another app during a RANKED exam
+    if (showAwayWarning && !submittedOk) {
+        AlertDialog(
+            onDismissRequest = { },
+            containerColor = Color(0xFF0F1829),
+            title = {
+                Text(
+                    text = "You left the exam",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Text(
+                    text = "Leaving the app during a ranked exam was recorded and will be reviewed. " +
+                        "The clock did not stop. Switching to other apps again can lead to disqualification.",
+                    fontSize = 12.5.sp,
+                    color = WisdomMuted,
+                    lineHeight = 17.sp
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showAwayWarning = false }) {
+                    Text(text = "I understand", color = WisdomAccentRose, fontWeight = FontWeight.Bold)
+                }
             }
         )
     }
