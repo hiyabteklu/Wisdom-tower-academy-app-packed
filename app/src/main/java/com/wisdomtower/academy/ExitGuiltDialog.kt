@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.wisdomtower.academy.ui.theme.wisdomDialogEnter
 
 // Unified tokens matching the live website card language
 private val DialogBg = Color(0xFF0C1424) // Deep card surface (wisdom.card)
@@ -40,6 +41,7 @@ private val OutlineBorder = Color(0x3394A3B8)
  * Clean exit confirmation styled to match website pill buttons and card surfaces.
  * Primary = Solid cyan pill (matches "Learning Hub" / "New Inquiry")
  * Secondary = Outline pill on dark surface (matches "Edit Profile")
+ * M7: the card scales in from 0.94 and fades (wisdomDialogEnter); nothing else changed.
  */
 @Composable
 fun ExitGuiltDialog(
@@ -59,7 +61,9 @@ fun ExitGuiltDialog(
             color = DialogBg,
             border = BorderStroke(1.dp, DialogBorder),
             shadowElevation = 20.dp,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .wisdomDialogEnter()
+                .fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 22.dp, vertical = 22.dp),
