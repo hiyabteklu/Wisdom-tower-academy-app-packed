@@ -1,5 +1,7 @@
 package com.wisdomtower.academy.ui.study
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -66,6 +68,7 @@ import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import com.wisdomtower.academy.ui.theme.WisdomGlassFill
 import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomMuted
+import com.wisdomtower.academy.ui.theme.wisdomReveal
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -320,6 +323,8 @@ fun HubItemListScreen(
                     }
                     items(current.items, key = { it.id }) { item ->
                         val isNew = item.id !in seen
+                        val rowIndex = current.items.indexOf(item)
+                        Box(modifier = Modifier.wisdomReveal("hub_${hubId}_${item.id}", rowIndex)) {
                         ItemRow(
                             item = item,
                             hubId = hubId,
@@ -334,6 +339,7 @@ fun HubItemListScreen(
                             seen = seen + item.id
                             seenPrefs.edit().putStringSet("ids", seen.toSet()).apply()
                             onOpenItem(item)
+                        }
                         }
                     }
                 }
@@ -549,6 +555,11 @@ private fun ItemRow(
                 if (progress != null) {
                     Spacer(modifier = Modifier.height(8.dp))
                     if (progress >= 0f) {
+                        val barProgress by animateFloatAsState(
+                            targetValue = progress.coerceIn(0f, 1f),
+                            animationSpec = tween(250),
+                            label = "hubRowProgress"
+                        )
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -558,7 +569,7 @@ private fun ItemRow(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .fillMaxWidth(progress.coerceIn(0f, 1f))
+                                    .fillMaxWidth(barProgress)
                                     .height(4.dp)
                                     .background(WisdomCyan)
                             )
