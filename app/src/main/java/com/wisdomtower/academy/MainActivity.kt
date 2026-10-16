@@ -3405,7 +3405,10 @@ fun MainScreen(
                 // U1 Option A: raised to zIndex 25f so they open above StudyWorkspaceScreen (18f)
                 if (activeDrawerScreen != null) {
                     BackHandler(enabled = true) { activeDrawerScreen = null }
-                    when (activeDrawerScreen) {
+                }
+                // M11-drawer-push: shared push / pop layer; the item is the open drawer screen so it keeps its content while it slides out
+                WisdomPushLayer(item = activeDrawerScreen, zIndexValue = 25f) { drawerScreenNow ->
+                    when (drawerScreenNow) {
                         "about" -> AboutScreen(
                             onBack = { activeDrawerScreen = null },
                             modifier = Modifier
