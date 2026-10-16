@@ -217,6 +217,12 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -4212,13 +4218,21 @@ fun MainScreen(
  * - Unselected tabs: completely unboxed, quiet muted slate icon & label.
  * - Selection animation: smooth physics-based spring slide across the shared track.
  */
-// FloatingPillNav v1
+// FloatingPillNav v2
 private val NavTrackTop = Color(0xFF101C30)
 private val NavTrackBottom = CardSurface
 
+/** Extra width (in tab units) the selected tab gets so its label fits. 1.35 = same as v1 (2.35 : 1). */
+private const val NAV_EXTRA_WEIGHT = 1.35f
+
+/** Width weight of tab [i] while the selected position is [pos] (fractional). 1 + extra at the centre, 1 far away. */
+private fun navTabWeight(i: Int, pos: Float): Float =
+    1f + NAV_EXTRA_WEIGHT * (1f - kotlin.math.abs(pos - i)).coerceAtLeast(0f)
+
 /**
- * Floating pill navigation. One independent capsule track in the app palette (no bar or band behind it),
- * a slim sliding selection pill, icons only. The active tab's label expands to the right of its icon.
+ * Floating pill navigation (motion v2). One independent capsule track, a slim selection pill, icons only; the active
+ * tab's label opens to the right of its icon. ONE spring clock (`pos`) drives everything, read only in the layout and
+ * draw phases (no recomposition per frame).
  */
 @Composable
 private fun AliveBottomNav(
@@ -4228,24 +4242,13 @@ private fun AliveBottomNav(
     modifier: Modifier = Modifier,
 ) {
     val view = LocalView.current
-    var pending by remember { mutableStateOf<Int?>(null) }
-    val targetIndex = pending ?: selectedIndex
-
-    LaunchedEffect(pending) {
-        val p = pending ?: return@LaunchedEffect
-        delay(70)
-        items.getOrNull(p)?.let { onItemSelected(p, it) }
-        pending = null
-    }
-
-    val slide = androidx.compose.animation.core.CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
-    // The active tab is wider so its label fits; the pill follows the same animated widths.
-    val weights = items.indices.map { i ->
-        animateFloatAsState(
-            targetValue = if (i == targetIndex) 2.35f else 1f,
-            animationSpec = tween(420, easing = slide),
-            label = "navWeight$i"
-        ).value
+    val lastIndex = (items.size - 1).coerceAtLeast(0)
+    val pos = remember { androidx.compose.animation.core.Animatable(selectedIndex.coerceIn(0, lastIndex).toFloat()) }
+    LaunchedEffect(selectedIndex) {
+        pos.animateTo(
+            selectedIndex.coerceIn(0, lastIndex).toFloat(),
+            spring(dampingRatio = 0.85f, stiffness = 420f)
+        )
     }
 
     val trackShape = RoundedCornerShape(999.dp)
@@ -4255,7 +4258,7 @@ private fun AliveBottomNav(
             .windowInsetsPadding(WindowInsets.navigationBars)
             .padding(horizontal = 24.dp, vertical = 10.dp)
     ) {
-        BoxWithConstraints(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
@@ -4269,90 +4272,130 @@ private fun AliveBottomNav(
                 .background(Brush.verticalGradient(listOf(NavTrackTop, NavTrackBottom)))
                 .border(BorderStroke(1.dp, CardBorder), trackShape)
         ) {
-            val inset = 4.dp
-            val inner = maxWidth - inset * 2
-            val total = weights.sum().coerceAtLeast(0.001f)
-            val widths = weights.map { inner * (it / total) }
-            val pillLeft = inset + widths.take(targetIndex).fold(0.dp) { a, b -> a + b }
-
-            Box(
-                modifier = Modifier
-                    .offset(x = pillLeft)
-                    .width(widths.getOrElse(targetIndex) { 0.dp })
-                    .height(40.dp)
-                    .align(Alignment.CenterStart)
-                    .clip(trackShape)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Accent.copy(alpha = 0.26f), Accent.copy(alpha = 0.12f))
-                        )
-                    )
-                    .border(BorderStroke(1.dp, Accent.copy(alpha = 0.6f)), trackShape)
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = inset),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                items.forEachIndexed { index, item ->
-                    val selected = targetIndex == index
-                    val interactionSource = remember(index) { MutableInteractionSource() }
-                    val isPressed by interactionSource.collectIsPressedAsState()
-                    val contentScale by animateFloatAsState(
-                        targetValue = if (isPressed) 0.94f else 1.0f,
-                        animationSpec = tween(120),
-                        label = "tabItemScale"
-                    )
-                    val tint by animateColorAsState(
-                        targetValue = if (selected) Accent else Muted,
-                        animationSpec = tween(260),
-                        label = "tabTint"
-                    )
-
+            Layout(
+                modifier = Modifier.fillMaxSize(),
+                content = {
+                    // child 0: the selection pill
                     Box(
                         modifier = Modifier
-                            .weight(weights[index].coerceAtLeast(0.01f))
-                            .fillMaxHeight()
                             .clip(trackShape)
-                            .clickable(
-                                interactionSource = interactionSource,
-                                indication = null
-                            ) {
-                                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                                if (index != targetIndex) pending = index
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center,
-                            modifier = Modifier.scale(contentScale)
-                        ) {
-                            Icon(
-                                imageVector = item.icon,
-                                contentDescription = item.title,
-                                tint = tint,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            AnimatedVisibility(
-                                visible = selected,
-                                enter = fadeIn(tween(220, delayMillis = 120)) + expandHorizontally(tween(320)),
-                                exit = fadeOut(tween(90)) + shrinkHorizontally(tween(240))
-                            ) {
-                                Text(
-                                    text = item.title,
-                                    color = tint,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    maxLines = 1,
-                                    softWrap = false,
-                                    modifier = Modifier.padding(start = 6.dp)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Accent.copy(alpha = 0.26f), Accent.copy(alpha = 0.12f))
                                 )
+                            )
+                            .border(BorderStroke(1.dp, Accent.copy(alpha = 0.6f)), trackShape)
+                    )
+                    // children 1..n: the tabs
+                    items.forEachIndexed { index, item ->
+                        val selected = selectedIndex == index
+                        val interactionSource = remember(index) { MutableInteractionSource() }
+                        val isPressed by interactionSource.collectIsPressedAsState()
+                        val pressScale by animateFloatAsState(
+                            targetValue = if (isPressed) 0.94f else 1.0f,
+                            animationSpec = tween(120),
+                            label = "tabItemScale"
+                        )
+                        val tint by animateColorAsState(
+                            targetValue = if (selected) Accent else Muted,
+                            animationSpec = tween(260),
+                            label = "tabTint"
+                        )
+                        Box(
+                            modifier = Modifier
+                                .clip(trackShape)
+                                .clickable(
+                                    interactionSource = interactionSource,
+                                    indication = null
+                                ) {
+                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                    if (index != selectedIndex) onItemSelected(index, item)
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.graphicsLayer {
+                                    scaleX = pressScale
+                                    scaleY = pressScale
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.title,
+                                    tint = tint,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                                // The label opens with the SAME clock: its width and fade follow `pos`.
+                                Box(
+                                    modifier = Modifier
+                                        .clipToBounds()
+                                        .layout { measurable, _ ->
+                                            val placeable = measurable.measure(Constraints())
+                                            val near = (1f - kotlin.math.abs(pos.value.coerceIn(0f, lastIndex.toFloat()) - index))
+                                                .coerceAtLeast(0f)
+                                            val w = (placeable.width * near).roundToInt()
+                                            layout(w, placeable.height) { placeable.placeRelative(0, 0) }
+                                        }
+                                        .graphicsLayer {
+                                            val near = (1f - kotlin.math.abs(pos.value.coerceIn(0f, lastIndex.toFloat()) - index))
+                                                .coerceAtLeast(0f)
+                                            alpha = ((near - 0.35f) / 0.65f).coerceIn(0f, 1f)
+                                        }
+                                ) {
+                                    Text(
+                                        text = item.title,
+                                        color = tint,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        modifier = Modifier.padding(start = 6.dp)
+                                    )
+                                }
                             }
                         }
                     }
+                }
+            ) { measurables, constraints ->
+                val n = measurables.size - 1
+                val insetPx = 4.dp.roundToPx()
+                val pillHeightPx = 40.dp.roundToPx()
+                val trackW = constraints.maxWidth
+                val trackH = constraints.maxHeight
+                if (n <= 0) return@Layout layout(trackW, trackH) {}
+                val innerPx = (trackW - insetPx * 2).coerceAtLeast(0)
+
+                val p = pos.value.coerceIn(0f, (n - 1).coerceAtLeast(0).toFloat())
+                val weights = FloatArray(n) { navTabWeight(it, p) }
+                val total = weights.sum().coerceAtLeast(0.001f)
+                val unit = innerPx / total
+
+                // tab edges (rounded cumulative, so there are no 1 px gaps)
+                val edges = IntArray(n + 1)
+                var cum = 0f
+                for (i in 0 until n) {
+                    edges[i] = insetPx + (unit * cum).roundToInt()
+                    cum += weights[i]
+                }
+                edges[n] = insetPx + innerPx
+
+                // pill: slides from the slot of tab a to the slot of tab a + 1 on the same clock
+                val a = kotlin.math.floor(p).toInt().coerceIn(0, (n - 2).coerceAtLeast(0))
+                val t = p - a
+                val nextW = if (a + 1 < n) weights[a + 1] else weights[a]
+                var before = 0f
+                for (j in 0 until a) before += weights[j]
+                val pillLeft = insetPx + (unit * (before + t * weights[a])).roundToInt()
+                val pillWidth = (unit * (weights[a] * (1f - t) + nextW * t)).roundToInt().coerceAtLeast(0)
+
+                val pill = measurables[0].measure(Constraints.fixed(pillWidth, pillHeightPx))
+                val tabs = (0 until n).map { i ->
+                    measurables[i + 1].measure(Constraints.fixed((edges[i + 1] - edges[i]).coerceAtLeast(0), trackH))
+                }
+                layout(trackW, trackH) {
+                    pill.placeRelative(pillLeft, (trackH - pillHeightPx) / 2)
+                    tabs.forEachIndexed { i, tab -> tab.placeRelative(edges[i], 0) }
                 }
             }
         }
