@@ -87,6 +87,7 @@ import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import com.wisdomtower.academy.ui.theme.WisdomGlassFill
 import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomMuted
+import com.wisdomtower.academy.ui.theme.wisdomReveal
 
 /**
  * Native Learning screen mirroring website reference:
@@ -95,6 +96,9 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
  *
  * GLASS (2026-10-13, owner request, docs/GLASS_PLAN.md area 2): the header card, the guest banner, the Study Tools
  * card (and its tiles) and the empty-curriculum card use the see-through glass look of the Targets screen.
+ *
+ * M11 slice 6 (docs/SESSION_2026-10-16_UI_AF.md): the header card, guest banner, Study Tools card, Curriculum header and
+ * empty-curriculum card rise in once per app session (wisdomReveal); the curriculum cards already do through openGrid.
  *
  * C10 (session C10-C, owner decision 2026-10-15: "Ai tutor is prohibited, and calculator is allowed always"):
  * while a RANKED competition exam is open (ExamLockdown.active) the native AI Tutor does not open from the tile or
@@ -317,7 +321,9 @@ fun LearningScreen(
             // TOP HEADER: Scholar Name, Folio, Email
             item(key = "learning_header") {
                 WisdomGlassCard(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wisdomReveal("learning_header", 0),
                     cornerRadius = 24.dp
                 ) {
                     Column(
@@ -394,7 +400,9 @@ fun LearningScreen(
             if (!isLoggedIn) {
                 item(key = "guest_banner") {
                     WisdomGlassCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wisdomReveal("learning_guest_banner", 1),
                         cornerRadius = 18.dp
                     ) {
                         Column(
@@ -452,7 +460,9 @@ fun LearningScreen(
             // STUDY TOOLS DOCK (8 tiles matching website)
             item(key = "study_tools_dock") {
                 WisdomGlassCard(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wisdomReveal("learning_tools_dock", 2),
                     cornerRadius = 24.dp
                 ) {
                     Column(
@@ -539,6 +549,7 @@ fun LearningScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .wisdomReveal("learning_curriculum_header", 3)
                         .padding(top = 10.dp, bottom = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -592,7 +603,9 @@ fun LearningScreen(
             if (enrolledCourses.isEmpty()) {
                 item(key = "curriculum_empty") {
                     WisdomGlassCard(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wisdomReveal("learning_curriculum_empty", 4),
                         cornerRadius = 16.dp
                     ) {
                         Column(
