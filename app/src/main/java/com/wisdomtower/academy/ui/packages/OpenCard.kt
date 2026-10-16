@@ -36,6 +36,7 @@ import coil.request.ImageRequest
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomGlassCard
+import com.wisdomtower.academy.ui.theme.wisdomReveal
 
 /**
  * THE one card used for packages, subjects and courses everywhere in the app (owner rule 2026-10-11):
@@ -157,6 +158,7 @@ fun OpenCard(
 /**
  * Lays a list out as a two-column grid inside a LazyColumn (two cards per row, like the website
  * `grid-cols-2`). [prefix] must be unique inside one LazyColumn.
+ * M4: each row rises in once per app session (`wisdomReveal`, docs/UI_MOTION_PLAN.md).
  */
 fun <T> LazyListScope.openGrid(
     prefix: String,
@@ -171,7 +173,9 @@ fun <T> LazyListScope.openGrid(
         val second = list.getOrNull(rowIndex * 2 + 1)
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wisdomReveal("${prefix}_row_$rowIndex", rowIndex),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Box(modifier = Modifier.weight(1f)) { card(first) }
