@@ -46,6 +46,14 @@
   /* "jump to latest": a round arrow button, shown only when the reader has scrolled well above the newest message */
   #jump { position: fixed; right: 14px; bottom: 14px; width: 42px; height: 42px; padding: 0; border-radius: 50%; border: 1px solid rgba(34,211,238,.4); background: rgba(12,22,40,.95); color: #a5f3fc; font: 700 20px/1 -apple-system, Roboto, sans-serif; display: none; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
   #jump:active { background: rgba(6,182,212,.3); color: #fff; }
+
+  /* Custom background picture (owner request 2026-10-16). The app draws assets/backgrounds/tutor_bg.jpg behind this page
+   * and adds the class "bgimg" to <html>; without that class nothing below applies (opaque dark page as before). */
+  html.bgimg, html.bgimg body { background: transparent; }
+  html.bgimg .bub.b { background: rgba(8,16,32,.78); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  html.bgimg #think { background: rgba(8,16,32,.78); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  html.bgimg #welcome p { color: #cbd5e1; }
+  html.bgimg #jump { background: rgba(8,16,32,.85); }
 </style>
 </head>
 <body>
