@@ -1,5 +1,9 @@
 package com.wisdomtower.academy.ui.study
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +16,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -19,6 +28,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -50,6 +60,10 @@ enum class DownloadState {
  * - When [state] is [DownloadState.DOWNLOADED]: turns into the existing green check mark.
  * - When [state] is [DownloadState.FAILED]: turns into a clear red retry icon.
  * - When [state] is [DownloadState.IDLE]: shows the standard download arrow.
+ *
+ * M6 (docs/UI_MOTION_PLAN.md): the arc EASES (250 ms) to the real progress instead of jumping (the percent text always shows
+ * the real value, it never counts up on its own), and the check mark POPS with a short spring, only when a download that
+ * was running has just finished (items that are already saved when the list opens do not pop).
  */
 @Composable
 fun DownloadGauge(
@@ -64,6 +78,27 @@ fun DownloadGauge(
     trackColor: Color = WisdomCyan.copy(alpha = 0.2f)
 ) {
     val iconSize = if (size > 22.dp) 22.dp else size
+
+    // M6: the drawn arc follows the real value with a short ease
+    val shownProgress by animateFloatAsState(
+        targetValue = (progress ?: 0f).coerceIn(0f, 1f),
+        animationSpec = tween(250),
+        label = "gaugeProgress"
+    )
+
+    // M6: check mark pop, only after a run that was seen downloading
+    val pop = remember { Animatable(1f) }
+    var wasDownloading by remember { mutableStateOf(false) }
+    LaunchedEffect(state) {
+        if (state == DownloadState.DOWNLOADING) {
+            wasDownloading = true
+        } else if (state == DownloadState.DOWNLOADED && wasDownloading) {
+            wasDownloading = false
+            pop.snapTo(0.55f)
+            pop.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 380f))
+        }
+    }
+
     Box(
         modifier = modifier.size(size),
         contentAlignment = Alignment.Center
@@ -74,7 +109,12 @@ fun DownloadGauge(
                     imageVector = Icons.Filled.CheckCircle,
                     contentDescription = "Saved offline. Tap to remove",
                     tint = downloadedColor,
-                    modifier = Modifier.size(iconSize)
+                    modifier = Modifier
+                        .size(iconSize)
+                        .graphicsLayer {
+                            scaleX = pop.value
+                            scaleY = pop.value
+                        }
                 )
             }
 
@@ -101,6 +141,7 @@ fun DownloadGauge(
                     val p = progress.coerceIn(0f, 1f)
                     val pct = (p * 100).toInt()
                     Canvas(modifier = Modifier.fillMaxSize()) {
+                        val drawn = shownProgress
                         val strokePx = strokeWidth.toPx()
                         val halfStroke = strokePx / 2f
                         val arcSize = Size(
@@ -118,12 +159,12 @@ fun DownloadGauge(
                             size = arcSize,
                             style = Stroke(width = strokePx)
                         )
-                        // Determinate progress arc
-                        if (p > 0f) {
+                        // Determinate progress arc (eased toward the real value)
+                        if (drawn > 0f) {
                             drawArc(
                                 color = color,
                                 startAngle = -90f,
-                                sweepAngle = 360f * p,
+                                sweepAngle = 360f * drawn,
                                 useCenter = false,
                                 topLeft = topLeft,
                                 size = arcSize,
