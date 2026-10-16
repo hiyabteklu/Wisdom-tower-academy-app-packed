@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,6 +45,7 @@ import com.wisdomtower.academy.data.competition.CountdownKind
 import com.wisdomtower.academy.data.competition.SubmitResult
 import com.wisdomtower.academy.ui.study.ScreenBackButton
 import com.wisdomtower.academy.ui.theme.WisdomGlassCard
+import com.wisdomtower.academy.ui.theme.wisdomReveal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -91,6 +92,8 @@ private val ErrorRed = Color(0xFFF87171)
 // Session AH (owner, 2026-10-15, phone test): the contest card is a glass card (WisdomGlassCard) instead of a
 // solid navy box, and the card buttons are CompetitionPillButton (round ends, no bright solid colour, one
 // line of text). The Review label no longer wraps into two lines because the buttons share the row evenly.
+// Session M9 (docs/UI_MOTION_PLAN.md, motion only): each contest card rises in with a stagger (wisdomReveal,
+// once per contest per app session, so the 30 second reload never replays it). Nothing else changed.
 // The lockdown flag is raised by CompetitionExamScreen (C6 slice 4), not here.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
@@ -251,7 +254,7 @@ fun CompetitionsHubScreen(
                     contentPadding = PaddingValues(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(rows, key = { it.first.id }) { row ->
+                    itemsIndexed(rows, key = { _, item -> item.first.id }) { index, row ->
                         val contestId = row.first.id
                         CompetitionCard(
                             summary = row.first,
@@ -274,7 +277,8 @@ fun CompetitionsHubScreen(
                                 actionError = null
                                 notice = null
                                 reviewOf = row.first
-                            }
+                            },
+                            modifier = Modifier.wisdomReveal(key = "competition_card_" + contestId, index = index)
                         )
                     }
                 }
@@ -372,7 +376,8 @@ private fun CompetitionCard(
     onStart: (Boolean) -> Unit,
     onAskJoin: () -> Unit,
     onOpenLeaderboard: () -> Unit,
-    onOpenReview: () -> Unit
+    onOpenReview: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val badge = if (display.phase == CompetitionPhase.PAUSED) {
         "Postponed by admin"
@@ -387,7 +392,7 @@ private fun CompetitionCard(
 
     // Session AH: see-through glass card, same call shape as the Account screen uses
     WisdomGlassCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         cornerRadius = 24.dp
     ) {
         Column(
