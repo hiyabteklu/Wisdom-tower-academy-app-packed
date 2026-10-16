@@ -2,6 +2,8 @@
 
 **FIRST, OWNER RULE 2026-10-16: read `docs/OWNER_RULE_WRITTEN_IS_DONE.md`. Written and pushed code counts as DONE (builds are green, the owner has confirmed it works). It overrides every `[~]`, "CI NOT seen" and "not seen on a device" label in the older docs. Report only what is genuinely not done.**
 
+**UI MOTION (owner order 2026-10-16, third live task): read `docs/UI_MOTION_PLAN.md` (root causes, motion language, area inventory, slices M1 to M11, status table in its section 7). It overrides the "do not work on UI polishing" lines below for MOTION AND TRANSITIONS ONLY (bottom nav pill, tab and screen transitions, card entrance, Settings accordions and the rest of the plan). Everything else archived stays closed. One slice per chat; the owner says "do M<n>", otherwise do the next open slice.**
+
 The agent rules live in ONE place: **`HANDOFF.md` section 0 (MANDATORY AGENT PROTOCOL)**. Read `HANDOFF.md` in full first, then **`docs/COMPETITION_STATUS.md`** (the live stage board), `docs/COMPETITION_DECISIONS.md` (owner answers, they override the plan), `docs/COMPETITION_PLAN.md`, then `docs/BUILD_PITFALLS.md` before writing any code, and the newest `docs/SESSION_*.md` files. Section 0, rule 10, plus `docs/EDITING_LARGE_FILES.md`, explain how to change files that are too big to resend: patch script plus the GitHub Action; NEVER answer "the file is too big".
 
 **NOTIFICATIONS V2 (owner order 2026-10-15, live work, extends C8): read `docs/NOTIFICATIONS_V2_PLAN.md` (plan, verified facts, slices R0 to R8, progress table in its section 8) right after the status board. It spans this repo, the WEBSITE repo and the live Supabase project.**
