@@ -243,6 +243,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.wisdomtower.academy.ui.theme.MyApplicationTheme
+import com.wisdomtower.academy.ui.theme.WisdomPushLayer
 import androidx.compose.ui.draw.shadow
 import kotlinx.coroutines.delay
 
@@ -3260,8 +3261,7 @@ fun MainScreen(
                 }
 
                 // Native Study Workspace (6 Learning Hubs Depth)
-                val currentWs = activeWorkspace
-                if (currentWs != null) {
+                WisdomPushLayer(item = activeWorkspace, zIndexValue = 18f) { currentWs ->
                     StudyWorkspaceScreen(
                         title = currentWs.first,
                         scopeSubtitle = currentWs.second,
@@ -3311,9 +3311,9 @@ fun MainScreen(
                 }
 
                 // Native Guides & Static Resources (Phase A6)
-                if (activeGuideSlug != null) {
+                WisdomPushLayer(item = activeGuideSlug, zIndexValue = 15f) { guideSlugNow ->
                     GuidesScreen(
-                        initialSlug = activeGuideSlug ?: "study-techniques",
+                        initialSlug = guideSlugNow,
                         onBack = { activeGuideSlug = null },
                         modifier = Modifier
                             .fillMaxSize()
@@ -3323,7 +3323,7 @@ fun MainScreen(
                 }
 
                 // C4-competitions-trophy: native competitions screen (trophy)
-                if (showCompetitions) {
+                WisdomPushLayer(item = if (showCompetitions) true else null, zIndexValue = 17f) { _ ->
                     CompetitionsHubScreen(
                         onBack = { showCompetitions = false },
                         modifier = Modifier
