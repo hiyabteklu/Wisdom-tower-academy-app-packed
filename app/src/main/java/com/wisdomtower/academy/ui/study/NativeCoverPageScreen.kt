@@ -103,6 +103,7 @@ object CoverForm {
     var dateText by mutableStateOf(todayText())
     var templateIndex by mutableIntStateOf(0)
     var accentIndex by mutableIntStateOf(0)
+    var borderIndex by mutableIntStateOf(0) // 0 = the template's own default border
 
     fun clear() {
         logo = null
@@ -191,14 +192,15 @@ fun NativeCoverPageScreen(
         submissionDate = CoverForm.dateText
     )
 
-    // Live preview and the 5 thumbnails are redrawn a moment after the last change (off the main thread).
+    // Live preview and the template thumbnails are redrawn a moment after the last change (off the main thread).
     var preview by remember { mutableStateOf<Bitmap?>(null) }
     var thumbs by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
-    LaunchedEffect(data, logoBmp, template, CoverForm.accentIndex) {
+    LaunchedEffect(data, logoBmp, template, CoverForm.accentIndex, CoverForm.borderIndex) {
         delay(140)
-        val big = withContext(Dispatchers.Default) { renderCoverBitmap(data, logoBmp, template, accent, 1.6f) }
+        val border = CoverForm.borderIndex
+        val big = withContext(Dispatchers.Default) { renderCoverBitmap(data, logoBmp, template, accent, 1.6f, border) }
         val small = withContext(Dispatchers.Default) {
-            COVER_TEMPLATES.indices.map { renderCoverBitmap(data, logoBmp, it, accent, 0.34f) }
+            COVER_TEMPLATES.indices.map { renderCoverBitmap(data, logoBmp, it, accent, 0.34f, border) }
         }
         preview = big
         thumbs = small
@@ -223,7 +225,7 @@ fun NativeCoverPageScreen(
                 val ok = withContext(Dispatchers.IO) {
                     try {
                         context.contentResolver.openOutputStream(uri)?.use { out ->
-                            writeCoverPdf(out, data, logoBmp, template, accent)
+                            writeCoverPdf(out, data, logoBmp, template, accent, CoverForm.borderIndex)
                             true
                         } ?: false
                     } catch (e: Exception) {
@@ -259,7 +261,7 @@ fun NativeCoverPageScreen(
                         color = Color.White
                     )
                     Text(
-                        text = "5 A4 templates, download as PDF",
+                        text = "${COVER_TEMPLATES.size} A4 templates, ${COVER_BORDERS.size} page borders, download as PDF",
                         fontSize = 11.sp,
                         color = WisdomMuted
                     )
@@ -273,7 +275,7 @@ fun NativeCoverPageScreen(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // 1. Template and colour
+                // 1. Template, colour and page border
                 item(key = "cover_templates") {
                     CoverSection("TEMPLATE") {
                         Row(
@@ -309,6 +311,22 @@ fun NativeCoverPageScreen(
                                             CircleShape
                                         )
                                         .clickable { CoverForm.accentIndex = index }
+                                )
+                            }
+                        }
+                        Text(text = "Page border", fontSize = 12.sp, color = WisdomMuted)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            COVER_BORDERS.forEachIndexed { index, name ->
+                                CoverPill(
+                                    text = name,
+                                    filled = index == CoverForm.borderIndex,
+                                    modifier = Modifier.width(100.dp),
+                                    onClick = { CoverForm.borderIndex = index }
                                 )
                             }
                         }
