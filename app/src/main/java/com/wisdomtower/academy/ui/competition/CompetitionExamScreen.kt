@@ -70,7 +70,8 @@ private val examSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default
 // away when it comes back). Failures are ignored.
 // C10 slice 5 (owner decision Q9, strict warning): when the student comes back after leaving the app during a
 // RANKED exam, a warning dialog must be acknowledged. It does not stop the clock and does not disqualify; the
-// admin reviews the recorded flags. The wording of the warning is the agent's, not the owner's.
+// admin reviews the recorded flags. The warning wording is the owner's (2026-10-16): detected, will be reviewed
+// by admins, may result in disqualification. The owner decided NOT to pin the phone.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 
 // Receives the calls from the page on a WebView thread and hands them to the main thread.
@@ -342,14 +343,14 @@ fun CompetitionExamScreen(
         )
     }
 
-    // C10 slice 5: strict warning after the student came back from another app during a RANKED exam
+    // C10 slice 5: warning after the student came back from another app during a RANKED exam (owner's wording)
     if (showAwayWarning && !submittedOk) {
         AlertDialog(
             onDismissRequest = { },
             containerColor = Color(0xFF0F1829),
             title = {
                 Text(
-                    text = "You left the exam",
+                    text = "You left the exam window",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
@@ -357,8 +358,8 @@ fun CompetitionExamScreen(
             },
             text = {
                 Text(
-                    text = "Leaving the app during a ranked exam was recorded and will be reviewed. " +
-                        "The clock did not stop. Switching to other apps again can lead to disqualification.",
+                    text = "We detected that you left the exam window during the exam. " +
+                        "This will be reviewed by admins and may result in disqualification.",
                     fontSize = 12.5.sp,
                     color = WisdomMuted,
                     lineHeight = 17.sp
