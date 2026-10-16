@@ -4,14 +4,9 @@ import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -34,7 +29,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -54,7 +48,6 @@ import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Science
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -68,16 +61,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -86,7 +75,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -188,11 +176,10 @@ val AVATAR_PRESETS_LIST = listOf(
     )
 )
 
-// Crown / gold tones (metal look: light, mid, deep, edge)
+// Gold tones for the completed gauge (metal look: light, mid, deep)
 private val GoldLight = Color(0xFFFFF1B8)
 private val GoldMid = Color(0xFFF2C14E)
 private val GoldDeep = Color(0xFFC48A14)
-private val GoldEdge = Color(0xFF8A5A0C)
 
 // Text colour on a filled (selected) pill
 private val PillOnAccent = Color(0xFF06101F)
@@ -202,9 +189,10 @@ private val PillOnAccent = Color(0xFF06101F)
  * - Signed-out: native sign-in / create-account screen (ui/auth/NativeSignInScreen.kt), a copy of
  *   the website login page that talks to Supabase directly (S2d). On success the session is stored
  *   by AuthStateManager.applyNativeSession and this screen switches to the signed-in view.
- * - Signed-in (T7, owner request 2026-10-13): "My Profile" gauge card (real score, premium crown at 100%),
- *   three profile sections with avatar grid and wrapping pill selectors (nothing is cut off to the right),
- *   Save, and Log Out as the LAST item. The student ID card, the "tap to flip" button and the
+ * - Signed-in (T7, owner request 2026-10-13; simplified 2026-10-16): ONLY the profile completion gauge
+ *   at the top (no card, no emoji, no avatar, no crown, no name, no checklist chips), then three profile
+ *   sections with avatar grid and wrapping pill selectors (nothing is cut off to the right), Save, and
+ *   Log Out as the LAST item. The student ID card, the "tap to flip" button and the
  *   folio / status / preferences / log-out box were removed.
  * - Competition points (owner decision B, session O): a small card above the profile panel with the
  *   cumulative competition points total from the server (ui/competition/CompetitionPointsCard.kt).
@@ -235,8 +223,7 @@ fun AccountScreen(
         return
     }
 
-    // Signed-in state. When no saved profile exists yet, start empty (the website does the same);
-    // "Student Scholar" is the website's own display-name fallback.
+    // Signed-in state. When no saved profile exists yet, start empty (the website does the same).
     var currentProfile by remember(userProfile) {
         mutableStateOf(
             userProfile ?: UserProfile(
@@ -269,7 +256,6 @@ fun AccountScreen(
             item(key = "my_profile_panel") {
                 MyProfilePanel(
                     profile = currentProfile,
-                    fallbackName = userName,
                     onProfileUpdated = { updated ->
                         currentProfile = updated
                         AuthStateManager.updateProfile(updated)
@@ -290,14 +276,6 @@ fun AccountScreen(
 // Small helpers
 // ---------------------------------------------------------------------------
 
-private fun initialsOf(name: String): String =
-    name.trim()
-        .split(Regex("\\s+"))
-        .filter { it.isNotEmpty() }
-        .take(2)
-        .joinToString("") { it.take(1) }
-        .uppercase()
-
 /** iOS-like press feedback: a quick, slightly bouncy shrink while the finger is down. */
 @Composable
 private fun pressScale(interactionSource: MutableInteractionSource, pressed: Float = 0.96f): Float {
@@ -311,7 +289,7 @@ private fun pressScale(interactionSource: MutableInteractionSource, pressed: Flo
 }
 
 // ---------------------------------------------------------------------------
-// My Profile: panel (hero + sections + save + log out)
+// My Profile: panel (gauge + sections + save + log out)
 // ---------------------------------------------------------------------------
 
 /**
@@ -321,7 +299,6 @@ private fun pressScale(interactionSource: MutableInteractionSource, pressed: Flo
 @Composable
 private fun MyProfilePanel(
     profile: UserProfile,
-    fallbackName: String?,
     onProfileUpdated: (UserProfile) -> Unit,
     onSignOut: () -> Unit
 ) {
@@ -374,31 +351,9 @@ private fun MyProfilePanel(
     }
 
     val composedName = listOf(firstName.trim(), lastName.trim()).filter { it.isNotBlank() }.joinToString(" ")
-    val displayName = composedName.ifBlank {
-        profile.fullName?.takeIf { it.isNotBlank() }
-            ?: fallbackName?.takeIf { it.isNotBlank() }
-            ?: "Student Scholar"
-    }
-    val selectedPreset = AVATAR_PRESETS_LIST.firstOrNull { it.id == selectedAvatarPreset }
-
-    // Every item that adds to the score is listed (the website list had no "Target Exam" although it is worth 10 points)
-    val milestones = listOf(
-        "Legal Name" to hasName,
-        "Academic Level" to educationLevel.isNotBlank(),
-        "Stream" to stream.isNotBlank(),
-        "Institution" to schoolName.isNotBlank(),
-        "Region" to townRegion.isNotBlank(),
-        "Phone" to phone.isNotBlank(),
-        "Target Exam" to targetExam.isNotBlank()
-    )
 
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        MyProfileHero(
-            score = completionScore,
-            displayName = displayName,
-            avatar = selectedPreset,
-            milestones = milestones
-        )
+        ProfileCompletionGauge(score = completionScore)
 
         // STEP 1: Avatar & Legal Identity
         StepAccordionCard(
@@ -570,17 +525,18 @@ private fun MyProfilePanel(
 }
 
 // ---------------------------------------------------------------------------
-// Hero: gauge + avatar + premium crown
+// Completion gauge: the only thing at the top (owner request 2026-10-16:
+// no emoji, no big card, no clutter)
 // ---------------------------------------------------------------------------
 
-@OptIn(ExperimentalLayoutApi::class)
+/**
+ * Circular completion gauge drawn with Canvas (same method as the timer ring, per BUILD_PITFALLS).
+ * The real percent sits in the middle. Cyan while incomplete; at 100% the ring turns gold with a soft glow.
+ * No card, no avatar, no crown, no name, no checklist: the three sections below already show
+ * which parts are filled.
+ */
 @Composable
-private fun MyProfileHero(
-    score: Int,
-    displayName: String,
-    avatar: AvatarPresetOption?,
-    milestones: List<Pair<String, Boolean>>
-) {
+private fun ProfileCompletionGauge(score: Int) {
     val complete = score >= 100
     val progress by animateFloatAsState(
         targetValue = score / 100f,
@@ -589,206 +545,61 @@ private fun MyProfileHero(
     )
     val shownScore = (progress * 100f).roundToInt()
     val accent = if (complete) GoldMid else WisdomCyan
-    val doneCount = milestones.count { it.second }
 
-    // The crown fades and bounces in at 100%. No AnimatedVisibility here: inside this Box-in-Column the compiler
-    // refuses it ("cannot be called in this context with an implicit receiver", see docs/SESSION_2026-10-13_H.md).
-    val crownAlpha by animateFloatAsState(
-        targetValue = if (complete) 1f else 0f,
-        animationSpec = tween(durationMillis = 600),
-        label = "crown_alpha"
-    )
-    val crownScale by animateFloatAsState(
-        targetValue = if (complete) 1f else 0.6f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "crown_scale"
-    )
-
-    WisdomGlassCard(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 24.dp,
-        borderWidth = if (complete) 1.5.dp else 1.dp,
-        borderColor = if (complete) GoldMid.copy(alpha = 0.6f) else WisdomCyan.copy(alpha = 0.35f)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        if (complete) listOf(Color(0xFF1E1A11), Color(0xFF0F1424))
-                        else listOf(Color(0xFF121C32), Color(0xFF0D1527))
-                    )
-                )
-                .padding(horizontal = 16.dp, vertical = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text(
-                text = "MY PROFILE",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = accent,
-                letterSpacing = 2.sp
-            )
-
-            // Gauge with the crown resting on top of the ring (only at 100%)
-            Box(contentAlignment = Alignment.TopCenter) {
-                Box(modifier = Modifier.padding(top = 26.dp, bottom = 10.dp)) {
-                    ProfileGauge(
-                        progress = progress,
-                        shownScore = shownScore,
-                        complete = complete,
-                        avatar = avatar,
-                        initials = initialsOf(displayName)
-                    )
-                }
-                if (crownAlpha > 0f) {
-                    PremiumCrown(
-                        modifier = Modifier.graphicsLayer {
-                            alpha = crownAlpha
-                            scaleX = crownScale
-                            scaleY = crownScale
-                        }
-                    )
-                }
-            }
-
-            Text(
-                text = displayName,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-
-            if (complete) {
-                Row(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(GoldMid.copy(alpha = 0.14f))
-                        .border(BorderStroke(1.dp, GoldMid.copy(alpha = 0.5f)), CircleShape)
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    Icon(Icons.Default.Shield, contentDescription = null, tint = GoldMid, modifier = Modifier.size(12.dp))
-                    Text(text = "Verified", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = GoldMid)
-                }
-                Text(
-                    text = "Golden Scholar Crown active",
-                    fontSize = 11.5.sp,
-                    color = WisdomMuted,
-                    textAlign = TextAlign.Center
-                )
-            } else {
-                Text(
-                    text = "Avatar, academic track, institution & phone required",
-                    fontSize = 11.5.sp,
-                    color = WisdomMuted,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            Text(
-                text = "$doneCount of ${milestones.size} steps complete",
-                fontSize = 10.5.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = accent.copy(alpha = 0.9f)
-            )
-
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                milestones.forEach { (label, done) ->
-                    ChecklistChip(label = label, done = done)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ChecklistChip(label: String, done: Boolean) {
-    Row(
+    Box(
         modifier = Modifier
-            .clip(CircleShape)
-            .background(if (done) WisdomAccentEmerald.copy(alpha = 0.14f) else Color.White.copy(alpha = 0.05f))
-            .border(
-                BorderStroke(1.dp, if (done) WisdomAccentEmerald.copy(alpha = 0.4f) else WisdomBorderWhite),
-                CircleShape
-            )
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp)
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
-        if (done) {
-            Icon(Icons.Default.Check, contentDescription = null, tint = WisdomAccentEmerald, modifier = Modifier.size(11.dp))
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(9.dp)
-                    .border(BorderStroke(1.2.dp, WisdomMuted), CircleShape)
-            )
-        }
-        Text(
-            text = label,
-            fontSize = 10.5.sp,
-            fontWeight = FontWeight.Medium,
-            color = if (done) Color.White else WisdomMuted
-        )
-    }
-}
+        Box(modifier = Modifier.size(128.dp), contentAlignment = Alignment.Center) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val stroke = 8.dp.toPx()
+                val inset = stroke / 2f
+                val arcSize = Size(size.width - stroke, size.height - stroke)
+                val topLeft = Offset(inset, inset)
 
-/** Circular gauge (drawn with Canvas, like the timer ring) with the avatar inside and the percent as a badge. */
-@Composable
-private fun ProfileGauge(
-    progress: Float,
-    shownScore: Int,
-    complete: Boolean,
-    avatar: AvatarPresetOption?,
-    initials: String
-) {
-    Box(modifier = Modifier.size(132.dp), contentAlignment = Alignment.Center) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val stroke = 9.dp.toPx()
-            val inset = stroke / 2f
-            val arcSize = Size(size.width - stroke, size.height - stroke)
-            val topLeft = Offset(inset, inset)
-
-            if (complete) {
-                // soft golden glow behind the ring
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(GoldMid.copy(alpha = 0.30f), Color.Transparent),
-                        center = center,
-                        radius = size.minDimension / 2f
-                    ),
-                    radius = size.minDimension / 2f,
-                    center = center
-                )
-            }
-
-            // track
-            drawArc(
-                color = Color.White.copy(alpha = 0.08f),
-                startAngle = -90f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = topLeft,
-                size = arcSize,
-                style = Stroke(width = stroke)
-            )
-
-            if (progress > 0f) {
                 if (complete) {
-                    rotate(-90f) {
+                    // soft golden glow behind the ring
+                    drawCircle(
+                        brush = Brush.radialGradient(
+                            colors = listOf(GoldMid.copy(alpha = 0.30f), Color.Transparent),
+                            center = center,
+                            radius = size.minDimension / 2f
+                        ),
+                        radius = size.minDimension / 2f,
+                        center = center
+                    )
+                }
+
+                // track
+                drawArc(
+                    color = Color.White.copy(alpha = 0.08f),
+                    startAngle = -90f,
+                    sweepAngle = 360f,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = stroke)
+                )
+
+                if (progress > 0f) {
+                    if (complete) {
+                        rotate(-90f) {
+                            drawArc(
+                                brush = Brush.sweepGradient(listOf(GoldLight, GoldMid, GoldDeep, GoldMid, GoldLight)),
+                                startAngle = 0f,
+                                sweepAngle = 360f * progress,
+                                useCenter = false,
+                                topLeft = topLeft,
+                                size = arcSize,
+                                style = Stroke(width = stroke, cap = StrokeCap.Round)
+                            )
+                        }
+                    } else {
                         drawArc(
-                            brush = Brush.sweepGradient(listOf(GoldLight, GoldMid, GoldDeep, GoldMid, GoldLight)),
-                            startAngle = 0f,
+                            color = WisdomCyan,
+                            startAngle = -90f,
                             sweepAngle = 360f * progress,
                             useCenter = false,
                             topLeft = topLeft,
@@ -796,136 +607,27 @@ private fun ProfileGauge(
                             style = Stroke(width = stroke, cap = StrokeCap.Round)
                         )
                     }
-                } else {
-                    drawArc(
-                        color = WisdomCyan,
-                        startAngle = -90f,
-                        sweepAngle = 360f * progress,
-                        useCenter = false,
-                        topLeft = topLeft,
-                        size = arcSize,
-                        style = Stroke(width = stroke, cap = StrokeCap.Round)
-                    )
                 }
             }
-        }
 
-        AvatarDisc(
-            preset = avatar,
-            initials = initials,
-            size = 88.dp,
-            iconSize = 40.dp
-        )
-
-        // percent badge on the lower edge of the ring
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = 10.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF0B1220))
-                .border(
-                    BorderStroke(1.dp, if (complete) GoldMid.copy(alpha = 0.7f) else WisdomCyan.copy(alpha = 0.6f)),
-                    CircleShape
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "$shownScore%",
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Black,
+                    color = accent,
+                    maxLines = 1,
+                    softWrap = false
                 )
-                .padding(horizontal = 11.dp, vertical = 3.dp)
-        ) {
-            Text(
-                text = "$shownScore%",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Black,
-                color = if (complete) GoldMid else WisdomCyan,
-                maxLines = 1,
-                softWrap = false
-            )
-        }
-    }
-}
-
-/**
- * Premium crown, drawn as a vector: metallic gold gradient, deeper gold edge, small gems and a slow
- * light sheen that sweeps across now and then. No emoji, no stock icon.
- */
-@Composable
-private fun PremiumCrown(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "crown_sheen")
-    val sheen by transition.animateFloat(
-        initialValue = -0.5f,
-        targetValue = 1.8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3600, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "crown_sheen_x"
-    )
-
-    Canvas(modifier = modifier.size(width = 66.dp, height = 46.dp)) {
-        val w = size.width
-        val h = size.height
-
-        val crown = Path().apply {
-            moveTo(0.10f * w, 0.80f * h)
-            lineTo(0.03f * w, 0.22f * h)
-            lineTo(0.28f * w, 0.52f * h)
-            lineTo(0.50f * w, 0.07f * h)
-            lineTo(0.72f * w, 0.52f * h)
-            lineTo(0.97f * w, 0.22f * h)
-            lineTo(0.90f * w, 0.80f * h)
-            close()
-        }
-        val metal = Brush.linearGradient(
-            colors = listOf(GoldLight, GoldMid, GoldDeep, GoldMid),
-            start = Offset(0f, 0f),
-            end = Offset(w, h)
-        )
-
-        // body
-        drawPath(path = crown, brush = metal)
-        drawPath(
-            path = crown,
-            color = GoldEdge.copy(alpha = 0.9f),
-            style = Stroke(width = 1.2.dp.toPx(), join = StrokeJoin.Round)
-        )
-
-        // base band
-        drawRoundRect(
-            brush = metal,
-            topLeft = Offset(0.08f * w, 0.80f * h),
-            size = Size(0.84f * w, 0.16f * h),
-            cornerRadius = CornerRadius(3.dp.toPx())
-        )
-        drawRoundRect(
-            color = GoldEdge.copy(alpha = 0.9f),
-            topLeft = Offset(0.08f * w, 0.80f * h),
-            size = Size(0.84f * w, 0.16f * h),
-            cornerRadius = CornerRadius(3.dp.toPx()),
-            style = Stroke(width = 1.dp.toPx())
-        )
-
-        // light sheen, clipped to the crown shape
-        clipPath(crown) {
-            val x = sheen * w
-            drawRect(
-                brush = Brush.linearGradient(
-                    colors = listOf(Color.Transparent, Color.White.copy(alpha = 0.65f), Color.Transparent),
-                    start = Offset(x - 0.22f * w, 0f),
-                    end = Offset(x + 0.22f * w, 0.7f * h)
+                Text(
+                    text = "COMPLETE",
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = WisdomMuted,
+                    letterSpacing = 1.6.sp
                 )
-            )
+            }
         }
-
-        // gems on the three tips and one on the band
-        val gem = Color(0xFFFFFBEA)
-        listOf(
-            Offset(0.03f * w, 0.20f * h),
-            Offset(0.50f * w, 0.05f * h),
-            Offset(0.97f * w, 0.20f * h)
-        ).forEach { c ->
-            drawCircle(color = GoldEdge, radius = 0.055f * w, center = c)
-            drawCircle(color = gem, radius = 0.040f * w, center = c)
-        }
-        drawCircle(color = GoldEdge, radius = 0.050f * w, center = Offset(0.50f * w, 0.88f * h))
-        drawCircle(color = Color(0xFF7DE8FF), radius = 0.036f * w, center = Offset(0.50f * w, 0.88f * h))
     }
 }
 
