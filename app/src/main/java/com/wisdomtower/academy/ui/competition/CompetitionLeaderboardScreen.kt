@@ -44,9 +44,11 @@ import com.wisdomtower.academy.data.competition.CompetitionResult
 import com.wisdomtower.academy.data.competition.LeaderboardResult
 import com.wisdomtower.academy.data.competition.LeaderboardRow
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
+import com.wisdomtower.academy.ui.theme.WisdomExpandable
 import com.wisdomtower.academy.ui.theme.WisdomGlassBorder
 import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import com.wisdomtower.academy.ui.theme.WisdomGlassFill
+import com.wisdomtower.academy.ui.theme.wisdomReveal
 
 private val LbCyan = Color(0xFF22E0FF)
 private val LbMuted = Color(0xFF94A3B8)
@@ -68,6 +70,9 @@ private val LbBronze = Color(0xFFD97706)
 // trophy cards, the rows and the prize panel are see-through glass (WisdomGlassCard and the same white tints), the
 // buttons are CompetitionPillButton. The medal colours stay on the trophies, the rank chips and a soft edge.
 // Logic, texts and data are unchanged.
+// Session M9 (docs/UI_MOTION_PLAN.md, motion only): the three trophy cards rise in the order 2nd, 1st, 3rd
+// (wisdomReveal, once per contest per app session), the own row and the prize panel rise after them, and ranks 4 to
+// 10 open and close with WisdomExpandable instead of appearing at once. No text, data or logic changed.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionLeaderboardScreen(
@@ -140,14 +145,14 @@ fun CompetitionLeaderboardScreen(
                     fontSize = 14.sp
                 )
             } else if (res is LeaderboardResult.Available) {
-                LeaderboardBody(res)
+                LeaderboardBody(competitionId = competitionId, res = res)
             }
         }
     }
 }
 
 @Composable
-private fun LeaderboardBody(res: LeaderboardResult.Available) {
+private fun LeaderboardBody(competitionId: String, res: LeaderboardResult.Available) {
     var expanded by remember { mutableStateOf(false) }
     val first = res.top.firstOrNull { it.rank == 1 }
     val second = res.top.firstOrNull { it.rank == 2 }
@@ -155,6 +160,8 @@ private fun LeaderboardBody(res: LeaderboardResult.Available) {
     val others = res.top.filter { it.rank > 3 }
     val me = res.me
     val myRank = me?.rank
+    // M9: one stable key prefix per contest, so each card rises once per app session
+    val revealKey = "lb_" + competitionId
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (res.disqualified) {
@@ -178,18 +185,35 @@ private fun LeaderboardBody(res: LeaderboardResult.Available) {
         }
 
         // the three trophies: a big gold card, then silver and bronze side by side
+        // M9 order of appearance: 2nd first, then 1st, then 3rd
         if (first != null) {
-            HeroTrophyCard(row = first, highlight = first.rank == myRank)
+            HeroTrophyCard(
+                row = first,
+                highlight = first.rank == myRank,
+                modifier = Modifier.wisdomReveal(key = revealKey + "_1", index = 1)
+            )
         }
         if (second != null || third != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (second != null) {
-                    PodiumTrophyCard(row = second, highlight = second.rank == myRank, modifier = Modifier.weight(1f))
+                    PodiumTrophyCard(
+                        row = second,
+                        highlight = second.rank == myRank,
+                        modifier = Modifier
+                            .weight(1f)
+                            .wisdomReveal(key = revealKey + "_2", index = 0)
+                    )
                 } else {
                     Spacer(modifier = Modifier.weight(1f))
                 }
                 if (third != null) {
-                    PodiumTrophyCard(row = third, highlight = third.rank == myRank, modifier = Modifier.weight(1f))
+                    PodiumTrophyCard(
+                        row = third,
+                        highlight = third.rank == myRank,
+                        modifier = Modifier
+                            .weight(1f)
+                            .wisdomReveal(key = revealKey + "_3", index = 2)
+                    )
                 } else {
                     Spacer(modifier = Modifier.weight(1f))
                 }
@@ -200,14 +224,22 @@ private fun LeaderboardBody(res: LeaderboardResult.Available) {
         if (others.isNotEmpty()) {
             val lastRank = others.last().rank
             val arrow = if (expanded) "\u25B4" else "\u25BE"
-            CompetitionPillButton(
-                label = "Ranks 4 to " + lastRank.toString() + "  " + arrow,
-                onClick = { expanded = !expanded },
-                modifier = Modifier.fillMaxWidth()
-            )
-            if (expanded) {
-                for (row in others) {
-                    LbRow(row = row, highlight = row.rank == myRank)
+            // one inner column with no spacing, so the closed state leaves no extra gap under the button
+            Column {
+                CompetitionPillButton(
+                    label = "Ranks 4 to " + lastRank.toString() + "  " + arrow,
+                    onClick = { expanded = !expanded },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                WisdomExpandable(visible = expanded) {
+                    Column(
+                        modifier = Modifier.padding(top = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        for (row in others) {
+                            LbRow(row = row, highlight = row.rank == myRank)
+                        }
+                    }
                 }
             }
         }
@@ -215,14 +247,21 @@ private fun LeaderboardBody(res: LeaderboardResult.Available) {
         // the student's own row when ranked outside the top 10 (decision E)
         if (me != null && res.top.none { it.rank == me.rank }) {
             Text(text = "Your rank", color = LbMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            LbRow(row = me, highlight = true)
+            Box(modifier = Modifier.wisdomReveal(key = revealKey + "_me", index = 3)) {
+                LbRow(row = me, highlight = true)
+            }
         }
 
         val prizeTitle = res.prizeTitle
         val prizeDetails = res.prizeDetails
         val points = res.points
         if (prizeTitle != null || prizeDetails != null || points != null) {
-            WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 16.dp) {
+            WisdomGlassCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wisdomReveal(key = revealKey + "_prize", index = 4),
+                cornerRadius = 16.dp
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -310,11 +349,11 @@ private fun RankChip(rank: Int) {
 }
 
 @Composable
-private fun HeroTrophyCard(row: LeaderboardRow, highlight: Boolean) {
+private fun HeroTrophyCard(row: LeaderboardRow, highlight: Boolean, modifier: Modifier = Modifier) {
     val accent = rankColor(row.rank)
     val shape = RoundedCornerShape(22.dp)
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(shape)
             .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.16f), WisdomGlassFill)))
