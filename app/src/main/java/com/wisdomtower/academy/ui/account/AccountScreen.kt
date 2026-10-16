@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,21 +32,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Save
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -69,13 +62,10 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.data.auth.AuthStateManager
@@ -85,11 +75,7 @@ import com.wisdomtower.academy.ui.competition.CompetitionPointsCard
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomAccentEmerald
-import com.wisdomtower.academy.ui.theme.WisdomAccentFuchsia
-import com.wisdomtower.academy.ui.theme.WisdomAccentPurple
 import com.wisdomtower.academy.ui.theme.WisdomAccentRose
-import com.wisdomtower.academy.ui.theme.WisdomAccentSky
-import com.wisdomtower.academy.ui.theme.WisdomAccentViolet
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
@@ -98,82 +84,72 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlin.math.roundToInt
 
 // ---------------------------------------------------------------------------
-// Option lists: copied from the website (S4 item d). Never invent options here:
-// the chosen value is written to the same Supabase `profiles` row the website uses.
-//  - levels:  website-reference/src/lib/academic-levels.ts  (ACADEMIC_LEVEL_OPTIONS)
-//  - streams, regions, avatar presets: website-reference/src/lib/profile.ts
+// Option lists. Never invent options here: the chosen value is written to the same
+// Supabase `profiles` row the website uses.
+//  - levels, regions: website-reference/src/lib/academic-levels.ts and profile.ts
+//  - universities: app/src/main/assets/data/universities.json (the 45 names of the app's own
+//    university guide, same order)
 // ---------------------------------------------------------------------------
 val EDUCATION_LEVEL_OPTIONS = listOf(
     "Grade 9", "Grade 10", "Grade 11", "Grade 12",
     "Remedial", "Freshman", "3rd Year (ECE)", "Other"
 )
 
-val ACADEMIC_STREAM_OPTIONS = listOf(
-    "Natural Science",
-    "Social Science",
-    "Electrical & Computer Engineering (ECE)",
-    "Software Engineering / Computer Science",
-    "Civil / Mechanical Engineering",
-    "Medicine / Health Sciences",
-    "Accounting & Finance",
-    "Economics & Management",
-    "Law & Jurisprudence",
-    "General / Undeclared"
+/** Levels whose students are at a university: they pick the university from the list. Everyone else types a school name. */
+val UNIVERSITY_LEVELS = setOf("Remedial", "Freshman", "3rd Year (ECE)")
+
+val UNIVERSITY_OPTIONS = listOf(
+    "Addis Ababa University",
+    "Addis Ababa Science and Technology University",
+    "Adama Science and Technology University",
+    "Jimma University",
+    "Mekelle University",
+    "Haramaya University",
+    "Bahir Dar University",
+    "University of Gondar",
+    "Hawassa University",
+    "Arba Minch University",
+    "Aksum University",
+    "Ambo University",
+    "Debre Berhan University",
+    "Debre Markos University",
+    "Dilla University",
+    "Dire Dawa University",
+    "Wollo University",
+    "Wolaita Sodo University",
+    "Jigjiga University",
+    "Madda Walabu University",
+    "Mizan-Tepi University",
+    "Samara University",
+    "Kotebe University of Education",
+    "Adigrat University",
+    "Assosa University",
+    "Bule Hora University",
+    "Debre Tabor University",
+    "Mattu University",
+    "Wachemo University",
+    "Wolkite University",
+    "Woldia University",
+    "Arsi University",
+    "Gambella University",
+    "Oda Bultum University",
+    "Salale University",
+    "Dembi Dolo University",
+    "Debark University",
+    "Bonga University",
+    "Werabe University",
+    "Jinka University",
+    "Kebri Dehar University",
+    "Injibara University",
+    "Raya University",
+    "Mekdela Amba University",
+    "Wollega University"
 )
 
 val ETHIOPIAN_REGION_OPTIONS = listOf(
     "Addis Ababa", "Oromia", "Amhara", "Tigray", "Sidama",
     "Central Ethiopia", "South Ethiopia", "South West Ethiopia",
     "Dire Dawa", "Harari", "Somali", "Afar", "Benishangul-Gumuz", "Gambela"
-)
-
-/**
- * One avatar. `id`, `name` and `role` are the website's AVATAR_PRESETS (website-reference/src/lib/profile.ts).
- * `gradient` are the website's three gradient colours (Tailwind values); `icon` is the closest Material
- * icon to the website's Lucide icon (GraduationCap, Cpu, Atom, HeartPulse, Code2, Compass, Scale, Zap).
- */
-data class AvatarPresetOption(
-    val id: String,
-    val name: String,
-    val role: String,
-    val accent: Color,
-    val gradient: List<Color>,
-    val icon: ImageVector
-)
-
-val AVATAR_PRESETS_LIST = listOf(
-    AvatarPresetOption(
-        "scholar-cyan", "Apex Scholar", "Academic Excellence", WisdomCyan,
-        listOf(Color(0xFF06B6D4), Color(0xFF0284C7), Color(0xFF1D4ED8)), Icons.Default.School
-    ),
-    AvatarPresetOption(
-        "engineer-amber", "Architect & Engineer", "Engineering & Tech", WisdomAccentAmber,
-        listOf(Color(0xFFFBBF24), Color(0xFFF97316), Color(0xFFD97706)), Icons.Default.Memory
-    ),
-    AvatarPresetOption(
-        "scientist-emerald", "Natural Scientist", "Research & Discovery", WisdomAccentEmerald,
-        listOf(Color(0xFF34D399), Color(0xFF0D9488), Color(0xFF0E7490)), Icons.Default.Science
-    ),
-    AvatarPresetOption(
-        "doctor-rose", "Medical Pioneer", "Health & Medicine", WisdomAccentRose,
-        listOf(Color(0xFFF43F5E), Color(0xFFDB2777), Color(0xFFB91C1C)), Icons.Default.Favorite
-    ),
-    AvatarPresetOption(
-        "coder-violet", "Software Innovator", "Computing & AI", WisdomAccentViolet,
-        listOf(Color(0xFFA855F7), Color(0xFF7C3AED), Color(0xFF4338CA)), Icons.Default.Code
-    ),
-    AvatarPresetOption(
-        "astronomer-sky", "Cosmic Explorer", "Physics & Astronomy", WisdomAccentSky,
-        listOf(Color(0xFF38BDF8), Color(0xFF2563EB), Color(0xFF3730A3)), Icons.Default.Explore
-    ),
-    AvatarPresetOption(
-        "lawyer-gold", "Social Thinker", "Social Sciences & Law", WisdomAccentAmber,
-        listOf(Color(0xFFFACC15), Color(0xFFF59E0B), Color(0xFF44403C)), Icons.Default.Gavel
-    ),
-    AvatarPresetOption(
-        "visionary-neon", "Future Leader", "Leadership & Impact", WisdomAccentFuchsia,
-        listOf(Color(0xFFD946EF), Color(0xFFEC4899), Color(0xFFF97316)), Icons.Default.FlashOn
-    )
 )
 
 // Gold tones for the completed gauge (metal look: light, mid, deep)
@@ -189,15 +165,14 @@ private val PillOnAccent = Color(0xFF06101F)
  * - Signed-out: native sign-in / create-account screen (ui/auth/NativeSignInScreen.kt), a copy of
  *   the website login page that talks to Supabase directly (S2d). On success the session is stored
  *   by AuthStateManager.applyNativeSession and this screen switches to the signed-in view.
- * - Signed-in (T7, owner request 2026-10-13; simplified 2026-10-16): ONLY the profile completion gauge
- *   at the top (no card, no emoji, no avatar, no crown, no name, no checklist chips), then three profile
- *   sections with avatar grid and wrapping pill selectors (nothing is cut off to the right), Save, and
- *   Log Out as the LAST item. The student ID card, the "tap to flip" button and the
- *   folio / status / preferences / log-out box were removed.
+ * - Signed-in (T7 2026-10-13; simplified 2026-10-16): ONLY the profile completion gauge at the top,
+ *   then three sections: name; academic level + university (university students pick from a list)
+ *   or school name (typed) + region; phone + target exam. Then Save, and Log Out as the LAST item.
+ *   The avatar picker and the stream / academic track picker were removed (owner, 2026-10-16).
  * - Competition points (owner decision B, session O): a small card above the profile panel with the
  *   cumulative competition points total from the server (ui/competition/CompetitionPointsCard.kt).
  *
- * S4 item d: no invented defaults (stream, region) and no invented enrollment card.
+ * Saving never touches `stream` or `avatarPreset`: whatever is already stored stays as it is.
  * Not ported: the website's Admin button (shown only for admin e-mails).
  */
 @Composable
@@ -293,8 +268,9 @@ private fun pressScale(interactionSource: MutableInteractionSource, pressed: Flo
 // ---------------------------------------------------------------------------
 
 /**
- * Same fields, option lists, defaults and score rules as the website ProfileCompletionPanel.tsx.
- * The completion score is computed live from the form state, exactly like the website.
+ * Same fields, defaults and option lists as the website ProfileCompletionPanel.tsx, minus avatar and stream.
+ * The completion score is computed live from the form state. Without the stream (it was worth 15) the
+ * institution is worth 30, so the total is still 100.
  */
 @Composable
 private fun MyProfilePanel(
@@ -302,7 +278,7 @@ private fun MyProfilePanel(
     onProfileUpdated: (UserProfile) -> Unit,
     onSignOut: () -> Unit
 ) {
-    // Website defaults: first/last name from full name; level "Freshman"; stream, region empty; avatar scholar-cyan
+    // Website defaults: first/last name from full name; level "Freshman"; region empty
     var firstName by remember(profile.firstName, profile.fullName) {
         mutableStateOf(
             profile.firstName?.takeIf { it.isNotBlank() }
@@ -318,14 +294,10 @@ private fun MyProfilePanel(
     var educationLevel by remember(profile.educationLevel) {
         mutableStateOf(profile.educationLevel?.takeIf { it.isNotBlank() } ?: "Freshman")
     }
-    var stream by remember(profile.stream) { mutableStateOf(profile.stream ?: "") }
     var schoolName by remember(profile.schoolName) { mutableStateOf(profile.schoolName ?: "") }
     var townRegion by remember(profile.townRegion) { mutableStateOf(profile.townRegion ?: "") }
     var phone by remember(profile.phone) { mutableStateOf(profile.phone ?: "") }
     var targetExam by remember(profile.targetExam) { mutableStateOf(profile.targetExam ?: "") }
-    var selectedAvatarPreset by remember(profile.avatarPreset) {
-        mutableStateOf(profile.avatarPreset?.takeIf { it.isNotBlank() } ?: "scholar-cyan")
-    }
     // Website stores the free-text level under "Other" in bio as "Custom Level: ..."
     var customLevel by remember(profile.bio) {
         mutableStateOf(
@@ -338,12 +310,12 @@ private fun MyProfilePanel(
     var step3Expanded by remember { mutableStateOf(false) }
 
     val hasName = firstName.isNotBlank() || !profile.fullName.isNullOrBlank()
+    val isUniversityStudent = educationLevel in UNIVERSITY_LEVELS
     val completionScore = run {
         var score = 0
         if (hasName) score += 20
         if (educationLevel.isNotBlank()) score += 20
-        if (stream.isNotBlank()) score += 15
-        if (schoolName.isNotBlank()) score += 15
+        if (schoolName.isNotBlank()) score += 30
         if (townRegion.isNotBlank()) score += 10
         if (targetExam.isNotBlank()) score += 10
         if (phone.isNotBlank()) score += 10
@@ -355,23 +327,17 @@ private fun MyProfilePanel(
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         ProfileCompletionGauge(score = completionScore)
 
-        // STEP 1: Avatar & Legal Identity
+        // STEP 1: Legal Identity
         StepAccordionCard(
             stepNumber = 1,
-            title = "Character Avatar & Legal Identity",
-            subtitle = "Select your scholar avatar preset, first and last name",
+            title = "Legal Identity",
+            subtitle = "Your first and last name",
             isFilled = hasName,
             unfilledLabel = "Required",
             isExpanded = step1Expanded,
             onToggle = { step1Expanded = !step1Expanded }
         ) {
             Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                FieldLabel("ACADEMIC CHARACTER AVATAR")
-                AvatarPicker(
-                    selectedId = selectedAvatarPreset,
-                    onSelect = { selectedAvatarPreset = it }
-                )
-
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     OutlinedTextField(
                         value = firstName,
@@ -397,12 +363,12 @@ private fun MyProfilePanel(
             }
         }
 
-        // STEP 2: Academic Curriculum, Track & Institution
+        // STEP 2: Academic level and institution
         StepAccordionCard(
             stepNumber = 2,
-            title = "Academic Curriculum, Track & Institution",
-            subtitle = "Academic level, stream, university/school, and region",
-            isFilled = educationLevel.isNotBlank() && stream.isNotBlank() && schoolName.isNotBlank() && townRegion.isNotBlank(),
+            title = "Academic Level & Institution",
+            subtitle = "Academic level, university or school, and region",
+            isFilled = educationLevel.isNotBlank() && schoolName.isNotBlank() && townRegion.isNotBlank(),
             unfilledLabel = "Incomplete",
             isExpanded = step2Expanded,
             onToggle = { step2Expanded = !step2Expanded }
@@ -413,7 +379,14 @@ private fun MyProfilePanel(
                     options = EDUCATION_LEVEL_OPTIONS,
                     selected = educationLevel,
                     accent = WisdomCyan,
-                    onSelect = { educationLevel = it }
+                    onSelect = { newLevel ->
+                        // Switching between university and school clears the institution: a university
+                        // name makes no sense for a Grade 10 student and the other way round.
+                        if ((educationLevel in UNIVERSITY_LEVELS) != (newLevel in UNIVERSITY_LEVELS)) {
+                            schoolName = ""
+                        }
+                        educationLevel = newLevel
+                    }
                 )
 
                 if (educationLevel == "Other") {
@@ -429,24 +402,24 @@ private fun MyProfilePanel(
                     )
                 }
 
-                FieldLabel("STREAM / ACADEMIC TRACK")
-                PillSelector(
-                    options = ACADEMIC_STREAM_OPTIONS,
-                    selected = stream,
-                    accent = WisdomAccentPurple,
-                    onSelect = { stream = it }
-                )
-
-                OutlinedTextField(
-                    value = schoolName,
-                    onValueChange = { schoolName = it },
-                    label = { Text("School / University Name", fontSize = 11.sp) },
-                    placeholder = { Text("e.g. Addis Ababa University / Millenium High", fontSize = 11.sp, color = WisdomMuted) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = fieldColors()
-                )
+                if (isUniversityStudent) {
+                    FieldLabel("UNIVERSITY")
+                    UniversityPicker(
+                        selected = schoolName,
+                        onSelect = { schoolName = it }
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = schoolName,
+                        onValueChange = { schoolName = it },
+                        label = { Text("School Name", fontSize = 11.sp) },
+                        placeholder = { Text("e.g. Millenium High School", fontSize = 11.sp, color = WisdomMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors()
+                    )
+                }
 
                 FieldLabel("TOWN / REGION IN ETHIOPIA")
                 PillSelector(
@@ -501,17 +474,16 @@ private fun MyProfilePanel(
                 } else {
                     profile.bio
                 }
+                // stream and avatarPreset are NOT set here: whatever is stored stays untouched
                 val updated = profile.copy(
                     fullName = if (composedName.isNotBlank()) composedName else profile.fullName,
                     firstName = firstName.trim(),
                     lastName = lastName.trim(),
                     educationLevel = educationLevel,
-                    stream = stream,
                     schoolName = schoolName.trim(),
                     townRegion = townRegion,
                     phone = phone.trim(),
                     targetExam = targetExam.trim(),
-                    avatarPreset = selectedAvatarPreset,
                     bio = newBio
                 )
                 onProfileUpdated(updated)
@@ -532,8 +504,6 @@ private fun MyProfilePanel(
 /**
  * Circular completion gauge drawn with Canvas (same method as the timer ring, per BUILD_PITFALLS).
  * The real percent sits in the middle. Cyan while incomplete; at 100% the ring turns gold with a soft glow.
- * No card, no avatar, no crown, no name, no checklist: the three sections below already show
- * which parts are filled.
  */
 @Composable
 private fun ProfileCompletionGauge(score: Int) {
@@ -632,160 +602,116 @@ private fun ProfileCompletionGauge(score: Int) {
 }
 
 // ---------------------------------------------------------------------------
-// Avatars
+// University picker: a field that opens a searchable, scrollable list of the 45 universities
 // ---------------------------------------------------------------------------
 
-/** Round avatar: the website preset gradient with its icon (or the name initials, like the website fallback). */
 @Composable
-private fun AvatarDisc(
-    preset: AvatarPresetOption?,
-    initials: String,
-    size: Dp,
-    iconSize: Dp,
-    modifier: Modifier = Modifier,
-    glow: Dp = 0.dp
-) {
-    val colors = preset?.gradient ?: listOf(Color(0xFF0891B2), Color(0xFF0369A1), Color(0xFF3730A3))
-    val glowColor = preset?.accent ?: WisdomCyan
-    Box(
-        modifier = modifier
-            .size(size)
-            .shadow(glow, CircleShape, ambientColor = glowColor, spotColor = glowColor)
-            .clip(CircleShape)
-            .background(Brush.linearGradient(colors))
-            .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)), CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        // soft gloss on the upper half
-        Box(
+private fun UniversityPicker(selected: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    val chevron by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(250),
+        label = "university_chevron"
+    )
+    val shape = RoundedCornerShape(14.dp)
+    val filtered = remember(query) {
+        val q = query.trim()
+        if (q.isEmpty()) UNIVERSITY_OPTIONS else UNIVERSITY_OPTIONS.filter { it.contains(q, ignoreCase = true) }
+    }
+
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
             modifier = Modifier
-                .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .fillMaxHeight(0.5f)
-                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Transparent)))
-        )
-        if (preset != null) {
-            Icon(
-                imageVector = preset.icon,
-                contentDescription = preset.name,
-                tint = Color.White,
-                modifier = Modifier.size(iconSize)
-            )
-        } else {
+                .clip(shape)
+                .background(Color(0xFF0F1829))
+                .border(BorderStroke(1.dp, if (expanded) WisdomCyan else WisdomBorderWhite), shape)
+                .clickable(onClick = { expanded = !expanded })
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = initials,
-                fontSize = (size.value * 0.34f).sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+                text = selected.ifBlank { "Select your university" },
+                fontSize = 13.sp,
+                fontWeight = if (selected.isBlank()) FontWeight.Normal else FontWeight.SemiBold,
+                color = if (selected.isBlank()) WisdomMuted else Color.White,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = WisdomMuted,
+                modifier = Modifier
+                    .size(20.dp)
+                    .graphicsLayer { rotationZ = chevron }
             )
         }
-    }
-}
 
-/** 8 avatars in two rows of 4 (everything visible, no sideways scrolling) and the chosen name + role below. */
-@Composable
-private fun AvatarPicker(selectedId: String, onSelect: (String) -> Unit) {
-    val selected = AVATAR_PRESETS_LIST.firstOrNull { it.id == selectedId }
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        AVATAR_PRESETS_LIST.chunked(4).forEach { rowItems ->
-            Row(modifier = Modifier.fillMaxWidth()) {
-                rowItems.forEach { preset ->
-                    Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        AvatarTile(
-                            preset = preset,
-                            selected = preset.id == selectedId,
-                            onClick = { onSelect(preset.id) }
-                        )
+        AnimatedVisibility(visible = expanded) {
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text("Search universities", fontSize = 11.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = shape,
+                    colors = fieldColors()
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 260.dp)
+                        .clip(shape)
+                        .background(Color.White.copy(alpha = 0.04f))
+                        .border(BorderStroke(1.dp, WisdomBorderWhite), shape)
+                ) {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        filtered.forEach { name ->
+                            UniversityRow(
+                                name = name,
+                                selected = name == selected,
+                                onClick = {
+                                    onSelect(name)
+                                    query = ""
+                                    expanded = false
+                                }
+                            )
+                        }
+                        if (filtered.isEmpty()) {
+                            Text(
+                                text = "No university matches your search",
+                                fontSize = 12.sp,
+                                color = WisdomMuted,
+                                modifier = Modifier.padding(14.dp)
+                            )
+                        }
                     }
                 }
             }
         }
-        if (selected != null) {
-            Text(
-                text = selected.name,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = selected.accent,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = selected.role,
-                fontSize = 10.5.sp,
-                color = WisdomMuted,
-                textAlign = TextAlign.Center
-            )
-        }
     }
 }
 
 @Composable
-private fun AvatarTile(preset: AvatarPresetOption, selected: Boolean, onClick: () -> Unit) {
-    val haptic = LocalHapticFeedback.current
-    val interaction = remember { MutableInteractionSource() }
-    val press = pressScale(interaction, 0.92f)
-    val lift by animateFloatAsState(
-        targetValue = if (selected) 1.06f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
-        label = "avatar_lift"
-    )
-    val ring by animateFloatAsState(
-        targetValue = if (selected) 1f else 0f,
-        animationSpec = tween(220),
-        label = "avatar_ring"
-    )
-    val glow by animateDpAsState(
-        targetValue = if (selected) 12.dp else 0.dp,
-        animationSpec = tween(220),
-        label = "avatar_glow"
-    )
-    val scale = press * lift
-
-    Box(
+private fun UniversityRow(name: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
         modifier = Modifier
-            .size(66.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                alpha = 0.72f + 0.28f * ring
-            }
-            .clickable(
-                interactionSource = interaction,
-                indication = null,
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onClick()
-                }
-            ),
-        contentAlignment = Alignment.Center
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .border(BorderStroke(2.dp, preset.accent.copy(alpha = ring)), CircleShape)
-        )
-        AvatarDisc(
-            preset = preset,
-            initials = "",
-            size = 54.dp,
-            iconSize = 26.dp,
-            glow = glow
+        Text(
+            text = name,
+            fontSize = 12.5.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = if (selected) WisdomCyan else Color(0xFFE2E8F0),
+            modifier = Modifier.weight(1f)
         )
         if (selected) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .background(preset.accent)
-                    .border(BorderStroke(2.dp, Color(0xFF0B1220)), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Check, contentDescription = null, tint = PillOnAccent, modifier = Modifier.size(11.dp))
-            }
+            Icon(Icons.Default.Check, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(14.dp))
         }
     }
 }
