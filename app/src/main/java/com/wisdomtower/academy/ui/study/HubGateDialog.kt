@@ -28,11 +28,14 @@ import androidx.compose.ui.window.Dialog
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomMuted
+import com.wisdomtower.academy.ui.theme.wisdomDialogEnter
 
 /**
  * Small message pop-up used when a course hub is closed (plan step N9). Layout follows the website's
  * `ComingSoonModal.tsx`: optional amber badge, title, hub name in cyan, sentence, one cyan button.
  * The texts come from `ContentAccess` (copied from the website); there is never a price or a purchase button.
+ *
+ * M11 slice 7: the card scales in and fades (wisdomDialogEnter, 200 ms); closing stays the platform's instant dismiss.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -48,6 +51,7 @@ internal fun HubGateDialog(
     Dialog(onDismissRequest = onClose) {
         Column(
             modifier = Modifier
+                .wisdomDialogEnter()
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
                 .background(Color(0xFF111B2E))

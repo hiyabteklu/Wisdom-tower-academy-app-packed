@@ -46,6 +46,7 @@ import com.wisdomtower.academy.data.auth.AuthStateManager
 import com.wisdomtower.academy.ui.theme.WisdomAccentRose
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomMuted
+import com.wisdomtower.academy.ui.theme.wisdomDialogEnter
 import kotlinx.coroutines.launch
 
 /**
@@ -53,6 +54,7 @@ import kotlinx.coroutines.launch
  * Shown only to a signed-in student. Texts match the website page `/delete-account`.
  * The student must type DELETE; the call goes to the website route through [AccountDeletionClient];
  * on success this phone is signed out and the Settings values stored on the phone are cleared.
+ * M11 slice 7: the confirmation dialog scales in and fades (wisdomDialogEnter, 200 ms); closing is the platform's instant dismiss.
  * NOT compiled, NOT tested on a phone.
  */
 @Composable
@@ -107,6 +109,7 @@ fun AccountDeletionSection(settingsPrefs: SharedPreferences) {
 
     if (showDialog) {
         AlertDialog(
+            modifier = Modifier.wisdomDialogEnter(),
             onDismissRequest = { if (!busy) showDialog = false },
             containerColor = Color(0xFF0F1829),
             title = {
