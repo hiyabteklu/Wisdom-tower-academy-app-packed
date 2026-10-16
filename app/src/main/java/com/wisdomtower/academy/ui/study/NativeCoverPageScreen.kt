@@ -103,6 +103,7 @@ object CoverForm {
     var dateText by mutableStateOf(todayText())
     var templateIndex by mutableIntStateOf(0)
     var accentIndex by mutableIntStateOf(0)
+    var borderIndex by mutableIntStateOf(0) // 0 = the template's own default border
 
     fun clear() {
         logo = null
@@ -194,11 +195,12 @@ fun NativeCoverPageScreen(
     // Live preview and the 5 thumbnails are redrawn a moment after the last change (off the main thread).
     var preview by remember { mutableStateOf<Bitmap?>(null) }
     var thumbs by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
-    LaunchedEffect(data, logoBmp, template, CoverForm.accentIndex) {
+    LaunchedEffect(data, logoBmp, template, CoverForm.accentIndex, CoverForm.borderIndex) {
         delay(140)
-        val big = withContext(Dispatchers.Default) { renderCoverBitmap(data, logoBmp, template, accent, 1.6f) }
+        val border = CoverForm.borderIndex
+        val big = withContext(Dispatchers.Default) { renderCoverBitmap(data, logoBmp, template, accent, 1.6f, border) }
         val small = withContext(Dispatchers.Default) {
-            COVER_TEMPLATES.indices.map { renderCoverBitmap(data, logoBmp, it, accent, 0.34f) }
+            COVER_TEMPLATES.indices.map { renderCoverBitmap(data, logoBmp, it, accent, 0.34f, border) }
         }
         preview = big
         thumbs = small
@@ -223,7 +225,7 @@ fun NativeCoverPageScreen(
                 val ok = withContext(Dispatchers.IO) {
                     try {
                         context.contentResolver.openOutputStream(uri)?.use { out ->
-                            writeCoverPdf(out, data, logoBmp, template, accent)
+                            writeCoverPdf(out, data, logoBmp, template, accent, CoverForm.borderIndex)
                             true
                         } ?: false
                     } catch (e: Exception) {
