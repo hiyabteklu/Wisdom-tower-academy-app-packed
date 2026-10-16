@@ -73,6 +73,7 @@ import com.wisdomtower.academy.ui.drawer.FaqScreen
 import com.wisdomtower.academy.ui.drawer.PrivacyScreen
 import com.wisdomtower.academy.ui.drawer.TermsScreen
 import com.wisdomtower.academy.ui.theme.WisdomNavy
+import com.wisdomtower.academy.ui.theme.WisdomTabLayer
 import com.wisdomtower.academy.data.auth.AuthStateManager
 import com.wisdomtower.academy.ui.notifications.NotificationsScreen
 import com.wisdomtower.academy.data.repository.AcademyRepository
@@ -3172,7 +3173,7 @@ fun MainScreen(
                 )
 
                 // Native Home Screen (Phase A2 / B)
-                if (selectedIndex == 0) {
+                WisdomTabLayer(tab = 0, selectedIndex = selectedIndex) {
                     HomeScreen(
                         modifier = Modifier
                             .fillMaxSize()
@@ -3185,7 +3186,7 @@ fun MainScreen(
                 }
 
                 // Native Learning Landing Shell (Phase A4 / B)
-                if (selectedIndex == 1 && activeStudyUrl == null) {
+                WisdomTabLayer(tab = 1, selectedIndex = selectedIndex, active = activeStudyUrl == null) {
                     LearningScreen(
                         modifier = Modifier
                             .fillMaxSize()
@@ -3216,7 +3217,7 @@ fun MainScreen(
                 }
 
                 // Native Packages Catalog & Landing Screens (Phase A3 / B)
-                if (selectedIndex == 2) {
+                WisdomTabLayer(tab = 2, selectedIndex = selectedIndex) {
                     val currentPkg = selectedPackage
                     if (currentPkg != null) {
                         PackageDetailScreen(
@@ -3281,7 +3282,7 @@ fun MainScreen(
                 }
 
                 // Native Account Command Center Shell (Phase A5 / B)
-                if (selectedIndex == 3) {
+                WisdomTabLayer(tab = 3, selectedIndex = selectedIndex) {
                     AccountScreen(
                         modifier = Modifier
                             .fillMaxSize()
@@ -3299,7 +3300,7 @@ fun MainScreen(
                 }
 
                 // Native Preferences & Settings Shell (Phase A5)
-                if (selectedIndex == 4) {
+                WisdomTabLayer(tab = 4, selectedIndex = selectedIndex) {
                     SettingsScreen(
                         modifier = Modifier
                             .fillMaxSize()
