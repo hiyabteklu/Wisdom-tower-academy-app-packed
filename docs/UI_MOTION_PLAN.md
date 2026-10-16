@@ -66,7 +66,7 @@ Performance and safety rules for EVERY slice:
 4. Heavy work (page composition, network) must not start in the middle of a slide: start it first, or after the first 120 ms (see M2, M3).
 5. Compose follows the phone's "Remove animations" setting by itself (hypothesis: verify once); do not add a separate switch.
 6. Exam, timer, submit and close controls are never animated away or delayed. Exam screens are the LAST slice.
-7. No new text, no invented numbers. A number never counts up (it would show wrong values for a moment) unless the owner asks for it; progress gauges may ease to the REAL value.
+7. No new text, no invented numbers. A number never counts up (it would show wrong values for a moment) unless the owner asks; progress gauges may ease to the REAL value.
 8. Do not change back handling, `selectedIndex` ownership or the WebView lifecycle (BUILD_PITFALLS, Phase D). Native `selectedIndex` stays the only source of truth.
 
 ## 5. Inventory: every area and what it needs
@@ -111,21 +111,21 @@ Every slice: step 1 inspect the live code and write the real cause or the curren
 - **M11. Consistency pass.** One sweep: find any screen still without the kit, fix feel differences between screens, update the phone checklist. No new features.
 
 ## 7. Status table (update in the same commit as each slice)
-Corrected 2026-10-16 (sessions UI_AA and UI_AE): the old table said "M1 to M11 NOT STARTED", which was out of date. Real state, from the commit list of `main` and the `SESSION_2026-10-16_UI_*` logs. "CI not seen" = I (the agent) did not see a build result; the owner's rule is that written and pushed counts as done and he reports problems.
+Corrected 2026-10-16 (sessions UI_AA, UI_AE and UI_AF): the old table said "M1 to M11 NOT STARTED", which was out of date. Real state, from the commit list of `main` and the `SESSION_2026-10-16_UI_*` logs. "CI not seen" = I (the agent) did not see a build result; the owner's rule is that written and pushed counts as done and he reports problems.
 | Slice | State |
 |---|---|
 | Plan | WRITTEN and pushed 2026-10-16 |
 | M1 | Motion kit `WisdomMotion.kt` + Settings accordion patch APPLIED (PR #32 merged 2026-10-16 11:05 EAT). CI not seen |
 | M2 | Bottom nav pill patch APPLIED (PR #33, 11:09 EAT, marker `FloatingPillNav v2` per UI_Z). CI not seen |
 | M3 | Tab change transition patch APPLIED (PR #34, 11:24 EAT, `WisdomTabLayer`). CI not seen |
-| M4 | `WisdomReveal.kt` (`wisdomReveal`) written and used in `OpenCard.kt`, `HubItemListScreen.kt` and the competition hub and leaderboard (per UI_Z). Whether Home, Learning and Packages call it directly was NOT confirmed. Commits not looked up |
+| M4 | `WisdomReveal.kt` (`wisdomReveal`) is called inside `openGrid` (`OpenCard.kt`), so every card grid on Home, Packages and Learning already rises in once per session (confirmed by code read in UI_AF); also used in `HubItemListScreen.kt` and the competition hub and leaderboard. Loose items on Home and Learning got it in M11 slice 6. Commits not looked up |
 | M5 | Screen push patch APPLIED (PR #35, 12:14 EAT, `WisdomPushLayer`). CI not seen |
 | M6 | Hub rows patch APPLIED (PR #36, 12:21 EAT). CI not seen |
 | M7 | Overlay motion patch APPLIED (PR #37, 12:29 EAT) and the bell-dot build fix M7b APPLIED (PR #38, 12:38 EAT; the first M7 version had a `RowScope.AnimatedVisibility` compile error). CI of PR #38 not seen |
 | M8 | Flashcards flip and swipe in `flashcards.html`, commit `0b10cfa` (12:32 EAT). CI not seen |
 | M9 | Slice 1 leaderboard motion, commit `bd08968`; slice 2 contest cards stagger in the hub, commit `decb8ac` (12:47 to 12:48 EAT). CI not seen |
 | M10 | Slice 1 quiz runner, commit `c34c056`; slice 2 competition exam window, commit `134d926` (12:53 to 13:00 EAT). CI not seen |
-| M11 | IN PROGRESS. Slice 1 UI_Z `707a8a8`: state audit + competition review page motion. Slice 2 UI_AA `c7ca038`: competition rules page. Slice 3 UI_AB `7de9a2a`: Account points card. Slice 4 UI_AC `cee276a`: review screen score line. Slice 5 UI_AD `4f39ef6`: drawer screens (About, Contact, FAQ, Privacy, Terms) entrance motion inside `DrawerScreens.kt`; no `MainActivity.kt` change. All `[~]`, CI not seen. OPEN: drawer screen push / pop transition (needs a patch script on `MainActivity.kt`), trophy shimmer while a contest is live (needs a live-contest signal in the top bar), dialogs in other files, phone check of Home / Learning / Packages, and whether M4 reached Home, Learning and Packages directly |
+| M11 | IN PROGRESS. Slice 1 UI_Z `707a8a8`: state audit + competition review page motion. Slice 2 UI_AA `c7ca038`: competition rules page. Slice 3 UI_AB `7de9a2a`: Account points card. Slice 4 UI_AC `cee276a`: review screen score line. Slice 5 UI_AD `4f39ef6`: drawer screens (About, Contact, FAQ, Privacy, Terms) entrance motion inside `DrawerScreens.kt`; no `MainActivity.kt` change. Slice 6 UI_AF (`55469c2` log + `HomeScreen.kt`, `c12c1cb` `LearningScreen.kt`): M4 coverage checked by code read (card grids covered through `openGrid`), `wisdomReveal` added to the loose Home items (account line, Open Learning card, Other resources heading) and Learning items (header, guest banner, Study Tools card, Curriculum header, empty card). All `[~]`, CI not seen. OPEN: drawer screen push / pop transition (needs a patch script on `MainActivity.kt`), trophy shimmer while a contest is live (needs a live-contest signal in the top bar), dialogs in other files, phone check of Home / Learning / Packages |
 
 ## 8. Owner decisions
 Nothing blocks M1 to M3. Defaults chosen by the planner (the owner can change them):
