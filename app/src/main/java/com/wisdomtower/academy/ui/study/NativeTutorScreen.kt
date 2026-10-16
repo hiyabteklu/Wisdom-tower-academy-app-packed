@@ -37,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import com.wisdomtower.academy.ui.theme.wisdomDialogEnter
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -572,6 +573,7 @@ fun NativeTutorScreen(
 
         if (showClearConfirm) {
             AlertDialog(
+                modifier = Modifier.wisdomDialogEnter(),
                 onDismissRequest = { showClearConfirm = false },
                 containerColor = Color(0xFF0E172A),
                 titleContentColor = Color.White,

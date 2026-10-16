@@ -29,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
+import com.wisdomtower.academy.ui.theme.wisdomDialogEnter
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -351,6 +352,7 @@ fun HubItemListScreen(
         val toRemove = confirmRemove
         if (toRemove != null && toRemove.isNotEmpty()) {
             AlertDialog(
+                modifier = Modifier.wisdomDialogEnter(),
                 onDismissRequest = { confirmRemove = null },
                 containerColor = Color(0xFF111B2E),
                 title = {
