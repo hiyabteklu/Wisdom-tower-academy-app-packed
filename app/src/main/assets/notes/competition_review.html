@@ -43,6 +43,17 @@
   .aibox { margin-top: 10px; border: 1px solid rgba(167,139,250,.3); background: rgba(139,92,246,.1); border-radius: 12px; padding: 10px 12px; color: rgba(255,255,255,.95); font-family: var(--wt-content-font-family, "WT Tinos", serif); font-style: var(--wt-content-font-style, italic); font-size: var(--wt-content-size-explanation, 17px); line-height: var(--wt-content-line-explanation, 26px); font-weight: 500; }
   .aibox .lbl { margin: 0 0 4px; font: 900 .68rem/1 -apple-system, Roboto, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #c4b5fd; font-style: normal; }
   .aibox .study-p { margin: .4em 0; }
+
+  /* M11 motion (docs/UI_MOTION_PLAN.md): same feel as the quiz and exam pages. Visual only, transform and opacity
+     only, never blocks a tap. draw() adds the class once, right after a real change (a different question, the
+     solution opening, the AI answer arriving), so an ordinary redraw never replays it. Remove animations in the
+     phone settings turns it off. */
+  @media (prefers-reduced-motion: no-preference) {
+    .ritem.in { animation: rvIn .24s ease-out; }
+    .solbox.in, .aibox.in { animation: rvBox .22s ease-out; }
+    @keyframes rvIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes rvBox { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+  }
 </style>
 </head>
 <body>
@@ -62,10 +73,13 @@
  * The app keeps the AI text and sends it back as explanation. No network.
  * The server only sends correct answers and solutions after the competition window has closed.
  * Nothing is typed here that the server did not send: no solution means no solution button.
+ * M11 (motion only): a new question rises in, the official solution and the AI answer fade down when they first
+ * appear. Flags newQ, solIn and aiIn are one-shot and read by draw().
  */
 (function () {
   var root = document.getElementById("root");
   var cur = null, lastId = null, showSol = false, startX = null, startY = null;
+  var solIn = false, lastHadAi = false;
 
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function R(t) { try { return window.WTRich.render(String(t == null ? "" : t)); } catch (e) { return esc(t); } }
@@ -85,6 +99,7 @@
   function draw() {
     if (!cur) return;
     var same = (lastId === cur.id);
+    var newQ = !same;
     if (!same) showSol = false;
     var keep = same ? (window.pageYOffset || 0) : 0;
     var choices = Array.isArray(cur.choices) ? cur.choices : [];
@@ -119,6 +134,21 @@
     if (hasAi) h += '<div class="aibox"><p class="lbl">AI explanation</p>' + R(aiText(cur.explanation)) + "</div>";
     h += "</div>";
     root.innerHTML = h;
+    /* M11: one-shot motion classes, added after the DOM is built */
+    if (newQ) {
+      var ri = root.querySelector(".ritem");
+      if (ri) ri.classList.add("in");
+    }
+    if (solIn) {
+      var sb = root.querySelector(".solbox");
+      if (sb) sb.classList.add("in");
+      solIn = false;
+    }
+    if (hasAi && !lastHadAi && !newQ) {
+      var ab = root.querySelector(".aibox");
+      if (ab) ab.classList.add("in");
+    }
+    lastHadAi = hasAi;
     window.scrollTo(0, keep);
     lastId = cur.id;
   }
@@ -128,7 +158,7 @@
     while (el && el !== root && !(el.getAttribute && el.getAttribute("data-act"))) el = el.parentNode;
     if (!el || el === root) return;
     var act = el.getAttribute("data-act");
-    if (act === "sol") { showSol = !showSol; draw(); }
+    if (act === "sol") { showSol = !showSol; solIn = showSol; draw(); }
     else if (act === "ai") { tell("explain", ""); }
   });
 
