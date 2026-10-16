@@ -72,6 +72,7 @@ import com.wisdomtower.academy.ui.theme.WisdomGlassFill
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import com.wisdomtower.academy.ui.theme.WisdomSecondaryButton
 import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
+import com.wisdomtower.academy.ui.theme.wisdomReveal
 import kotlinx.coroutines.delay
 
 data class ProgramItem(
@@ -237,15 +238,18 @@ fun HomeScreen(
             }
 
             // 2. "Open Learning" card: the shared OpenCard (picture, title, Open). No gradient, no floating pill.
+            //    M11 slice 6: rises in once like the program cards below it (wisdomReveal, docs/UI_MOTION_PLAN.md).
             item(key = "welcome_card") {
-                OpenCard(
-                    title = "Open Learning",
-                    image = "file:///android_asset/images/home/academy.jpg",
-                    onClick = { onNavigateToUrl("/learning") }
-                )
+                Box(modifier = Modifier.wisdomReveal("home_welcome_card", 0)) {
+                    OpenCard(
+                        title = "Open Learning",
+                        image = "file:///android_asset/images/home/academy.jpg",
+                        onClick = { onNavigateToUrl("/learning") }
+                    )
+                }
             }
 
-            // 3. Program cards: the shared OpenCard, two per row
+            // 3. Program cards: the shared OpenCard, two per row (each row already rises in through openGrid)
             openGrid("programs", HOME_PROGRAMS) { program ->
                 OpenCard(program.name, program.assetImage) { onNavigateToUrl(program.path) }
             }
@@ -259,7 +263,9 @@ fun HomeScreen(
                     lineHeight = 31.sp,
                     fontWeight = FontWeight.Black,
                     color = WisdomTextPrimary,
-                    modifier = Modifier.padding(top = 10.dp, bottom = 2.dp)
+                    modifier = Modifier
+                        .wisdomReveal("home_resources_header", 0)
+                        .padding(top = 10.dp, bottom = 2.dp)
                 )
             }
 
@@ -307,6 +313,7 @@ fun HomeScreen(
  * The only thing at the top of Home: ONE line.
  *  - signed out: "New here? Create a free account" on the left, "Sign in" button on the right;
  *  - signed in: "Welcome back, <name>" on the left, "My Learning" button on the right.
+ * M11 slice 6: the line fades up first (wisdomReveal, index 0).
  */
 @Composable
 private fun HeroSection(
@@ -317,7 +324,9 @@ private fun HeroSection(
     onSignUp: () -> Unit
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .wisdomReveal("home_hero", 0),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
