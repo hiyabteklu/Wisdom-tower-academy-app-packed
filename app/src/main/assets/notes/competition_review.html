@@ -89,11 +89,13 @@
   function tell(name, arg) {
     try { if (window.WTReview && window.WTReview[name]) window.WTReview[name](arg); } catch (e) {}
   }
-  /* the AI writes math as \( ... \) and \[ ... \]; the shared renderer reads $ ... $ and $$ ... $$ */
+  /* the AI writes math as \( ... \) and \[ ... \]; the shared renderer reads $ ... $ and $$ ... $$.
+   * The AI pads the delimiters with spaces; the renderer's inline $ rule refuses a space right after the opening $ or right
+   * before the closing $, so the converted text is trimmed (and inline math cannot hold a line break). */
   function aiText(s) {
     return String(s == null ? "" : s)
-      .replace(/\\\[([\s\S]+?)\\\]/g, function (m, a) { return "$$" + a + "$$"; })
-      .replace(/\\\(([\s\S]+?)\\\)/g, function (m, a) { return "$" + a + "$"; });
+      .replace(/\\\[([\s\S]+?)\\\]/g, function (m, a) { return "$$" + a.trim() + "$$"; })
+      .replace(/\\\(([\s\S]+?)\\\)/g, function (m, a) { return "$" + a.trim().replace(/\s*\n\s*/g, " ") + "$"; });
   }
 
   function draw() {
