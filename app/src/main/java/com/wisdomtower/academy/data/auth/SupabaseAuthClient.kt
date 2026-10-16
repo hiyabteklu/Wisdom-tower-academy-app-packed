@@ -275,6 +275,12 @@ object SupabaseAuthClient {
             errorCode == "user_already_exists" || errorCode == "email_exists" || msg.contains("already registered") ->
                 SupabaseAuthResult.Failure(AuthFailureKind.USER_EXISTS, "An account with this email or phone number already exists. Please sign in.")
 
+            errorCode == "same_password" || msg.contains("different from the old password") ->
+                SupabaseAuthResult.Failure(AuthFailureKind.WEAK_PASSWORD, "Your new password can't be the same as your old one. Please choose a different password.")
+
+            errorCode == "weak_password" && (msg.contains("weak") || msg.contains("guess") || msg.contains("pwned") || msg.contains("compromised")) ->
+                SupabaseAuthResult.Failure(AuthFailureKind.WEAK_PASSWORD, "That password is too easy to guess. Please choose a stronger one.")
+
             errorCode == "weak_password" || msg.contains("password should be") ->
                 SupabaseAuthResult.Failure(AuthFailureKind.WEAK_PASSWORD, "Password must be at least 6 characters.")
 
