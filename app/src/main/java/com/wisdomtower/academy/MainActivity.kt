@@ -2166,15 +2166,22 @@ fun MainScreen(
                                         tint = Accent,
                                         modifier = Modifier.size(22.dp)
                                     )
-                                    AnimatedVisibility(
-                                        visible = unreadNotifCount > 0,
-                                        modifier = Modifier.align(Alignment.TopEnd),
-                                        enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium)) + fadeIn(tween(120)),
-                                        exit = scaleOut(tween(120)) + fadeOut(tween(120))
-                                    ) {
+                                    // M7b-bell: spring pop without AnimatedVisibility (it cannot be called here: implicit RowScope receiver)
+                                    val bellDotScale by animateFloatAsState(
+                                        targetValue = if (unreadNotifCount > 0) 1f else 0f,
+                                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+                                        label = "bellDotScale"
+                                    )
+                                    if (bellDotScale > 0.01f) {
                                         Box(
                                             modifier = Modifier
                                                 .size(8.dp)
+                                                .align(Alignment.TopEnd)
+                                                .graphicsLayer {
+                                                    scaleX = bellDotScale
+                                                    scaleY = bellDotScale
+                                                    alpha = bellDotScale.coerceIn(0f, 1f)
+                                                }
                                                 .background(Color(0xFFEF4444), CircleShape)
                                         )
                                     }
