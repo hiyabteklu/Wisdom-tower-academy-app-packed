@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -52,7 +53,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,13 +61,13 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.wisdomtower.academy.data.competition.ExamLockdown
-import com.wisdomtower.academy.data.model.StudentIdGenerator
 import com.wisdomtower.academy.data.model.UserProfile
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.OpenCard
 import com.wisdomtower.academy.ui.packages.openGrid
 import com.wisdomtower.academy.ui.study.NativeCalculatorScreen
+import com.wisdomtower.academy.ui.study.NativeCoverPageScreen
 import com.wisdomtower.academy.ui.study.NativeNotebookScreen
 import com.wisdomtower.academy.ui.study.NativeStatusScreen
 import com.wisdomtower.academy.ui.study.NativeTargetsScreen
@@ -94,11 +94,17 @@ import com.wisdomtower.academy.ui.theme.wisdomReveal
  * - src/app/learning/page.tsx
  * - src/app/learning/LearningContent.tsx
  *
- * GLASS (2026-10-13, owner request, docs/GLASS_PLAN.md area 2): the header card, the guest banner, the Study Tools
+ * GLASS (2026-10-13, owner request, docs/GLASS_PLAN.md area 2): the guest banner, the Study Tools
  * card (and its tiles) and the empty-curriculum card use the see-through glass look of the Targets screen.
  *
- * M11 slice 6 (docs/SESSION_2026-10-16_UI_AF.md): the header card, guest banner, Study Tools card, Curriculum header and
+ * M11 slice 6 (docs/SESSION_2026-10-16_UI_AF.md): the guest banner, Study Tools card, Curriculum header and
  * empty-curriculum card rise in once per app session (wisdomReveal); the curriculum cards already do through openGrid.
+ *
+ * COVER PAGE (owner order 2026-10-16, docs/SESSION_2026-10-16_COVER_A.md): the name / student ID / email card above
+ * the Study Tools dock was REMOVED (the account details live in the Account tab), and the "Courses" tile of the dock
+ * was replaced by "Cover Page", which opens the native Cover Page Generator ([NativeCoverPageScreen]) in place of
+ * this screen; Back returns here. "All Courses" in the Curriculum header still opens the packages tab.
+ * Status: written, not compiled, not seen on a device.
  *
  * C10 (session C10-C, owner decision 2026-10-15: "Ai tutor is prohibited, and calculator is allowed always"):
  * while a RANKED competition exam is open (ExamLockdown.active) the native AI Tutor does not open from the tile or
@@ -107,18 +113,14 @@ import com.wisdomtower.academy.ui.theme.wisdomReveal
  * Status: written, not compiled, not seen on a device. The website pop-up path (onOpenTool with tool=tutor) is a
  * fallback that no tile uses any more; MainActivity.kt routes every tutor link here through requestTutor.
  *
- * Header:
- * - Scholar Avatar, Full Name ("Scholar" when the name is unknown, as on the website), Student Folio (WTA-XXXX), User Email
- * - The website's three header chips ("{n}d Streak", "{n}% Goals", "{n} Tested") were REMOVED in S4:
- *   the website computes them from data kept in the WebView's own localStorage, which native code cannot read,
- *   and the old native chips were fixed invented values. Re-add only through a real bridge to that data.
- * - Guest Scholar Banner if signed out
+ * Guest Scholar Banner if signed out.
  *
  * Study Tools Dock (8 tiles):
- * - Timer, Planner, Targets, Notebook, Calculator, AI Tutor, Your status, Courses
- * - All tiles now open NATIVE screens inside this tab: Timer ([NativeTimerScreen]), Planner ([NativePlannerScreen]),
+ * - Timer, Planner, Targets, Notebook, Calculator, AI Tutor, Your status, Cover Page
+ * - All tiles open NATIVE screens inside this tab: Timer ([NativeTimerScreen]), Planner ([NativePlannerScreen]),
  *   Targets ([NativeTargetsScreen], P11 step), Notebook ([NativeNotebookScreen], P11 step), Calculator, AI Tutor
- *   ([NativeTutorScreen]), Your status ([NativeStatusScreen], F7 part 5, real data only) and Courses (the packages tab).
+ *   ([NativeTutorScreen]), Your status ([NativeStatusScreen], F7 part 5, real data only) and Cover Page
+ *   ([NativeCoverPageScreen]).
  *   The website pop-up path (`onOpenTool`) is now only a fallback for tiles without a native screen (none at the moment).
  *   NOT yet done for "Your status": the entry points outside this screen (the side-menu row and website links with
  *   `tool=analytics`) still open the website pop-up; they need a patch of `MainActivity.kt` like P11.
@@ -145,7 +147,7 @@ val STUDY_TOOLS_TILES = listOf(
     StudyToolTile("calculator", "Calculator", Icons.Default.Calculate, "/learning?tool=calculator"),
     StudyToolTile("tutor", "AI Tutor", Icons.Default.AutoAwesome, "/learning?tool=tutor"),
     StudyToolTile("analytics", "Your status", Icons.AutoMirrored.Filled.TrendingUp, "/learning?tool=analytics"),
-    StudyToolTile("courses", "Courses", Icons.AutoMirrored.Filled.MenuBook, "/packages")
+    StudyToolTile("cover", "Cover Page", Icons.Default.Description, "/learning?tool=cover")
 )
 
 /**
@@ -270,6 +272,13 @@ fun LearningScreen(
         )
         return
     }
+    // Cover Page Generator (owner order 2026-10-16): the "Cover Page" tile shows it in place of this screen; Back returns here.
+    var coverOpen by remember { mutableStateOf(false) }
+    BackHandler(enabled = coverOpen) { coverOpen = false }
+    if (coverOpen) {
+        NativeCoverPageScreen(onBack = { coverOpen = false }, modifier = modifier)
+        return
+    }
     BackHandler(enabled = tutorOpen) { tutorOpen = false }
     // Requests from outside this screen (drawer, website links): open the native tutor as well (P7).
     // C10: not while a RANKED competition exam is open; a notice is shown instead.
@@ -292,13 +301,6 @@ fun LearningScreen(
         return
     }
 
-    val displayName = userProfile?.fullName ?: userName ?: "Scholar"
-    val email = userProfile?.email ?: userEmail
-    val studentIdData = remember(userProfile, isLoggedIn) {
-        StudentIdGenerator.computeStudentId(userProfile?.id, userProfile)
-    }
-    val studentId = studentIdData.idNumber
-
     // Courses for the Curriculum section: the website's default list for the student's academic level
     val enrolledCourses = remember(packageList, userProfile?.educationLevel) {
         defaultPackageIdsForLevel(userProfile?.educationLevel).mapNotNull { id ->
@@ -318,84 +320,6 @@ fun LearningScreen(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // TOP HEADER: Scholar Name, Folio, Email
-            item(key = "learning_header") {
-                WisdomGlassCard(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wisdomReveal("learning_header", 0),
-                    cornerRadius = 24.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                // Avatar Initial Box
-                                Box(
-                                    modifier = Modifier
-                                        .size(46.dp)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(Color.White.copy(alpha = 0.08f))
-                                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)), RoundedCornerShape(14.dp)),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = displayName.take(1).uppercase(),
-                                        fontSize = 20.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color.White
-                                    )
-                                }
-
-                                Column {
-                                    Text(
-                                        text = displayName,
-                                        fontSize = 17.sp,
-                                        fontWeight = FontWeight.Black,
-                                        color = Color.White,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            text = studentId,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = WisdomCyan,
-                                            fontFamily = FontFamily.Monospace
-                                        )
-                                        if (!email.isNullOrBlank()) {
-                                            Text(
-                                                text = "• $email",
-                                                fontSize = 10.5.sp,
-                                                color = WisdomMuted,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
             // GUEST SCHOLAR BANNER (if signed out)
             if (!isLoggedIn) {
                 item(key = "guest_banner") {
@@ -491,6 +415,7 @@ fun LearningScreen(
                                     Box(modifier = Modifier.weight(1f)) {
                                         ToolTileButton(
                                             tile = tile,
+                                            highlight = false,
                                             onClick = {
                                                 if (tile.key == "timer") {
                                                     timerOpen = true
@@ -509,7 +434,7 @@ fun LearningScreen(
                                 }
                             }
 
-                            // Row 2 (Calculator, AI Tutor, Your status, Courses)
+                            // Row 2 (Calculator, AI Tutor, Your status, Cover Page)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -518,9 +443,10 @@ fun LearningScreen(
                                     Box(modifier = Modifier.weight(1f)) {
                                         ToolTileButton(
                                             tile = tile,
+                                            highlight = tile.key == "cover",
                                             onClick = {
-                                                if (tile.key == "courses") {
-                                                    onNavigateToUrl("/packages")
+                                                if (tile.key == "cover") {
+                                                    coverOpen = true
                                                 } else if (tile.key == "calculator") {
                                                     calculatorOpen = true
                                                 } else if (tile.key == "tutor") {
@@ -671,14 +597,18 @@ private fun showTutorBlockedNotice(context: android.content.Context) {
 @Composable
 private fun ToolTileButton(
     tile: StudyToolTile,
+    highlight: Boolean,
     onClick: () -> Unit
 ) {
+    // The Cover Page tile (new, owner order 2026-10-16) has a cyan edge and a cyan-tinted icon plate so it stands out.
+    val edge = if (highlight) WisdomCyan.copy(alpha = 0.65f) else WisdomGlassBorder
+    val plate = if (highlight) WisdomCyan.copy(alpha = 0.18f) else WisdomGlassFillStrong
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(WisdomGlassFill)
-            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(16.dp))
+            .border(BorderStroke(1.dp, edge), RoundedCornerShape(16.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
@@ -695,8 +625,8 @@ private fun ToolTileButton(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(WisdomGlassFillStrong)
-                    .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(12.dp)),
+                    .background(plate)
+                    .border(BorderStroke(1.dp, edge), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
