@@ -82,6 +82,28 @@
   .rhead .acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .mini { border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.05); color: #cbd5e1; font-size: .72rem; font-weight: 800; padding: 6px 10px; border-radius: 8px; }
   .mini.score { background: #f59e0b; border-color: #f59e0b; color: #0a101d; }
+
+  /* M10 motion (docs/UI_MOTION_PLAN.md): same effects as quiz.html. Visual only, transform and opacity only,
+     never blocks a tap. Each effect is played once by a class that draw() adds right after a real change
+     (question change, answer pick, dialog opening), so an ordinary redraw never replays it. The countdown
+     text, Submit Exam, Keep Going, the Submitting and Could not submit dialogs and the close buttons are not
+     animated. Remove animations in the phone settings turns all of it off. */
+  @media (prefers-reduced-motion: no-preference) {
+    .qcard.in-f { animation: qInF .22s ease-out; }
+    .qcard.in-b { animation: qInB .22s ease-out; }
+    .qcard.in-r { animation: qInR .26s ease-out; }
+    @keyframes qInF { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+    @keyframes qInB { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+    @keyframes qInR { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .choice.pop { animation: cPop .26s ease-out; }
+    @keyframes cPop { 0% { transform: scale(.98); } 55% { transform: scale(1.015); } 100% { transform: scale(1); } }
+    .timer.warn { animation: tPulse 1.1s ease-in-out infinite; }
+    @keyframes tPulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+    .ovl.in { animation: ovlIn .2s ease-out; }
+    .ovl.in .sheet { animation: sheetIn .24s ease-out; }
+    @keyframes ovlIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes sheetIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+  }
 </style>
 </head>
 <body>
@@ -106,6 +128,8 @@
  * Back to the app through window.WTBridge: onAnswers(json), onSubmit(json), onDone(json).
  * window.wtBack() returns true when it handled Back (closes a dialog), false when the app should leave.
  * window.wtForceSubmit() lets the app submit when the SERVER clock says the time is up.
+ * M10 (motion only): enterDir, pulseCi and ovlIn are one-shot flags read by draw() to play a short entrance on the
+ * new question, a pulse on the picked choice and a fade on a newly opened dialog. Logic, texts and grading unchanged.
  */
 (function () {
   var root = document.getElementById("root");
@@ -114,6 +138,7 @@
   var confirmOpen = false, submitting = false, submitted = false, submitErr = "", srv = null, resultOpen = false;
   var hasTimer = false, deadline = 0, timerId = null, retryId = null;
   var startX = null, startY = null;
+  var enterDir = "", pulseCi = -1, ovlIn = false;
 
   function hasOwn(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
   function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -164,7 +189,7 @@
     try { r = JSON.parse(text || "{}"); } catch (e) { r = { ok: false, message: "Unexpected answer. Please try again." }; }
     submitting = false;
     if (r && r.ok) {
-      submitted = true; srv = r; submitErr = ""; stopTimer(); resultOpen = true; draw();
+      submitted = true; srv = r; submitErr = ""; stopTimer(); resultOpen = true; ovlIn = true; draw();
     } else {
       submitErr = (r && r.message) ? String(r.message) : "Could not submit. Please try again.";
       draw();
@@ -182,12 +207,14 @@
   /* ---------- actions ---------- */
   function goTo(i) {
     if (i < 0 || i >= Q.length || submitted || submitting) return;
+    enterDir = i > idx ? "f" : "b";
     idx = i; draw(); window.scrollTo(0, 0);
   }
   function pick(ci) {
     if (submitted || submitting) return;
     if (eliminated[idx] && eliminated[idx][ci]) eliminated[idx][ci] = false;
     answers[idx] = ci;
+    pulseCi = ci;
     draw();
     send("onAnswers", { answers: answers });
   }
@@ -327,6 +354,22 @@
     if (resultOpen) h += resultModal(c);
     root.innerHTML = h;
     if (resultOpen) animateGauge();
+    /* M10: one-shot motion classes, added after the DOM is built and then cleared so a redraw never replays them */
+    if (enterDir) {
+      var qc = root.querySelector(".qcard");
+      if (qc) qc.classList.add("in-" + enterDir);
+      enterDir = "";
+    }
+    if (pulseCi >= 0) {
+      var pc = root.querySelector('.choice[data-ci="' + pulseCi + '"]');
+      if (pc) pc.classList.add("pop");
+      pulseCi = -1;
+    }
+    if (ovlIn) {
+      var ov = root.querySelector(".ovl");
+      if (ov) ov.classList.add("in");
+      ovlIn = false;
+    }
     var curPill = root.querySelector(".pill.cur");
     if (curPill && curPill.scrollIntoView) {
       try { curPill.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }); } catch (_) {}
@@ -345,12 +388,12 @@
     else if (act === "prev") goTo(idx - 1);
     else if (act === "next") goTo(idx + 1);
     else if (act === "pill") goTo(Number(el.getAttribute("data-i")));
-    else if (act === "finish") { confirmOpen = true; draw(); }
+    else if (act === "finish") { confirmOpen = true; ovlIn = true; draw(); }
     else if (act === "keep") { confirmOpen = false; draw(); }
     else if (act === "confirm") doSubmit();
     else if (act === "retry") { if (retryId) { clearTimeout(retryId); retryId = null; } submitErr = ""; submitting = true; draw(); sendSubmit(); }
     else if (act === "rclose") { resultOpen = false; draw(); }
-    else if (act === "scorecard") { resultOpen = true; draw(); }
+    else if (act === "scorecard") { resultOpen = true; ovlIn = true; draw(); }
     else if (act === "done") send("onDone", {});
   });
 
@@ -393,6 +436,7 @@
       }
       hasTimer = typeof opt.remainingMs === "number" && isFinite(opt.remainingMs);
       if (hasTimer) deadline = Date.now() + Math.max(0, opt.remainingMs);
+      enterDir = "r";
       startTimer(); draw();
     } catch (e) {
       root.innerHTML = '<p class="msg">Could not display this exam.</p>';
