@@ -2,6 +2,11 @@ package com.wisdomtower.academy.ui.settings
 
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -81,6 +86,8 @@ import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
+import com.wisdomtower.academy.ui.theme.WisdomExpandable
+import com.wisdomtower.academy.ui.theme.wisdomAnimatedColor
 import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.launch
@@ -342,8 +349,8 @@ fun SettingsScreen(
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .clip(RoundedCornerShape(10.dp))
-                                                .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.04f))
-                                                .border(BorderStroke(1.dp, if (isSelected) Color.White else WisdomBorderWhite), RoundedCornerShape(10.dp))
+                                                .background(wisdomAnimatedColor(isSelected, Color.White, Color.White.copy(alpha = 0.04f)))
+                                                .border(BorderStroke(1.dp, wisdomAnimatedColor(isSelected, Color.White, WisdomBorderWhite)), RoundedCornerShape(10.dp))
                                                 .clickable {
                                                     dailyGoalMinutes = mins
                                                     prefsStorage.edit().putInt("daily_study_goal_minutes", mins).apply()
@@ -355,7 +362,7 @@ fun SettingsScreen(
                                                 text = "$mins min/day",
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) Color.Black else Color.White
+                                                color = wisdomAnimatedColor(isSelected, Color.Black, Color.White)
                                             )
                                         }
                                     }
@@ -413,8 +420,8 @@ fun SettingsScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(if (isSelected) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.03f))
-                                        .border(BorderStroke(1.dp, if (isSelected) Color.White.copy(alpha = 0.5f) else WisdomBorderWhite), RoundedCornerShape(10.dp))
+                                        .background(wisdomAnimatedColor(isSelected, Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.03f)))
+                                        .border(BorderStroke(1.dp, wisdomAnimatedColor(isSelected, Color.White.copy(alpha = 0.5f), WisdomBorderWhite)), RoundedCornerShape(10.dp))
                                         .clickable {
                                             studyWindow = id
                                             prefsStorage.edit().putString("preferred_study_time", id).apply()
@@ -436,8 +443,8 @@ fun SettingsScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(10.dp))
-                                        .background(if (isSelected) Color.White.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.03f))
-                                        .border(BorderStroke(1.dp, if (isSelected) Color.White.copy(alpha = 0.5f) else WisdomBorderWhite), RoundedCornerShape(10.dp))
+                                        .background(wisdomAnimatedColor(isSelected, Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.03f)))
+                                        .border(BorderStroke(1.dp, wisdomAnimatedColor(isSelected, Color.White.copy(alpha = 0.5f), WisdomBorderWhite)), RoundedCornerShape(10.dp))
                                         .clickable {
                                             studyWindow = id
                                             prefsStorage.edit().putString("preferred_study_time", id).apply()
@@ -696,8 +703,8 @@ fun SettingsScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.04f))
-                                        .border(BorderStroke(1.dp, if (isSelected) Color.White else WisdomBorderWhite), RoundedCornerShape(12.dp))
+                                        .background(wisdomAnimatedColor(isSelected, Color.White, Color.White.copy(alpha = 0.04f)))
+                                        .border(BorderStroke(1.dp, wisdomAnimatedColor(isSelected, Color.White, WisdomBorderWhite)), RoundedCornerShape(12.dp))
                                         .clickable {
                                             fontSize = id
                                             prefsStorage.edit().putString("font_size", id).apply()
@@ -706,8 +713,8 @@ fun SettingsScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(text = pair.first, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (isSelected) Color.Black else Color.White)
-                                        Text(text = pair.second, fontSize = 10.sp, color = if (isSelected) Color.DarkGray else WisdomMuted)
+                                        Text(text = pair.first, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = wisdomAnimatedColor(isSelected, Color.Black, Color.White))
+                                        Text(text = pair.second, fontSize = 10.sp, color = wisdomAnimatedColor(isSelected, Color.DarkGray, WisdomMuted))
                                     }
                                 }
                             }
@@ -1096,10 +1103,25 @@ private fun SettingsAccordionCard(
     onToggle: () -> Unit,
     content: @Composable () -> Unit
 ) {
+    val edge by animateColorAsState(
+        targetValue = if (isExpanded) WisdomCyan.copy(alpha = 0.4f) else WisdomBorderWhite,
+        animationSpec = tween(240),
+        label = "accordionEdge"
+    )
+    val accordionChevronTint by animateColorAsState(
+        targetValue = if (isExpanded) WisdomCyan else WisdomMuted,
+        animationSpec = tween(240),
+        label = "accordionChevronTintAnim"
+    )
+    val chevronAngle by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
+        label = "accordionChevron"
+    )
     WisdomGlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 16.dp,
-        borderColor = WisdomBorderWhite
+        borderColor = edge
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -1148,12 +1170,12 @@ private fun SettingsAccordionCard(
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = WisdomMuted,
-                    modifier = Modifier.size(20.dp)
+                    tint = accordionChevronTint,
+                    modifier = Modifier.size(20.dp).rotate(chevronAngle)
                 )
             }
 
-            if (isExpanded) {
+            WisdomExpandable(visible = isExpanded) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
