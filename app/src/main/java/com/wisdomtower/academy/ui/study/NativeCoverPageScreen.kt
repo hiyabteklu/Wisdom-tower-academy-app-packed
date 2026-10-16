@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -16,6 +17,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -52,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -59,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
@@ -79,14 +83,17 @@ import java.util.Locale
 /**
  * Cover Page Generator (owner order 2026-10-16: replaces the "Courses" tile of the Study Tools dock).
  *
- * The student picks one of 5 A4 templates and a colour, fills in: logo, university name, department, group or
- * individual (group name and a members list with ID numbers, or one student), submitted to, submission date, and
- * downloads the page as a PDF. The drawing code is in CoverPageRenderer.kt: the preview and the PDF come from the
- * same function, so they match. No new dependency, no permission: the logo comes from the system picker
- * (GetContent) and the PDF is saved where the student chooses (CreateDocument, the system "Save as" screen).
+ * LAYOUT (owner order 2026-10-16, second request): NO screen header and NO pinned bottom bar. The app's own top bar
+ * and bottom navigation stay visible, so this screen keeps every pixel between them for the form. The first thing in
+ * the scroll is a compact style card (templates, colours, page borders) followed by the live preview, sized from the
+ * space the screen really has so both fit without scrolling. Clear and Download PDF are the last items of the form.
+ * Back: the system back gesture (BackHandler) returns to the Learning screen.
+ *
+ * The drawing code is in CoverPageRenderer.kt: the preview and the PDF come from the same function, so they match.
+ * No new dependency, no permission: the logo comes from the system picker (GetContent) and the PDF is saved where
+ * the student chooses (CreateDocument, the system "Save as" screen).
  *
  * What is typed stays in [CoverForm] until the app is closed (so Back and reopen keep it). The Clear button empties it.
- * Added by the agent beyond the owner's list: an optional "Assignment or course title" field and the colour choice.
  * Status: written, NOT compiled by the author, not seen on a device.
  */
 object CoverForm {
@@ -171,6 +178,8 @@ fun NativeCoverPageScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler(onBack = onBack)
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -241,52 +250,38 @@ fun NativeCoverPageScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        AtmosphereBackground(modifier = Modifier.fillMaxSize())
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Top bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ScreenBackButton(onClick = onBack)
-                Column {
-                    Text(
-                        text = "Cover Page Generator",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "${COVER_TEMPLATES.size} A4 templates, ${COVER_BORDERS.size} page borders, download as PDF",
-                        fontSize = 11.sp,
-                        color = WisdomMuted
-                    )
-                }
-            }
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // The style card above the preview is about 244 dp tall including gaps; the preview takes the rest of the
+        // screen (never wider than the screen), so templates, colours, borders and the whole page fit together.
+        val ratio = COVER_PAGE_W.toFloat() / COVER_PAGE_H.toFloat()
+        val previewH = (maxHeight.value - 244f).coerceIn(280f, 760f)
+        val previewW = minOf(previewH * ratio, maxWidth.value - 24f)
 
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                // 1. Template, colour and page border
-                item(key = "cover_templates") {
-                    CoverSection("TEMPLATE") {
+        AtmosphereBackground(modifier = Modifier.fillMaxSize())
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 1. Compact style card: template, colour and page border
+            item(key = "cover_style") {
+                WisdomGlassCard(modifier = Modifier.fillMaxWidth(), cornerRadius = 18.dp) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             COVER_TEMPLATES.forEachIndexed { index, t ->
                                 TemplateThumb(
                                     name = t.name,
+                                    premium = t.premium,
                                     bmp = thumbs.getOrNull(index),
                                     selected = index == template,
                                     onClick = { CoverForm.templateIndex = index }
@@ -294,16 +289,18 @@ fun NativeCoverPageScreen(
                             }
                         }
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(9.dp)
                         ) {
-                            Text(text = "Colour", fontSize = 12.sp, color = WisdomMuted)
+                            Text(text = "Colour", fontSize = 11.sp, color = WisdomMuted)
                             COVER_ACCENTS.forEachIndexed { index, a ->
                                 val selected = index == CoverForm.accentIndex
                                 Box(
                                     modifier = Modifier
-                                        .size(30.dp)
+                                        .size(28.dp)
                                         .clip(CircleShape)
                                         .background(Color(a.color))
                                         .border(
@@ -314,238 +311,246 @@ fun NativeCoverPageScreen(
                                 )
                             }
                         }
-                        Text(text = "Page border", fontSize = 12.sp, color = WisdomMuted)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
+                            Text(text = "Border", fontSize = 11.sp, color = WisdomMuted)
                             COVER_BORDERS.forEachIndexed { index, name ->
                                 CoverPill(
                                     text = name,
                                     filled = index == CoverForm.borderIndex,
-                                    modifier = Modifier.width(100.dp),
+                                    modifier = Modifier.width(84.dp),
+                                    height = 34.dp,
                                     onClick = { CoverForm.borderIndex = index }
                                 )
                             }
                         }
                     }
                 }
+            }
 
-                // 2. Live preview
-                item(key = "cover_preview") {
-                    CoverSection("PREVIEW") {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(COVER_PAGE_W.toFloat() / COVER_PAGE_H.toFloat())
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(Color.White)
-                        ) {
-                            val pb = preview
-                            if (pb != null) {
-                                Image(
-                                    bitmap = pb.asImageBitmap(),
-                                    contentDescription = "Cover page preview",
-                                    contentScale = ContentScale.FillBounds,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // 3. Logo
-                item(key = "cover_logo") {
-                    CoverSection("LOGO") {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color.White.copy(alpha = 0.08f))
-                                    .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(14.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                val lb = CoverForm.logo
-                                if (lb != null) {
-                                    Image(
-                                        bitmap = lb.asImageBitmap(),
-                                        contentDescription = "Logo",
-                                        contentScale = ContentScale.Fit,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(6.dp)
-                                    )
-                                } else {
-                                    Text(text = "LOGO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted)
-                                }
-                            }
-                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                CoverPill(
-                                    text = if (CoverForm.logo == null) "Choose logo" else "Change logo",
-                                    filled = true,
-                                    modifier = Modifier.width(150.dp),
-                                    onClick = { logoLauncher.launch("image/*") }
-                                )
-                                if (CoverForm.logo != null) {
-                                    CoverPill(
-                                        text = "Remove",
-                                        filled = false,
-                                        modifier = Modifier.width(150.dp),
-                                        onClick = { CoverForm.logo = null }
-                                    )
-                                }
-                            }
-                        }
-                        Text(
-                            text = "A PNG with a transparent background looks best.",
-                            fontSize = 11.sp,
-                            color = WisdomMuted
-                        )
-                    }
-                }
-
-                // 4. Institution and title
-                item(key = "cover_institution") {
-                    CoverSection("INSTITUTION") {
-                        CoverField(CoverForm.university, { CoverForm.university = it }, "University name")
-                        CoverField(CoverForm.department, { CoverForm.department = it }, "Department")
-                        CoverField(CoverForm.title, { CoverForm.title = it }, "Assignment or course title (optional)")
-                    }
-                }
-
-                // 5. Group or individual
-                item(key = "cover_people") {
-                    CoverSection("SUBMITTED BY") {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            CoverPill(
-                                text = "Group",
-                                filled = CoverForm.isGroup,
-                                modifier = Modifier.weight(1f),
-                                onClick = { CoverForm.isGroup = true }
-                            )
-                            CoverPill(
-                                text = "Individual",
-                                filled = !CoverForm.isGroup,
-                                modifier = Modifier.weight(1f),
-                                onClick = { CoverForm.isGroup = false }
+            // 2. Live preview (sized to the free screen height)
+            item(key = "cover_preview") {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(previewW.dp)
+                            .aspectRatio(ratio)
+                            .shadow(8.dp, RoundedCornerShape(4.dp))
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.White)
+                    ) {
+                        val pb = preview
+                        if (pb != null) {
+                            Image(
+                                bitmap = pb.asImageBitmap(),
+                                contentDescription = "Cover page preview",
+                                contentScale = ContentScale.FillBounds,
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
-                        if (CoverForm.isGroup) {
-                            CoverField(CoverForm.groupName, { CoverForm.groupName = it }, "Group name or number")
-                            Text(text = "Group members", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            CoverForm.members.forEachIndexed { index, m ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                ) {
-                                    Text(
-                                        text = (index + 1).toString(),
-                                        fontSize = 12.sp,
-                                        color = WisdomMuted,
-                                        modifier = Modifier.width(16.dp)
-                                    )
-                                    CoverField(
-                                        value = m.name,
-                                        onValueChange = { v -> CoverForm.members[index] = CoverForm.members[index].copy(name = v) },
-                                        label = "Full name",
-                                        modifier = Modifier.weight(1.4f)
-                                    )
-                                    CoverField(
-                                        value = m.id,
-                                        onValueChange = { v -> CoverForm.members[index] = CoverForm.members[index].copy(id = v) },
-                                        label = "ID number",
-                                        modifier = Modifier.weight(1f),
-                                        capitalize = false
-                                    )
-                                    if (CoverForm.members.size > 1) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(32.dp)
-                                                .clip(CircleShape)
-                                                .clickable { CoverForm.members.removeAt(index) },
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Close,
-                                                contentDescription = "Remove member",
-                                                tint = WisdomMuted,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            if (CoverForm.members.size < MAX_MEMBERS) {
-                                CoverPill(
-                                    text = "+ Add member",
-                                    filled = false,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onClick = { CoverForm.members.add(CoverMember()) }
-                                )
-                            }
-                        } else {
-                            CoverField(CoverForm.studentName, { CoverForm.studentName = it }, "Student full name")
-                            CoverField(CoverForm.studentId, { CoverForm.studentId = it }, "ID number", capitalize = false)
-                        }
                     }
-                }
-
-                // 6. Submitted to and date
-                item(key = "cover_submission") {
-                    CoverSection("SUBMISSION") {
-                        CoverField(CoverForm.submittedTo, { CoverForm.submittedTo = it }, "Submitted to (instructor)")
-                        CoverField(
-                            value = CoverForm.dateText,
-                            onValueChange = { CoverForm.dateText = it },
-                            label = "Submission date",
-                            trailing = {
-                                Icon(
-                                    imageVector = Icons.Default.CalendarMonth,
-                                    contentDescription = "Pick a date",
-                                    tint = WisdomCyan,
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clickable { showDatePicker(context) { picked -> CoverForm.dateText = picked } }
-                                )
-                            }
-                        )
-                    }
-                }
-
-                item(key = "cover_bottom_spacer") {
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
 
-            // Bottom bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                CoverPill(
-                    text = "Clear",
-                    filled = false,
-                    modifier = Modifier.weight(0.45f),
-                    onClick = { CoverForm.clear() }
-                )
-                CoverPill(
-                    text = "Download PDF",
-                    filled = true,
-                    modifier = Modifier.weight(1f),
-                    onClick = { saveLauncher.launch(pdfFileName(CoverForm.title, CoverForm.department)) }
-                )
+            // 3. Logo
+            item(key = "cover_logo") {
+                CoverSection("LOGO") {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color.White.copy(alpha = 0.08f))
+                                .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(14.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val lb = CoverForm.logo
+                            if (lb != null) {
+                                Image(
+                                    bitmap = lb.asImageBitmap(),
+                                    contentDescription = "Logo",
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(6.dp)
+                                )
+                            } else {
+                                Text(text = "LOGO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted)
+                            }
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            CoverPill(
+                                text = if (CoverForm.logo == null) "Choose logo" else "Change logo",
+                                filled = true,
+                                modifier = Modifier.width(150.dp),
+                                onClick = { logoLauncher.launch("image/*") }
+                            )
+                            if (CoverForm.logo != null) {
+                                CoverPill(
+                                    text = "Remove",
+                                    filled = false,
+                                    modifier = Modifier.width(150.dp),
+                                    onClick = { CoverForm.logo = null }
+                                )
+                            }
+                        }
+                    }
+                    Text(
+                        text = "A PNG with a transparent background looks best.",
+                        fontSize = 11.sp,
+                        color = WisdomMuted
+                    )
+                }
+            }
+
+            // 4. Institution and title
+            item(key = "cover_institution") {
+                CoverSection("INSTITUTION") {
+                    CoverField(CoverForm.university, { CoverForm.university = it }, "University name")
+                    CoverField(CoverForm.department, { CoverForm.department = it }, "Department")
+                    CoverField(CoverForm.title, { CoverForm.title = it }, "Assignment or course title (optional)")
+                }
+            }
+
+            // 5. Group or individual
+            item(key = "cover_people") {
+                CoverSection("SUBMITTED BY") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CoverPill(
+                            text = "Group",
+                            filled = CoverForm.isGroup,
+                            modifier = Modifier.weight(1f),
+                            onClick = { CoverForm.isGroup = true }
+                        )
+                        CoverPill(
+                            text = "Individual",
+                            filled = !CoverForm.isGroup,
+                            modifier = Modifier.weight(1f),
+                            onClick = { CoverForm.isGroup = false }
+                        )
+                    }
+                    if (CoverForm.isGroup) {
+                        CoverField(CoverForm.groupName, { CoverForm.groupName = it }, "Group name or number")
+                        Text(text = "Group members", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                        CoverForm.members.forEachIndexed { index, m ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = (index + 1).toString(),
+                                    fontSize = 12.sp,
+                                    color = WisdomMuted,
+                                    modifier = Modifier.width(16.dp)
+                                )
+                                CoverField(
+                                    value = m.name,
+                                    onValueChange = { v -> CoverForm.members[index] = CoverForm.members[index].copy(name = v) },
+                                    label = "Full name",
+                                    modifier = Modifier.weight(1.4f)
+                                )
+                                CoverField(
+                                    value = m.id,
+                                    onValueChange = { v -> CoverForm.members[index] = CoverForm.members[index].copy(id = v) },
+                                    label = "ID number",
+                                    modifier = Modifier.weight(1f),
+                                    capitalize = false
+                                )
+                                if (CoverForm.members.size > 1) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .clickable { CoverForm.members.removeAt(index) },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Remove member",
+                                            tint = WisdomMuted,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        if (CoverForm.members.size < MAX_MEMBERS) {
+                            CoverPill(
+                                text = "+ Add member",
+                                filled = false,
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { CoverForm.members.add(CoverMember()) }
+                            )
+                        }
+                    } else {
+                        CoverField(CoverForm.studentName, { CoverForm.studentName = it }, "Student full name")
+                        CoverField(CoverForm.studentId, { CoverForm.studentId = it }, "ID number", capitalize = false)
+                    }
+                }
+            }
+
+            // 6. Submitted to and date
+            item(key = "cover_submission") {
+                CoverSection("SUBMISSION") {
+                    CoverField(CoverForm.submittedTo, { CoverForm.submittedTo = it }, "Submitted to (instructor)")
+                    CoverField(
+                        value = CoverForm.dateText,
+                        onValueChange = { CoverForm.dateText = it },
+                        label = "Submission date",
+                        trailing = {
+                            Icon(
+                                imageVector = Icons.Default.CalendarMonth,
+                                contentDescription = "Pick a date",
+                                tint = WisdomCyan,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clickable { showDatePicker(context) { picked -> CoverForm.dateText = picked } }
+                            )
+                        }
+                    )
+                }
+            }
+
+            // 7. Clear and Download live at the end of the form (not pinned above the bottom navigation)
+            item(key = "cover_actions") {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    CoverPill(
+                        text = "Clear",
+                        filled = false,
+                        modifier = Modifier.weight(0.45f),
+                        height = 48.dp,
+                        onClick = { CoverForm.clear() }
+                    )
+                    CoverPill(
+                        text = "Download PDF",
+                        filled = true,
+                        modifier = Modifier.weight(1f),
+                        height = 48.dp,
+                        onClick = { saveLauncher.launch(pdfFileName(CoverForm.title, CoverForm.department)) }
+                    )
+                }
+            }
+
+            item(key = "cover_bottom_spacer") {
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -573,14 +578,14 @@ private fun CoverSection(title: String, content: @Composable ColumnScope.() -> U
 }
 
 @Composable
-private fun TemplateThumb(name: String, bmp: Bitmap?, selected: Boolean, onClick: () -> Unit) {
+private fun TemplateThumb(name: String, premium: Boolean, bmp: Bitmap?, selected: Boolean, onClick: () -> Unit) {
     Column(
         modifier = Modifier
-            .width(96.dp)
+            .width(66.dp)
             .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val shape = RoundedCornerShape(8.dp)
+        val shape = RoundedCornerShape(6.dp)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -601,22 +606,29 @@ private fun TemplateThumb(name: String, bmp: Bitmap?, selected: Boolean, onClick
                 )
             }
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = name,
-            fontSize = 11.sp,
+            text = if (premium) "\u2605 $name" else name,
+            fontSize = 10.sp,
             fontWeight = FontWeight.SemiBold,
-            color = if (selected) WisdomCyan else Color.White
+            maxLines = 1,
+            color = if (selected) WisdomCyan else if (premium) Color(0xFFE8C766) else Color.White
         )
     }
 }
 
 @Composable
-private fun CoverPill(text: String, filled: Boolean, modifier: Modifier, onClick: () -> Unit) {
+private fun CoverPill(
+    text: String,
+    filled: Boolean,
+    modifier: Modifier,
+    height: Dp = 42.dp,
+    onClick: () -> Unit
+) {
     val shape = RoundedCornerShape(50)
     Box(
         modifier = modifier
-            .height(42.dp)
+            .height(height)
             .clip(shape)
             .background(if (filled) WisdomCyan else WisdomGlassFill)
             .border(BorderStroke(1.dp, if (filled) WisdomCyan else WisdomGlassBorder), shape)
