@@ -9,7 +9,7 @@
   :root { color-scheme: dark; }
   html, body { margin: 0; padding: 0; background: #0a101d; }
   body { color: #e2e8f0; font: 15px/1.6 -apple-system, Roboto, "Segoe UI", sans-serif; -webkit-text-size-adjust: 100%; }
-  #root { padding: 14px 12px 20px; max-width: 760px; margin: 0 auto; overflow-wrap: anywhere; }
+  #root { padding: 14px 12px 20px; max-width: 760px; margin: 0 auto; overflow-wrap: break-word; }
 
   .item { margin-bottom: 14px; }
   .row { display: flex; }
@@ -20,6 +20,13 @@
   .bub.u { max-width: 88%; background: linear-gradient(90deg, #06b6d4, #3b82f6); color: #020617; font-weight: 500; border-bottom-right-radius: 4px; box-shadow: 0 2px 10px rgba(6,182,212,.2); }
   .bub .body > :first-child { margin-top: 0; }
   .bub .body > :last-child { margin-bottom: 0; }
+
+  /* Tables and wide equations scroll sideways inside their own box instead of breaking words letter by letter (tutor spec patch B) */
+  .bub .body .scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  .bub .body table.study-table { width: max-content; min-width: 100%; }
+  .bub .body table.study-table th, .bub .body table.study-table td { min-width: 96px; overflow-wrap: normal; word-break: normal; }
+  .bub .body .katex-display { overflow-x: auto; overflow-y: hidden; max-width: 100%; }
+
   .meta { margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 11px; }
   .bub.b .meta { color: #94a3b8; }
   .bub.u .meta { color: rgba(2,6,23,.7); }
@@ -84,9 +91,11 @@ var els = {}, order = [], msgs = {}, sid = "", cur = null, copiedId = "", copyTi
 function esc(s) {
   return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-/* the AI may write math as \( ... \) and \[ ... \]; the shared renderer reads $ ... $ and $$ ... $$ */
+/* the AI may write math as \( ... \) and \[ ... \]; the shared renderer reads $ ... $ and $$ ... $$.
+ * Also strips a leaked ">>> SUGGESTION:" tail (chats saved before the server fix, or any future leak); the chips come from m.suggestions. */
 function aiText(s) {
   return String(s == null ? "" : s)
+    .replace(/\s*>{2,3}\s*(?:SUGGESTION|Follow-up)\s*:[\s\S]*$/i, "")
     .replace(/\\\[([\s\S]+?)\\\]/g, function (m, a) { return "$$" + a + "$$"; })
     .replace(/\\\(([\s\S]+?)\\\)/g, function (m, a) { return "$" + a + "$"; });
 }
