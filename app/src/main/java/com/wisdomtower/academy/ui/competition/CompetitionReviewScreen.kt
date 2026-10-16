@@ -33,6 +33,7 @@ import com.wisdomtower.academy.data.competition.ReviewQuestion
 import com.wisdomtower.academy.data.competition.ReviewResult
 import com.wisdomtower.academy.data.content.AiExplainRepository
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
+import com.wisdomtower.academy.ui.theme.wisdomReveal
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
@@ -53,6 +54,8 @@ private val RvRed = Color(0xFFF87171)
 // solution, Explain with AI) now live inside the page in ONE row, the solution is closed when a question opens,
 // the separate native Explain button is gone, and a slide left or right moves to the next or previous question
 // (the page calls onSwipe). Previous and Next are pill buttons in one row, Back is a pill too.
+// Session UI_AC (M11 slice 4, 2026-10-16): the score line rises in once with wisdomReveal when the review has loaded.
+// Back, Previous and Next stay instant. The question motion itself lives in competition_review.html (UI_Z).
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
 fun CompetitionReviewScreen(
@@ -130,7 +133,8 @@ fun CompetitionReviewScreen(
                         text = "Your score: " + score.toString() + " of " + total.toString(),
                         color = RvCyan,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.wisdomReveal(key = "comp_review_score_" + competitionId, index = 0)
                     )
                 }
                 Text(
