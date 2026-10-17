@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,6 +87,7 @@ private val ECE_SEMESTER_ENTRIES = listOf(
  * The unused parameters are kept so the caller in MainActivity.kt does not change.
  *
  * GLASS (2026-10-13, docs/GLASS_PLAN.md area 3): the round back button uses the glass look of the Targets screen.
+ * S3 part 2 (2026-10-17): that back button is a Role.Button with a 48 dp touch target (it still looks 36 dp).
  *
  * Clean cards (owner request 2026-10-13): the ECE course cards (and the workspace header they open) show the course
  * TITLE only, without the course code ("ECEg3051 · Electromagnetic Fields" -> "Electromagnetic Fields"). The code is
@@ -164,6 +167,7 @@ fun PackageDetailScreen(
                 ) {
                     Box(
                         modifier = Modifier
+                            .minimumInteractiveComponentSize()
                             .size(36.dp)
                             .clip(CircleShape)
                             .background(WisdomGlassFillStrong)
@@ -171,6 +175,7 @@ fun PackageDetailScreen(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
+                                role = Role.Button,
                                 onClick = goBack
                             ),
                         contentAlignment = Alignment.Center
