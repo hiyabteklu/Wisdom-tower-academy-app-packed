@@ -34,8 +34,9 @@ import androidx.compose.ui.graphics.Color
  * The full-screen dark backdrop of a pop-up (for example `.ovl` in competition_exam.html, rgba(2,6,23,.82)) was treated
  * like a page wrapper and made transparent, so nothing dimmed the page, and the pop-up box itself became 8 percent
  * glass, so the text behind showed through it. Now a full-screen FIXED layer that is partly see-through is a scrim: it
- * becomes a 55 percent black dim, and every dark panel inside it becomes a 82 percent navy panel (readable). Normal
- * glass strength raised from 8 to 16 percent. To go back: glass 0.08, remove the scrim / panel branches in the script.
+ * becomes a dim, and every dark panel inside it becomes a navy panel. Normal glass strength raised from 8 to 16 percent.
+ * BG-POPUP-2 (owner: still not readable): scrim 55 to 65 percent black, panel 82 to 96 percent navy (readable first).
+ * To go back: glass 0.08, remove the scrim / panel branches in the script.
  */
 object AppBackdrop {
     /** The plain page colour of the chosen option. Reading it in a composable follows the choice live. */
@@ -53,7 +54,7 @@ object AppBackdrop {
      * so black, navy and ink-blue; not green, red, orange or cyan) of a block element into white 16 percent glass, and a
      * navy-only gradient into the same glass. A full-screen wrapper becomes transparent instead, EXCEPT a full-screen
      * fixed layer that is partly see-through (a pop-up backdrop): that becomes a dim, and the dark panels inside it
-     * become solid-looking navy so their text is readable. Inline elements
+     * become near-solid navy so their text is readable. Inline elements
      * (highlights, code chips) are skipped. It re-runs (inside the mutation callback, so before the next paint)
      * whenever a class changes or nodes are added, so selected / correct / wrong states keep working: the old inline
      * value is restored before every pass. Background transitions are finished at once so no solid colour fades in.
@@ -63,7 +64,7 @@ object AppBackdrop {
     private const val GLASS_JS = """
 (function(){
  if(window.__wtGlass){window.__wtGlass.run();return;}
- var KEY='data-wtg',GLASS='rgba(255,255,255,0.16)',SCRIM='rgba(0,0,0,0.55)',PANEL='rgba(12,20,36,0.82)',timer=null,busy=false;
+ var KEY='data-wtg',GLASS='rgba(255,255,255,0.16)',SCRIM='rgba(0,0,0,0.65)',PANEL='rgba(12,20,36,0.96)',timer=null,busy=false;
  function parse(s){var m=s&&s.match(/rgba?\(([^)]+)\)/);if(!m)return null;
   var p=m[1].split(/[ ,\/]+/).filter(Boolean).map(parseFloat);
   return {r:p[0],g:p[1],b:p[2],a:(p.length>3&&!isNaN(p[3]))?p[3]:1};}
