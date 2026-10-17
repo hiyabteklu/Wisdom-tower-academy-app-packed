@@ -3,6 +3,7 @@
 Wisdom Tower Academy (`com.wisdomtower.academy`)
 
 > 2026-10-11: section 3C (Data Safety) was rewritten because the earlier text was a guess, and section 5 (blockers) was added. Read section 5 first.
+> 2026-10-17: account deletion (section 3C Deletion line and section 5 item 1) checked and corrected, see `docs/SESSION_2026-10-17_S2_ACCOUNT_DELETION.md`.
 
 ---
 
@@ -91,16 +92,16 @@ Output location:
 3. Once 14 consecutive days have completed with active tester engagement and opt-ins, apply for production access in Play Console.
 
 ### C. Privacy Policy & Data Safety (rewritten 2026-10-11)
-1. **Privacy Policy Link:** `https://www.wisdom-tower-academy.live/privacy`. Before submitting, make sure that page lists everything below and mentions account deletion.
+1. **Privacy Policy Link:** `https://www.wisdom-tower-academy.live/privacy`. Before submitting, make sure that page lists everything below and mentions account deletion (it does since 2026-10-12: the Right to Erasure item links to `/delete-account`).
 2. **Data Safety form.** What the app really handles (verified by reading the app code and manifest on 2026-10-11, except where marked "confirm"):
-   - **Permissions in the manifest:** internet, network state, notifications. NO location, NO storage, NO camera, NO microphone. So: location data = none.
+   - **Permissions in the manifest:** internet, network state, notifications (plus `RECEIVE_BOOT_COMPLETED`, a normal permission, nothing to declare). NO location, NO storage, NO camera, NO microphone, NO exact-alarm permission (removed in S1). So: location data = none.
    - **Personal info:** full name, e-mail address, phone number (sign-in and profile).
    - **Profile details:** academic level, stream, school or university, region, short bio, target exam and score, daily study goal, avatar choice. Saved in the Supabase `profiles` table.
    - **App activity (confirm):** study progress and results saved by the website pages shown inside the app (Supabase `learning_progress`, `academic_results`).
    - **Device or other IDs:** Firebase push-notification token (the app contains Firebase Cloud Messaging).
    - **Text sent to AI (confirm):** questions typed into the AI tutor and "Explain with AI" go to the website server and from there to Gemini and Groq (third parties). Declare this as data shared with third-party services.
    - **Security:** all traffic is HTTPS (cleartext is switched off in the manifest). Sign-in tokens are stored encrypted on the phone (Android Keystore). Say "data is encrypted in transit".
-   - **Deletion:** Google requires an in-app way to delete the account and a public web link. NOT built yet, see section 5.
+   - **Deletion:** BUILT and checked 2026-10-17 (S2). In the app: Settings > Security > Delete my account (type DELETE). On the web: `https://www.wisdom-tower-academy.live/delete-account` (enter this as the account deletion URL in Play Console). Answer "yes, users can request deletion" and "yes, data is deleted"; mention that verified payment records are kept five years and no longer linked to the account.
    - **Ads:** none known. Confirm there is no ad SDK in `app/build.gradle.kts` before answering "no ads".
    - **Payments:** the app is in free mode (`IS_FREE_MODE = true` on the website) and collects no payment data. If paid packages come back, redo this form.
    - **Local storage:** PDFs and cached pages stay in the app's private storage.
@@ -134,9 +135,9 @@ Prepare and upload under **Store presence → Main store listing**:
 
 ## 5. Blockers found 2026-10-11 (do these before step 4)
 
-1. **Account deletion is missing (Google rejects apps without it).** Neither the website nor the app has it. Needs a website route and page first: spec in `WEBSITE_CHANGES.md` section 4. Then an in-app "Delete my account" button.
+1. **Account deletion: DONE in code (checked 2026-10-17, S2).** Website route `/api/account/delete`, public page `/delete-account`, privacy link, and the in-app button all exist; the live database has every table the route uses and no foreign key can block the delete. **Owner still to do:** one real test with a TEST account on a phone (delete, then sign in again must fail), and enter the `/delete-account` URL in Play Console. Details: `docs/SESSION_2026-10-17_S2_ACCOUNT_DELETION.md`.
 2. **Owner decision on the website login fix** (`WEBSITE_CHANGES.md` section 1) and the Supabase "Confirm email" setting. Until then website users can still get a fake local-only login.
-3. **Privacy page must match the data above** (section 3C).
+3. **Privacy page must match the data above** (section 3C). Still open: Groq, Appwrite and Firebase are not named (`WEBSITE_CHANGES.md` section 5).
 4. **12 testers for 14 days** (section 3B). Start this as early as possible, it is the longest wait.
 5. **Store pictures and texts** (section 3E) are not made yet.
 6. **Release signing secrets** (section 1) must exist in GitHub before a signed `.aab` can be built. Not verified whether they are set.
