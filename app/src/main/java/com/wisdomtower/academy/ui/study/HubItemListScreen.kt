@@ -355,7 +355,7 @@ fun HubItemListScreen(
             AlertDialog(
                 modifier = Modifier.wisdomDialogEnter(),
                 onDismissRequest = { confirmRemove = null },
-                containerColor = Color(0xB3111B2E),
+                containerColor = Color(0xF2111B2E),
                 title = {
                     Text(
                         text = if (toRemove.size == 1) "Remove from this phone?" else "Remove ${toRemove.size} saved items?",

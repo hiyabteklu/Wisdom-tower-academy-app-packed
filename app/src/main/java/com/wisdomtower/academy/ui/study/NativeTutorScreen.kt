@@ -600,7 +600,7 @@ fun NativeTutorScreen(
             AlertDialog(
                 modifier = Modifier.wisdomDialogEnter(),
                 onDismissRequest = { showClearConfirm = false },
-                containerColor = Color(0xB30E172A),
+                containerColor = Color(0xF20E172A),
                 titleContentColor = Color.White,
                 textContentColor = Color(0xFFCBD5E1),
                 title = { Text("Clear this chat?", fontWeight = FontWeight.Bold) },
