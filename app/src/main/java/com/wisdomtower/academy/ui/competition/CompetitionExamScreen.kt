@@ -40,6 +40,8 @@ import com.wisdomtower.academy.data.competition.CompetitionRunnerState
 import com.wisdomtower.academy.data.competition.CompetitionSession
 import com.wisdomtower.academy.data.competition.ExamLockdown
 import com.wisdomtower.academy.data.competition.SubmitResult
+import com.wisdomtower.academy.ui.theme.AppBackdrop
+import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentRose
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.CoroutineScope
@@ -72,6 +74,8 @@ private val examSaveScope = CoroutineScope(SupervisorJob() + Dispatchers.Default
 // RANKED exam, a warning dialog must be acknowledged. It does not stop the clock and does not disqualify; the
 // admin reviews the recorded flags. The warning wording is the owner's (2026-10-16): detected, will be reviewed
 // by admins, may result in disqualification. The owner decided NOT to pin the phone.
+// Default background picture (owner, 2026-10-17): the screen now draws the app background (AtmosphereBackground)
+// behind the page, the WebView is see-through and the page's own dark page colour is cleared (AppBackdrop).
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 
 // Receives the calls from the page on a WebView thread and hands them to the main thread.
@@ -313,11 +317,13 @@ fun CompetitionExamScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
+        AtmosphereBackground(modifier = Modifier.fillMaxSize())
+
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 WebView(ctx).apply {
-                    setBackgroundColor(0xFF0A101D.toInt())
+                    setBackgroundColor(AppBackdrop.webViewColor(ctx))
                     settings.javaScriptEnabled = true
                     settings.allowFileAccess = true
                     settings.blockNetworkLoads = true
@@ -325,6 +331,7 @@ fun CompetitionExamScreen(
                     addJavascriptInterface(bridge, "WTBridge")
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView, url: String?) {
+                            AppBackdrop.clearPageBackground(view)
                             pageReady = true
                         }
 
