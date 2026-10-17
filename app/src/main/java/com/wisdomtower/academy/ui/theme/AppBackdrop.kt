@@ -24,6 +24,11 @@ import androidx.compose.ui.graphics.Color
  * panel faded from solid to glass. Fix: the script now runs INSIDE the mutation callback (before the next paint) and
  * finishes background-colour / background-image transitions straight away, before measuring and after applying.
  * Glass strength raised from 5 to 8 percent (owner: glass is too faint on the textured background).
+ *
+ * Slice BG-LOADING (2026-10-17, owner: "in loading it's black, especially on notes, exams, flashcards"): the page's own
+ * dark colour showed from the start of loading until the glass script ran. [hidePageUntilReady] (called from
+ * onPageStarted by scripts/patch_backdrop_loading.py) makes the WebView invisible, so the native backdrop shows, and
+ * [clearPageBackground] fades it in once the glass script has run (safety reveal after 1.5 s).
  */
 object AppBackdrop {
     /** The plain page colour of the chosen option. Reading it in a composable follows the choice live. */
@@ -109,13 +114,27 @@ object AppBackdrop {
     fun webViewColor(context: Context): Int = android.graphics.Color.TRANSPARENT
 
     /**
+     * BG-LOADING: call from onPageStarted of a local-page WebView. The page is invisible (the native backdrop shows)
+     * until [clearPageBackground] has run the glass script; a safety reveal after 1.5 s covers a page that never finishes.
+     */
+    fun hidePageUntilReady(view: WebView) {
+        view.animate().cancel()
+        view.alpha = 0f
+        view.postDelayed({ view.animate().alpha(1f).setDuration(140).start() }, 1500)
+    }
+
+    /**
      * Call from onPageFinished of a local-page WebView: makes the page itself transparent and turns its dark-blue
-     * panels into glass. Every caller must have [AtmosphereBackground] behind its WebView (checked 2026-10-17:
-     * Notes, Flashcards, Quiz, Competition exam and review, AI Tutor all have it).
+     * panels into glass, then fades the page in (see [hidePageUntilReady]). Every caller must have
+     * [AtmosphereBackground] behind its WebView (checked 2026-10-17: Notes, Flashcards, Quiz, Competition exam and
+     * review, AI Tutor all have it).
      */
     fun clearPageBackground(view: WebView) {
         val css = "html{background:transparent !important}body{background:transparent !important}"
         view.evaluateJavascript(clearPageJs(css), null)
-        view.evaluateJavascript(GLASS_JS, null)
+        view.evaluateJavascript(GLASS_JS) {
+            view.animate().cancel()
+            view.animate().alpha(1f).setDuration(140).start()
+        }
     }
 }
