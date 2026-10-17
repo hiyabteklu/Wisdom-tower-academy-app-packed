@@ -98,9 +98,13 @@ private fun flushNoteProgress(resourceId: String, progress: NoteProgress) {
  * `learning_progress` (the higher percent is kept by the repository); the reading time is added every 30 seconds
  * and once more when the screen is left. Nothing is saved for a signed-out student (the repository returns false).
  *
- * Loading look (owner request 2026-10-13): while the note is fetched and while the page lays itself out under the
- * dark cover (T6), the app-start loader ([BrandSplashLoader]) is shown in the middle instead of a plain dark screen or
- * the standard spinner; the cover fades away (animated alpha, 220 ms) when the page reports ready.
+ * Loading look (owner request 2026-10-13): while the note is fetched and while the page lays itself out (the maths
+ * is typeset and the lines change length, so the page would visibly jump), the app-start loader ([BrandSplashLoader])
+ * is shown in the middle; the page fades in (animated alpha, 220 ms) when it reports ready.
+ * BG-NOTE-LOADER (2026-10-17, owner: the loader had a solid dark background, it must be transparent so the chosen
+ * background shows): the cover used to be a dark fill that hid the page. Now the cover has NO fill. The page itself
+ * is hidden instead (its alpha is 1 minus the cover alpha), so the jumping is still hidden, and the loader floats
+ * on the chosen app background. To go back: put `.background(Color(0x4D0A101D))` on the cover Box again.
  * Build fix 2026-10-13: the cover used `AnimatedVisibility` inside a `Box` inside a `Column`, which the compiler
  * refuses; it is now a plain `animateFloatAsState` alpha.
  *
@@ -226,11 +230,14 @@ fun NotesReaderScreen(
                         label = "noteCoverAlpha"
                     )
                     Box(modifier = Modifier.fillMaxSize()) {
+                        // The page is hidden while it lays itself out (its alpha is the opposite of the cover's).
                         NoteWebView(
                             body = r.item.bodyMd.orEmpty(),
                             bridge = bridge,
                             webRef = webRef,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .alpha(1f - coverAlpha)
                         )
                         if (coverAlpha > 0f) {
                             var showCoverLoader by remember { mutableStateOf(false) }
@@ -238,11 +245,11 @@ fun NotesReaderScreen(
                                 delay(150L)
                                 showCoverLoader = true
                             }
+                            // No fill: only the loader, drawn on the chosen app background.
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .alpha(coverAlpha)
-                                    .background(Color(0x4D0A101D)),
+                                    .alpha(coverAlpha),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (showCoverLoader) {
