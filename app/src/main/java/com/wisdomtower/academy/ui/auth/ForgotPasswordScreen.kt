@@ -141,11 +141,11 @@ fun ForgotPasswordScreen(
             return
         }
         if (password.length < 6) {
-            error = "Password must be at least 6 characters"
+            error = "Password must be at least 6 characters." // UX-CONSISTENCY-2026-10-17: same wording as Settings
             return
         }
         if (password != confirmPassword) {
-            error = "Passwords do not match"
+            error = "Passwords do not match. Please re-enter."
             return
         }
         focus.clearFocus()

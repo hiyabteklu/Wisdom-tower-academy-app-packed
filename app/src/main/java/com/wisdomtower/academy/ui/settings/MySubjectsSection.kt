@@ -112,6 +112,7 @@ fun MySubjectsSection() {
                 ) {
                     if (userId.isNullOrBlank()) {
                         Text("Sign in to choose your subjects.", fontSize = 12.sp, color = WisdomMuted)
+                        com.wisdomtower.academy.ui.auth.SignInPill() // UX-CONSISTENCY-2026-10-17
                     } else {
                         val level = profile?.educationLevel
                         val initial = remember(userId, level) { MySubjectsStore.load(context, userId, level) }

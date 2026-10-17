@@ -3293,6 +3293,11 @@ fun MainScreen(
                     }
                 }
 
+                // UX-CONSISTENCY-2026-10-17: every "Sign in to ..." pill opens the Account tab (native sign-in)
+                androidx.compose.runtime.SideEffect {
+                    com.wisdomtower.academy.ui.auth.SignInNavigator.open = { handleGlobalNav("/login") }
+                }
+
                 // Native Study Workspace (6 Learning Hubs Depth)
                 WisdomPushLayer(item = activeWorkspace, zIndexValue = 18f) { currentWs ->
                     StudyWorkspaceScreen(

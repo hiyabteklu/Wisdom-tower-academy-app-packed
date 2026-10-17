@@ -281,12 +281,15 @@ fun HubItemListScreen(
             val current = result
             when {
                 !loggedIn -> item(key = "hub_list_signin") {
-                    MessageCard(
-                        title = "Sign in to open",
-                        message = "Create a free account to unlock books, notes, questions, and exams. " +
-                            "No payment required for registered students.",
-                        onRetry = null
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) { // UX-CONSISTENCY-2026-10-17
+                        MessageCard(
+                            title = "Sign in to open",
+                            message = "Create a free account to unlock books, notes, questions, and exams. " +
+                                "No payment required for registered students.",
+                            onRetry = null
+                        )
+                        com.wisdomtower.academy.ui.auth.SignInPill(modifier = Modifier.padding(top = 14.dp))
+                    }
                 }
 
                 current == null -> item(key = "hub_list_loading") {

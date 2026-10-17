@@ -111,11 +111,18 @@ object SupabaseAccountClient {
             httpCode == 401 || code == "bad_jwt" || code == "session_not_found" || code.contains("jwt") ->
                 AccountCallResult.Failure(SESSION_EXPIRED, true)
 
-            code == "weak_password" || msg.contains("password should be") ->
+            // UX-CONSISTENCY-2026-10-17: the same-password case MUST be tested first. Supabase words it "New password should be
+            // different from the old password", which also contains "password should be".
+            code == "same_password" || msg.contains("different from the old password") ||
+                msg.contains("same as the old password") ->
+                AccountCallResult.Failure("Your new password can't be the same as your old password. Please choose a different one.")
+
+            (code == "weak_password" || msg.contains("password should be")) &&
+                (msg.contains("at least") || msg.contains("characters")) ->
                 AccountCallResult.Failure("Password must be at least 6 characters.")
 
-            code == "same_password" || msg.contains("different from the old password") ->
-                AccountCallResult.Failure("New password should be different from the old password.")
+            code == "weak_password" || msg.contains("password should be") ->
+                AccountCallResult.Failure("That password is too weak or too easy to guess. Please choose a stronger one.")
 
             httpCode == 429 || code.contains("rate_limit") ->
                 AccountCallResult.Failure("Too many attempts. Please wait a moment and try again.")

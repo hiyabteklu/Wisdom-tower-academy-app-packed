@@ -578,7 +578,12 @@ fun LearningScreen(
             // Tapping a card opens the package page with its subject list (never straight to the six hubs,
             // which do not exist at package level for Freshman, Grades, Remedial and ECE and gave a 404).
             openGrid("curriculum", enrolledCourses) { pkg ->
-                OpenCard(pkg.name, pkg.assetImage) { onSelectCourse(pkg) }
+                // UX-CONSISTENCY-2026-10-17: the ECE card stands for the whole year, so it uses the Home picture and title
+                val isEceTrack = pkg.id.startsWith("ece")
+                OpenCard(
+                    if (isEceTrack) com.wisdomtower.academy.ui.packages.ECE_TRACK_TITLE else pkg.name,
+                    if (isEceTrack) com.wisdomtower.academy.ui.packages.ECE_TRACK_COVER_ASSET else pkg.assetImage
+                ) { onSelectCourse(pkg) }
             }
 
             item(key = "learning_bottom_spacer") {
