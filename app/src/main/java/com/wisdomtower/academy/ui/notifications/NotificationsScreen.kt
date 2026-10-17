@@ -62,6 +62,7 @@ import com.wisdomtower.academy.ui.theme.WisdomGlassFill
 import com.wisdomtower.academy.ui.theme.WisdomGlassFillQuiet
 import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomMuted
+import com.wisdomtower.academy.ui.theme.WisdomMessageCard
 import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
 
 /**
@@ -295,26 +296,14 @@ fun NotificationsScreen(
             // Real error from the last refresh (not on the website; keeps failures visible)
             if (lastError != null && !isRefreshing) {
                 item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0x22F43F5E))
-                            .padding(14.dp)
-                    ) {
-                        Text(lastError.orEmpty(), color = Color(0xFFFDA4AF), fontSize = 12.sp)
-                        Text(
-                            "Try again",
-                            color = WisdomAccentSky,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .padding(top = 8.dp)
-                                .clickable {
-                                    NotificationRepository.refreshNotifications(currentUser?.id, currentUser?.email)
-                                }
-                        )
-                    }
+                    WisdomMessageCard( // S6-msgcard
+                        message = lastError.orEmpty(),
+                        isError = true,
+                        retryLabel = "Try again",
+                        onRetry = {
+                            NotificationRepository.refreshNotifications(currentUser?.id, currentUser?.email)
+                        }
+                    )
                     Spacer(Modifier.height(16.dp))
                 }
             }
