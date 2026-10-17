@@ -63,7 +63,7 @@ import androidx.core.content.ContextCompat
 
 private val OnboardBg = Color(0xFF060B15)
 private val OnboardAccent = Color(0xFF22E0FF)
-private val OnboardCard = Color(0xFF0C1424)
+private val OnboardCard = Color(0x660C1424)
 private val OnboardMuted = Color(0xFF94A3B8)
 
 private data class OnboardPage(

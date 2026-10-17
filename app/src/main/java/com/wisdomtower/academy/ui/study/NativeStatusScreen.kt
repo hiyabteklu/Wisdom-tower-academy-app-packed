@@ -68,7 +68,7 @@ private val StRose = Color(0xFFFB7185)
 private val StMuted = Color(0xFF94A3B8)
 private val StSlate200 = Color(0xFFE2E8F0)
 private val StSlate300 = Color(0xFFCBD5E1)
-private val StPanelBg = Color(0xFF0B1329)
+private val StPanelBg = Color(0x660B1329)
 
 /**
  * Native port of the "Your status" tool (`activeFeature === "analytics"` in `LearningContent.tsx`, component
@@ -540,7 +540,7 @@ private fun StHudCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
-            .background(StPanelBg.copy(alpha = 0.75f))
+            .background(StPanelBg.copy(alpha = 0.40f))
             .border(BorderStroke(1.dp, accent.copy(alpha = 0.30f)), RoundedCornerShape(20.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)

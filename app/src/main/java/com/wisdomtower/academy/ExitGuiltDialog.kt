@@ -30,7 +30,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.wisdomtower.academy.ui.theme.wisdomDialogEnter
 
 // Unified tokens matching the live website card language
-private val DialogBg = Color(0xFF0C1424) // Deep card surface (wisdom.card)
+private val DialogBg = Color(0xB30C1424) // Deep card surface (wisdom.card)
 private val DialogBorder = Color(0x3322E0FF) // 1px subtle cyan border
 private val Accent = Color(0xFF22E0FF) // Source of truth cyan
 private val DarkOnCyan = Color(0xFF070D17) // Dark text for solid cyan button

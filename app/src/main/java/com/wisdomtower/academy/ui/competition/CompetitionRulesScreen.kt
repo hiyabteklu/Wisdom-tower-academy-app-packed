@@ -26,7 +26,7 @@ import com.wisdomtower.academy.ui.theme.wisdomReveal
 
 private val RulesMuted = Color(0xFF94A3B8)
 private val RulesRed = Color(0xFFF87171)
-private val RulesNavy = Color(0xFF0A101D)
+private val RulesNavy = Color(0x660A101D)
 
 // Session U (owner, 2026-10-15): the student must first read a short red warning before a ranked attempt.
 // Two parts live in this file:
