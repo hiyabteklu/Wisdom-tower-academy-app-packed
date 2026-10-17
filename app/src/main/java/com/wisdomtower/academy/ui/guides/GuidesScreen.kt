@@ -145,10 +145,10 @@ private val GuideSoftColor = Color(0xFFCBD5E1)
 
 /** Reading text of every guide page: 16 sp on 26 sp lines, light slate (high contrast on the dark glass). */
 private val GuideBodyStyle = TextStyle(
-    fontFamily = PlusJakartaSansFontFamily,
-    fontWeight = FontWeight.Bold,
-    fontSize = 16.sp,
-    lineHeight = 26.sp,
+    fontFamily = PlusJakartaSansFontFamily, // S11-guides-type
+    fontWeight = FontWeight.Normal,
+    fontSize = 14.sp,
+    lineHeight = 22.sp,
     color = GuideBodyColor
 )
 
@@ -156,9 +156,9 @@ private val GuideBodyStyle = TextStyle(
 private val GuideQuoteStyle = TextStyle(
     fontFamily = ContentFontFamily,
     fontStyle = FontStyle.Italic,
-    fontWeight = FontWeight.Bold,
-    fontSize = 19.sp,
-    lineHeight = 28.sp,
+    fontWeight = FontWeight.Medium,
+    fontSize = 16.sp,
+    lineHeight = 24.sp,
     color = Color(0xFFFDE68A)
 )
 
@@ -268,9 +268,9 @@ fun GuidesScreen(
                     Text(
                         text = "Other resources",
                         fontFamily = OutfitFontFamily,
-                        fontSize = 26.sp,
-                        lineHeight = 31.sp,
-                        fontWeight = FontWeight.Black,
+                        fontSize = 22.sp,
+                        lineHeight = 27.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                 }
@@ -418,8 +418,8 @@ private fun GuideTabRow(activeSlug: String, scroll: ScrollState, onSelect: (Stri
                         )
                         Text(
                             text = tab.title,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = foreground,
                             maxLines = 1
                         )
@@ -467,8 +467,8 @@ private fun GuideTabPill(tab: GuideTab, selected: Boolean, onClick: () -> Unit) 
         )
         Text(
             text = tab.title,
-            fontSize = 15.sp,
-            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Bold,
+            fontSize = 14.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
             color = foreground,
             maxLines = 1
         )
@@ -536,9 +536,9 @@ private fun GuideHeaderCard(tag: String, accent: Color, icon: ImageVector, title
         Text(
             text = title,
             fontFamily = OutfitFontFamily,
-            fontWeight = FontWeight.Black,
-            fontSize = 30.sp,
-            lineHeight = 36.sp,
+            fontWeight = FontWeight.Bold,
+            fontSize = 24.sp,
+            lineHeight = 30.sp,
             color = Color.White
         )
         if (!body.isNullOrBlank()) {
@@ -564,9 +564,9 @@ private fun SectionTitleRow(icon: ImageVector, accent: Color, title: String) {
         Text(
             text = title,
             fontFamily = OutfitFontFamily,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 22.sp,
-            lineHeight = 27.sp,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp,
+            lineHeight = 23.sp,
             color = Color.White,
             modifier = Modifier.weight(1f)
         )
@@ -585,7 +585,7 @@ private fun PillTag(label: String, color: Color) {
         Text(
             text = label,
             fontSize = 12.sp,
-            fontWeight = FontWeight.ExtraBold,
+            fontWeight = FontWeight.Bold,
             letterSpacing = 0.8.sp,
             color = color
         )
@@ -601,7 +601,7 @@ private fun FactBadge(label: String) {
             .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
             .padding(horizontal = 14.dp, vertical = 7.dp)
     ) {
-        Text(text = label, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = GuideSoftColor)
+        Text(text = label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = GuideSoftColor)
     }
 }
 
@@ -631,9 +631,9 @@ private fun InfoBox(title: String, icon: ImageVector, accent: Color, content: @C
             Text(
                 text = title,
                 fontFamily = OutfitFontFamily,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 18.sp,
-                lineHeight = 23.sp,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                lineHeight = 20.sp,
                 color = accent,
                 modifier = Modifier.weight(1f)
             )
@@ -713,9 +713,9 @@ private fun AccordionCard(
             Text(
                 text = title,
                 fontFamily = PlusJakartaSansFontFamily,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 18.sp,
-                lineHeight = 23.sp,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                lineHeight = 20.sp,
                 color = Color.White,
                 modifier = Modifier.weight(1f)
             )
@@ -762,7 +762,7 @@ private fun ExpandPill(label: String, expanded: Boolean, accent: Color, fullWidt
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = label, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = accent)
+        Text(text = label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = accent)
         Spacer(modifier = Modifier.width(8.dp))
         Icon(
             imageVector = Icons.Filled.KeyboardArrowDown,
@@ -792,7 +792,7 @@ private fun LinkPill(label: String, accent: Color, filled: Boolean, onClick: () 
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(text = label, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, color = foreground)
+        Text(text = label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = foreground)
         Icon(
             imageVector = Icons.AutoMirrored.Filled.OpenInNew,
             contentDescription = null,
@@ -809,11 +809,11 @@ private fun GuideSearchField(value: String, onChange: (String) -> Unit, placehol
         onValueChange = onChange,
         textStyle = TextStyle(
             fontFamily = PlusJakartaSansFontFamily,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
             color = Color.White
         ),
-        placeholder = { Text(placeholder, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = GuideSoftColor) },
+        placeholder = { Text(placeholder, fontSize = 13.sp, fontWeight = FontWeight.Normal, color = GuideSoftColor) },
         leadingIcon = {
             Icon(Icons.Filled.Search, contentDescription = null, tint = WisdomCyan, modifier = Modifier.size(22.dp))
         },
@@ -873,8 +873,8 @@ private fun FilterChip(label: String, selected: Boolean, accent: Color, onClick:
     ) {
         Text(
             text = label,
-            fontSize = 15.sp,
-            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Bold,
+            fontSize = 14.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
             color = foreground,
             maxLines = 1
         )
@@ -888,9 +888,9 @@ private fun EmptyNoteCard(title: String?, text: String) {
             Text(
                 text = title,
                 fontFamily = OutfitFontFamily,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 20.sp,
-                lineHeight = 25.sp,
+                fontWeight = FontWeight.Bold,
+                fontSize = 17.sp,
+                lineHeight = 22.sp,
                 color = Color.White
             )
         }
@@ -1068,9 +1068,9 @@ private fun StudyTechniqueStepCard(
             Text(
                 text = highlight,
                 fontFamily = PlusJakartaSansFontFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                lineHeight = 27.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp,
+                lineHeight = 23.sp,
                 color = Color.White,
                 modifier = Modifier.weight(1f)
             )
@@ -1101,8 +1101,8 @@ private fun StepHeader(step: String, category: String, title: String, accentColo
             Text(
                 text = step,
                 fontFamily = OutfitFontFamily,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
                 color = accentColor
             )
         }
@@ -1110,16 +1110,16 @@ private fun StepHeader(step: String, category: String, title: String, accentColo
             Text(
                 text = category.uppercase(),
                 fontSize = 12.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Bold,
                 letterSpacing = 0.8.sp,
                 color = accentColor
             )
             Text(
                 text = title,
                 fontFamily = OutfitFontFamily,
-                fontSize = 24.sp,
-                lineHeight = 29.sp,
-                fontWeight = FontWeight.Black,
+                fontSize = 20.sp,
+                lineHeight = 25.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color.White
             )
         }
@@ -1231,25 +1231,25 @@ private fun SuccessStoryCardItem(story: SuccessStory) {
                         Text(
                             text = "ACHIEVEMENT",
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontWeight = FontWeight.Bold,
                             letterSpacing = 0.8.sp,
                             color = WisdomAccentAmber
                         )
                         Text(
                             text = story.achievement,
                             fontFamily = OutfitFontFamily,
-                            fontSize = 24.sp,
-                            lineHeight = 29.sp,
-                            fontWeight = FontWeight.Black,
+                            fontSize = 19.sp,
+                            lineHeight = 24.sp,
+                            fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         val byline = listOf(story.name, story.program, story.year).filter { it.isNotBlank() }.joinToString(" · ")
                         if (byline.isNotEmpty()) {
                             Text(
                                 text = byline,
-                                fontSize = 15.sp,
-                                lineHeight = 21.sp,
-                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                lineHeight = 19.sp,
+                                fontWeight = FontWeight.Medium,
                                 color = GuideSoftColor
                             )
                         }
@@ -1486,9 +1486,9 @@ private fun CampusSectionCard(
             Text(
                 text = subtitle,
                 fontFamily = PlusJakartaSansFontFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 19.sp,
-                lineHeight = 26.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp,
+                lineHeight = 23.sp,
                 color = Color.White
             )
         }
@@ -1641,7 +1641,7 @@ private fun UniversityDetailCard(uni: UniversityDetail) {
                     Text(
                         text = "FEATURED",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.ExtraBold,
+                        fontWeight = FontWeight.Bold,
                         letterSpacing = 0.8.sp,
                         color = WisdomAccentAmber
                     )
@@ -1651,14 +1651,14 @@ private fun UniversityDetailCard(uni: UniversityDetail) {
             Text(
                 text = uni.name,
                 fontFamily = OutfitFontFamily,
-                fontSize = 23.sp,
-                lineHeight = 28.sp,
-                fontWeight = FontWeight.Black,
+                fontSize = 19.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color.White
             )
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Filled.LocationOn, contentDescription = null, tint = WisdomAccentSky, modifier = Modifier.size(20.dp))
-                Text(text = uni.location, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = GuideSoftColor)
+                Text(text = uni.location, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = GuideSoftColor)
             }
 
             val facts = buildList {
@@ -1851,9 +1851,9 @@ private fun DepartmentDetailCard(dept: DepartmentDetail, categoryLabel: String) 
             Text(
                 text = dept.name,
                 fontFamily = OutfitFontFamily,
-                fontSize = 23.sp,
-                lineHeight = 28.sp,
-                fontWeight = FontWeight.Black,
+                fontSize = 19.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color.White
             )
 
@@ -2012,18 +2012,18 @@ private fun ScholarshipCardItem(sch: ScholarshipOpportunity) {
             Text(
                 text = sch.title,
                 fontFamily = OutfitFontFamily,
-                fontSize = 23.sp,
-                lineHeight = 28.sp,
-                fontWeight = FontWeight.Black,
+                fontSize = 19.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color.White
             )
             val providerLine = listOf(sch.provider, sch.amount).filter { it.isNotBlank() }.joinToString(" · ")
             if (providerLine.isNotEmpty()) {
                 Text(
                     text = providerLine,
-                    fontSize = 17.sp,
-                    lineHeight = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 15.sp,
+                    lineHeight = 21.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = WisdomAccentRose
                 )
             }

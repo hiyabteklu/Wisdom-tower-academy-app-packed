@@ -30,18 +30,18 @@ fun FreeResourcesStateCard(heading: String?, message: String) {
                 Text(
                     text = heading,
                     fontFamily = OutfitFontFamily,
-                    fontSize = 20.sp,
-                    lineHeight = 25.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 17.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
             }
             Text(
                 text = message,
                 fontFamily = PlusJakartaSansFontFamily,
-                fontSize = 16.sp,
-                lineHeight = 25.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.Normal,
                 color = Color(0xFFCBD5E1)
             )
         }
