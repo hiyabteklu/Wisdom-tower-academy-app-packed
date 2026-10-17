@@ -3,6 +3,7 @@ package com.wisdomtower.academy.ui.theme
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,6 +37,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -224,8 +228,18 @@ fun WisdomOpenButton(
     }
 }
 
+/** Dark tint over the app picture (same values the AI Tutor used since 2026-10-16): top 40 percent, bottom 60 percent. */
+private val BackdropScrimTop = Color(0x66050A14)
+private val BackdropScrimBottom = Color(0x99050A14)
+
 /**
- * Atmospheric background: two soft glow orbs (cyan top-left, purple middle-right) on the dark page colour.
+ * The app background that every screen and the app shell draw.
+ *
+ * DEFAULT PICTURE (owner request 2026-10-17): when `assets/backgrounds/tutor_bg.jpg` exists (see [AppBackdrop]) it is drawn
+ * full screen (crop) with a dark vertical scrim so the text stays readable, on EVERY screen. The AI Tutor used the same
+ * picture alone before. When the picture is missing, the original look below is used unchanged.
+ *
+ * ORIGINAL LOOK: two soft glow orbs (cyan top-left, purple middle-right) on the dark page colour.
  *
  * GLASS area 7 (2026-10-13, docs/GLASS_PLAN.md): the orbs are now drawn with radial gradients that fade to fully
  * transparent at their own edge. Before, each orb was a solid circle with `Modifier.blur(...)`: the blur is cut at the
@@ -238,27 +252,49 @@ fun WisdomOpenButton(
 fun AtmosphereBackground(
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
-            .background(WisdomBackground)
-            .clipToBounds()
-            .drawBehind {
-                // Orb 1: cyan glow top
-                drawGlowOrb(
-                    color = WisdomCyan,
-                    peakAlpha = 0.11f,
-                    center = Offset(130.dp.toPx(), 70.dp.toPx()),
-                    radius = 220.dp.toPx()
-                )
-                // Orb 2: purple glow middle right
-                drawGlowOrb(
-                    color = WisdomAccentPurple,
-                    peakAlpha = 0.08f,
-                    center = Offset(280.dp.toPx(), 240.dp.toPx()),
-                    radius = 190.dp.toPx()
-                )
-            }
-    )
+    val context = LocalContext.current
+    val picture = remember { AppBackdrop.get(context) }
+    if (picture != null) {
+        Box(
+            modifier = modifier
+                .background(WisdomBackground)
+                .clipToBounds()
+        ) {
+            Image(
+                bitmap = picture,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(BackdropScrimTop, BackdropScrimBottom)))
+            )
+        }
+    } else {
+        Box(
+            modifier = modifier
+                .background(WisdomBackground)
+                .clipToBounds()
+                .drawBehind {
+                    // Orb 1: cyan glow top
+                    drawGlowOrb(
+                        color = WisdomCyan,
+                        peakAlpha = 0.11f,
+                        center = Offset(130.dp.toPx(), 70.dp.toPx()),
+                        radius = 220.dp.toPx()
+                    )
+                    // Orb 2: purple glow middle right
+                    drawGlowOrb(
+                        color = WisdomAccentPurple,
+                        peakAlpha = 0.08f,
+                        center = Offset(280.dp.toPx(), 240.dp.toPx()),
+                        radius = 190.dp.toPx()
+                    )
+                }
+        )
+    }
 }
 
 /** One soft glow: strongest in the centre, smooth bell-shaped fall-off, exactly transparent at [radius]. */

@@ -41,6 +41,7 @@ import com.wisdomtower.academy.data.content.ContentItemResult
 import com.wisdomtower.academy.data.content.ExamAttemptRepository
 import com.wisdomtower.academy.data.content.LearningContentRepository
 import com.wisdomtower.academy.data.content.LearningProgressRepository
+import com.wisdomtower.academy.ui.theme.AppBackdrop
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomMuted
@@ -80,6 +81,9 @@ private const val QUIZ_PREF_MODE = "feedback_mode"
  * Clean reading (owner request 2026-10-13): NO top row (back arrow + title) any more, the quiz page uses the whole
  * screen under the app bar (its own timer, submit and question controls are inside the page and unchanged).
  * Leaving is done with the phone Back button / gesture (the BackHandler below); [title] is still passed to the page.
+ *
+ * Default background picture (owner request 2026-10-17): the WebView is see-through and the page's own dark page colour
+ * is cleared ([AppBackdrop]), so the app picture drawn by [AtmosphereBackground] shows behind the questions.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -276,7 +280,7 @@ private fun QuizWebView(
             modifier = modifier,
             factory = { ctx ->
                 WebView(ctx).apply {
-                    setBackgroundColor(0xFF0A101D.toInt())
+                    setBackgroundColor(AppBackdrop.webViewColor(ctx))
                     settings.javaScriptEnabled = true
                     settings.allowFileAccess = true
                     settings.blockNetworkLoads = true
@@ -285,6 +289,7 @@ private fun QuizWebView(
                     addJavascriptInterface(bridge, "WTBridge")
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView, url: String?) {
+                            AppBackdrop.clearPageBackground(view)
                             view.evaluateJavascript("window.setQuiz($metaLiteral, $optionsLiteral);", null)
                         }
 

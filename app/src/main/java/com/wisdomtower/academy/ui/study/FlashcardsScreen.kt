@@ -37,6 +37,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.wisdomtower.academy.data.content.ContentItemResult
 import com.wisdomtower.academy.data.content.LearningContentRepository
 import com.wisdomtower.academy.data.content.LearningProgressRepository
+import com.wisdomtower.academy.ui.theme.AppBackdrop
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomMuted
@@ -54,6 +55,9 @@ import kotlin.math.roundToInt
  * Clean reading (owner request 2026-10-13): NO top row (back arrow + deck title) any more, the deck uses the whole
  * screen under the app bar. Leaving is done with the phone Back button / gesture (handled by `StudyWorkspaceScreen`);
  * [onBack] and [title] are kept in the signature but not drawn.
+ *
+ * Default background picture (owner request 2026-10-17): the WebView is see-through and the page's own dark page colour
+ * is cleared ([AppBackdrop]), so the app picture drawn by [AtmosphereBackground] shows behind the cards.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -141,7 +145,7 @@ private fun DeckWebView(metaJson: String, onProgress: (String) -> Unit, modifier
             modifier = modifier,
             factory = { ctx ->
                 WebView(ctx).apply {
-                    setBackgroundColor(0xFF0A101D.toInt())
+                    setBackgroundColor(AppBackdrop.webViewColor(ctx))
                     settings.javaScriptEnabled = true
                     settings.allowFileAccess = true
                     settings.blockNetworkLoads = true
@@ -149,6 +153,7 @@ private fun DeckWebView(metaJson: String, onProgress: (String) -> Unit, modifier
                     addJavascriptInterface(DeckBridge(onProgress), "WTBridge")
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView, url: String?) {
+                            AppBackdrop.clearPageBackground(view)
                             view.evaluateJavascript("window.setDeck($literal);", null)
                         }
 

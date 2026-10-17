@@ -44,6 +44,7 @@ import com.wisdomtower.academy.data.content.AiExplainRepository
 import com.wisdomtower.academy.data.content.ContentItemResult
 import com.wisdomtower.academy.data.content.LearningContentRepository
 import com.wisdomtower.academy.data.content.LearningProgressRepository
+import com.wisdomtower.academy.ui.theme.AppBackdrop
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomMuted
@@ -106,6 +107,9 @@ private fun flushNoteProgress(resourceId: String, progress: NoteProgress) {
  * Clean reading (owner request 2026-10-13): NO top row (back arrow + note title) any more, the note uses the whole
  * screen under the app bar. Leaving is done with the phone Back button / gesture (handled by `StudyWorkspaceScreen`);
  * [onBack] and [title] are kept in the signature but not drawn.
+ *
+ * Default background picture (owner request 2026-10-17): the WebView is see-through and the page's own dark page colour
+ * is cleared ([AppBackdrop]), so the app picture drawn by [AtmosphereBackground] shows behind the text.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -292,7 +296,7 @@ private fun NoteWebView(body: String, bridge: Any, webRef: Array<WebView?>, modi
             modifier = modifier,
             factory = { ctx ->
                 WebView(ctx).apply {
-                    setBackgroundColor(0xFF0A101D.toInt())
+                    setBackgroundColor(AppBackdrop.webViewColor(ctx))
                     settings.javaScriptEnabled = true
                     settings.allowFileAccess = true
                     settings.blockNetworkLoads = true
@@ -300,6 +304,7 @@ private fun NoteWebView(body: String, bridge: Any, webRef: Array<WebView?>, modi
                     addJavascriptInterface(bridge, "WTBridge")
                     webViewClient = object : WebViewClient() {
                         override fun onPageFinished(view: WebView, url: String?) {
+                            AppBackdrop.clearPageBackground(view)
                             view.evaluateJavascript("window.setNote($literal);", null)
                         }
 

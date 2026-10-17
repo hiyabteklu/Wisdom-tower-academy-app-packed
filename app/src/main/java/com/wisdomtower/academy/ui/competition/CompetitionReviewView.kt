@@ -16,6 +16,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import com.wisdomtower.academy.ui.theme.AppBackdrop
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -32,6 +33,8 @@ import org.json.JSONObject
 // right = previous) and explain. canExplain says whether the Explain button is drawn at all (false while a ranked
 // exam is running), explaining says the AI answer is on its way. The bridge calls come on a background thread,
 // so they are handed to the main thread before the screen's lambdas run.
+// Default background picture (owner, 2026-10-17): the WebView is see-through and the page's own dark page colour is
+// cleared (AppBackdrop), so the app picture drawn behind the review screen shows through.
 // Status: written, not compiled, not seen on a device.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @SuppressLint("SetJavaScriptEnabled")
@@ -83,7 +86,7 @@ fun CompetitionReviewView(
         modifier = modifier,
         factory = { ctx ->
             WebView(ctx).apply {
-                setBackgroundColor(0xFF0A101D.toInt())
+                setBackgroundColor(AppBackdrop.webViewColor(ctx))
                 settings.javaScriptEnabled = true
                 settings.allowFileAccess = true
                 settings.blockNetworkLoads = true
@@ -97,6 +100,7 @@ fun CompetitionReviewView(
                 )
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String?) {
+                        AppBackdrop.clearPageBackground(view)
                         pageReady = true
                     }
 
