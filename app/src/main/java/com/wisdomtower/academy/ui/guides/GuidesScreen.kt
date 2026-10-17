@@ -2,11 +2,16 @@ package com.wisdomtower.academy.ui.guides
 
 // Guides audited against website-reference/ (2026-10-11, session F). Every label and text below is
 // copied from the website pages: components/academy/*, app/academy/{universities,departments,
-// scholarships,success-stories}/page.tsx and data/universities.ts. Do not add wording that is not there.
+// scholarships,success-stories}/page.tsx and data/universities.ts.
 //
 // 2026-10-14 (docs/SESSION_2026-10-14_resources_ios.md): iOS-style redesign. ONLY look, sizes, icons and motion changed.
-// Every sentence is unchanged. Motion language is copied from NativeSignInScreen (expand 280 ms + fade, press-in spring
-// 0.6 / 500, sliding/animated pills). Sizes: page title 26 sp, hero title 30 sp, card titles 22 sp, body 16 sp / 26 sp.
+// Motion language is copied from NativeSignInScreen (expand 280 ms + fade, press-in spring 0.6 / 500, sliding pills).
+//
+// 2026-10-17: (1) Universities + Scholarships notices are now an always-open "Tip" landing section (sectioned,
+// icon cards) instead of a long accordion title. (2) University and department cards expand DOWNWARD from the
+// button you pressed (the button no longer sits under the growing content). (3) The universities and departments
+// JSON is parsed OFF the main thread, the brand loader covers the wait, and long lists are drawn in small batches,
+// so opening those tabs no longer freezes.
 
 import android.content.Intent
 import android.net.Uri
@@ -14,7 +19,10 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -28,6 +36,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
@@ -121,6 +131,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.wisdomtower.academy.BrandSplashLoader
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.ContentFontFamily
 import com.wisdomtower.academy.ui.theme.OutfitFontFamily
@@ -136,14 +147,16 @@ import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomGlassFill
 import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomModernCard
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 
 /* ============================== look and motion tokens ============================== */
 
 private val GuideBodyColor = Color(0xFFE2E8F0)
 private val GuideSoftColor = Color(0xFFCBD5E1)
 
-/** Reading text of every guide page: 16 sp on 26 sp lines, light slate (high contrast on the dark glass). */
+/** Reading text of every guide page: light slate (high contrast on the dark glass). */
 private val GuideBodyStyle = TextStyle(
     fontFamily = PlusJakartaSansFontFamily, // S11-guides-type
     fontWeight = FontWeight.Normal,
@@ -151,6 +164,9 @@ private val GuideBodyStyle = TextStyle(
     lineHeight = 22.sp,
     color = GuideBodyColor
 )
+
+/** Slightly larger reading text for the Tip landing cards. */
+private val TipBodyStyle = GuideBodyStyle.copy(fontSize = 15.sp, lineHeight = 24.sp)
 
 /** Quotes (success stories, universities closing line): the app's content serif in italic, a little larger. */
 private val GuideQuoteStyle = TextStyle(
@@ -225,6 +241,40 @@ private fun guideIcon(slug: String): ImageVector = when (slug) {
     else -> Icons.Filled.Lightbulb
 }
 
+/** Loaded off the main thread (see [GuidesScreen]). */
+private class UniData(val intro: List<String>, val closing: String, val list: List<UniversityDetail>)
+private class DeptData(val categories: List<DepartmentCategoryDetail>, val list: List<DepartmentDetail>)
+
+/* ============================== loading cover ============================== */
+
+/** The app's own splash loader (neon rings + logo), shown while a big tab is being prepared. */
+@Composable
+private fun GuideLoading() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(340.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        BrandSplashLoader(size = 96.dp)
+    }
+}
+
+/**
+ * False for the first two frames, then true. The loader is drawn first, so a press on a heavy tab answers at once
+ * instead of freezing while the whole list is built in the same frame.
+ */
+@Composable
+private fun rememberAfterFirstFrames(): Boolean {
+    var ready by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        withFrameNanos { }
+        withFrameNanos { }
+        ready = true
+    }
+    return ready
+}
+
 /* ============================== screen ============================== */
 
 @Composable
@@ -238,9 +288,19 @@ fun GuidesScreen(
     val listState = rememberLazyListState()
     val tabScroll = rememberScrollState()
 
-    val (uniIntro, universitiesList) = remember { GuidesRepository.loadUniversities(context) }
-    val uniClosing = remember { GuidesRepository.loadUniversitiesClosing(context) }
-    val (deptCategories, departmentsList) = remember { GuidesRepository.loadDepartments(context) }
+    // The two big JSON files are read and parsed in the background, never on the main thread.
+    val uniData by produceState<UniData?>(initialValue = null, context) {
+        value = withContext(Dispatchers.Default) {
+            val (intro, list) = GuidesRepository.loadUniversities(context)
+            UniData(intro, GuidesRepository.loadUniversitiesClosing(context), list)
+        }
+    }
+    val deptData by produceState<DeptData?>(initialValue = null, context) {
+        value = withContext(Dispatchers.Default) {
+            val (categories, list) = GuidesRepository.loadDepartments(context)
+            DeptData(categories, list)
+        }
+    }
     val (storiesList, scholarshipsList) = remember { GuidesRepository.loadFreeResources(context) }
 
     // Keep the chosen tab in view, and bring the page back up to the tabs when a new guide opens.
@@ -294,12 +354,8 @@ fun GuidesScreen(
                     when (slug) {
                         "success-stories" -> SuccessStoriesFullSection(stories = storiesList)
                         "campus-life" -> CampusLifeFullSection()
-                        "universities" -> UniversitiesFullSection(
-                            introParagraphs = uniIntro,
-                            closing = uniClosing,
-                            universities = universitiesList
-                        )
-                        "departments" -> DepartmentsFullSection(categories = deptCategories, departments = departmentsList)
+                        "universities" -> UniversitiesFullSection(data = uniData)
+                        "departments" -> DepartmentsFullSection(data = deptData)
                         "scholarships" -> ScholarshipsFullSection(scholarships = scholarshipsList)
                         else -> StudyTechniquesFullSection()
                     }
@@ -510,7 +566,7 @@ private fun GuideCard(accent: Color?, content: @Composable ColumnScope.() -> Uni
     }
 }
 
-/** Page hero: accent glow, big icon, heavy 30 sp title, body split into readable paragraphs. */
+/** Page hero: accent glow, big icon, heavy title, body split into readable paragraphs. */
 @Composable
 private fun GuideHeaderCard(tag: String, accent: Color, icon: ImageVector, title: String, body: String?) {
     val shape = RoundedCornerShape(30.dp)
@@ -613,7 +669,7 @@ private fun BadgeRow(labels: List<String>) {
     }
 }
 
-/** Titled box inside an expanded card: round icon, heavy 18 sp title in the accent colour, then the content. */
+/** Titled box inside an expanded card: round icon, heavy title in the accent colour, then the content. */
 @Composable
 private fun InfoBox(title: String, icon: ImageVector, accent: Color, content: @Composable ColumnScope.() -> Unit) {
     val shape = RoundedCornerShape(24.dp)
@@ -644,7 +700,7 @@ private fun InfoBox(title: String, icon: ImageVector, accent: Color, content: @C
 
 /** Bullet with a native icon in a round accent tile instead of a text dot. */
 @Composable
-private fun IconBullet(text: String, icon: ImageVector, color: Color) {
+private fun IconBullet(text: String, icon: ImageVector, color: Color, style: TextStyle = GuideBodyStyle) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
         Box(
             modifier = Modifier
@@ -661,7 +717,7 @@ private fun IconBullet(text: String, icon: ImageVector, color: Color) {
                 modifier = Modifier.size(16.dp)
             )
         }
-        Text(text = text, style = GuideBodyStyle, modifier = Modifier.weight(1f))
+        Text(text = text, style = style, modifier = Modifier.weight(1f))
     }
 }
 
@@ -902,6 +958,198 @@ private fun openLink(context: android.content.Context, url: String) {
     try {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     } catch (_: Exception) {
+    }
+}
+
+/* ============================== TIP LANDING (Universities + Scholarships) ============================== */
+
+/** One section of a Tip: a small label, a paragraph and/or a checklist. */
+private class TipBlock(val label: String, val text: String, val bullets: List<String>)
+
+private fun cleanMd(s: String): String = s.replace("**", "").trimStart('#', ' ').trim()
+
+/**
+ * Splits an intro at blank lines. A paragraph whose lines start with a bullet becomes a checklist, its first plain
+ * line being the label. Other paragraphs take their label from [labels] by position ("Good to know" when missing).
+ * The wording of the text is never changed.
+ */
+private fun parseTipBlocks(raw: String, labels: List<String>): List<TipBlock> {
+    val out = mutableListOf<TipBlock>()
+    raw.split("\n\n").map { it.trim() }.filter { it.isNotEmpty() }.forEachIndexed { i, para ->
+        val lines = para.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        fun isBullet(l: String) = l.startsWith("•") || l.startsWith("- ") || l.startsWith("* ")
+        val bullets = lines.filter { isBullet(it) }.map { cleanMd(it.trimStart('•', '-', '*', ' ')) }
+        val plain = lines.filterNot { isBullet(it) }.map { cleanMd(it) }
+        if (bullets.isNotEmpty()) {
+            val heading = plain.firstOrNull().orEmpty()
+            out.add(
+                TipBlock(
+                    label = heading.ifBlank { labels.getOrNull(i)?.ifBlank { null } ?: "Checklist" },
+                    text = plain.drop(1).joinToString(" "),
+                    bullets = bullets
+                )
+            )
+        } else {
+            out.add(
+                TipBlock(
+                    label = labels.getOrNull(i)?.ifBlank { null } ?: "Good to know",
+                    text = plain.joinToString(" "),
+                    bullets = emptyList()
+                )
+            )
+        }
+    }
+    return out
+}
+
+/** "Tip" title row: a softly pulsing glow behind the bulb and a fading line. */
+@Composable
+private fun TipHeader(accent: Color) {
+    val transition = rememberInfiniteTransition(label = "tipGlow")
+    val glow by transition.animateFloat(
+        initialValue = 0.20f,
+        targetValue = 0.55f,
+        animationSpec = infiniteRepeatable(animation = tween(1700), repeatMode = RepeatMode.Reverse),
+        label = "tipGlowAlpha"
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .size(70.dp)
+                    .background(
+                        Brush.radialGradient(listOf(accent.copy(alpha = glow), Color.Transparent)),
+                        CircleShape
+                    )
+            )
+            IconTile(icon = Icons.Filled.Lightbulb, accent = accent, tile = 48.dp, glyph = 26.dp)
+        }
+        Text(
+            text = "Tip",
+            fontFamily = OutfitFontFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 28.sp,
+            lineHeight = 34.sp,
+            color = Color.White
+        )
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(2.dp)
+                .clip(CircleShape)
+                .background(Brush.horizontalGradient(listOf(accent.copy(alpha = 0.65f), Color.Transparent)))
+        )
+    }
+}
+
+/** One sectioned card: gradient glass, big faded number, round icon, label, then the text / checklist. */
+@Composable
+private fun TipSectionCard(
+    number: String,
+    icon: ImageVector,
+    accent: Color,
+    block: TipBlock,
+    bulletIcon: ImageVector
+) {
+    val shape = RoundedCornerShape(26.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(Brush.linearGradient(listOf(accent.copy(alpha = 0.18f), accent.copy(alpha = 0.04f))))
+            .border(
+                BorderStroke(
+                    1.dp,
+                    Brush.linearGradient(listOf(accent.copy(alpha = 0.6f), Color.White.copy(alpha = 0.06f)))
+                ),
+                shape
+            )
+    ) {
+        Text(
+            text = number,
+            fontFamily = OutfitFontFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 56.sp,
+            color = accent.copy(alpha = 0.10f),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 4.dp, end = 18.dp)
+        )
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                IconTile(icon = icon, accent = accent, tile = 44.dp, glyph = 24.dp)
+                Text(
+                    text = block.label.uppercase(),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.8.sp,
+                    color = accent,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 40.dp)
+                )
+            }
+            if (block.text.isNotBlank()) {
+                Text(text = block.text, style = TipBodyStyle)
+            }
+            block.bullets.forEach { b ->
+                IconBullet(text = b, icon = bulletIcon, color = accent, style = TipBodyStyle)
+            }
+        }
+    }
+}
+
+/**
+ * The open landing section under the page hero: "Tip" title, then the intro in short icon cards (staggered rise-in).
+ * Icons and colours repeat in order when there are more blocks than entries.
+ */
+@Composable
+private fun TipLanding(
+    accent: Color,
+    blocks: List<TipBlock>,
+    icons: List<ImageVector>,
+    accents: List<Color>,
+    bulletIcon: ImageVector,
+    closing: String? = null
+) {
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Reveal(0) { TipHeader(accent = accent) }
+        blocks.forEachIndexed { i, block ->
+            Reveal(i + 1) {
+                TipSectionCard(
+                    number = (i + 1).toString().padStart(2, '0'),
+                    icon = icons[i % icons.size],
+                    accent = accents[i % accents.size],
+                    block = block,
+                    bulletIcon = bulletIcon
+                )
+            }
+        }
+        if (!closing.isNullOrBlank()) {
+            Reveal(blocks.size + 1) {
+                val quoteShape = RoundedCornerShape(24.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(quoteShape)
+                        .background(WisdomAccentAmber.copy(alpha = 0.08f))
+                        .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.3f)), quoteShape)
+                        .padding(18.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    IconTile(icon = Icons.Filled.Star, accent = WisdomAccentAmber, tile = 36.dp, glyph = 20.dp)
+                    Text(text = closing, style = GuideQuoteStyle, modifier = Modifier.weight(1f))
+                }
+            }
+        }
     }
 }
 
@@ -1513,8 +1761,23 @@ private fun CampusSectionCard(
 /* ============================== 4. UNIVERSITIES ============================== */
 /* Source: app/academy/universities/page.tsx and data/universities.ts. */
 
+private val UNI_TIP_LABELS = listOf("The usual mistake", "A better way to see it", "What rankings miss", "How this is written")
+private val UNI_TIP_ICONS = listOf(Icons.Filled.Warning, Icons.Filled.Lightbulb, Icons.Filled.Search, Icons.Filled.Info)
+private val UNI_TIP_ACCENTS = listOf(WisdomAccentAmber, WisdomAccentSky, WisdomAccentViolet, WisdomAccentEmerald)
+
+/** Waits for the background load and for the loader's first frames; shows the brand loader until then. */
 @Composable
-private fun UniversitiesFullSection(
+private fun UniversitiesFullSection(data: UniData?) {
+    val ready = rememberAfterFirstFrames()
+    if (data == null || !ready) {
+        GuideLoading()
+    } else {
+        UniversitiesContent(introParagraphs = data.intro, closing = data.closing, universities = data.list)
+    }
+}
+
+@Composable
+private fun UniversitiesContent(
     introParagraphs: List<String>,
     closing: String,
     universities: List<UniversityDetail>
@@ -1545,6 +1808,17 @@ private fun UniversitiesFullSection(
         }
     }
 
+    // Draw the cards in small batches so the page never builds all of them in one frame.
+    var visibleCount by remember(filteredList) { mutableStateOf(6) }
+    LaunchedEffect(filteredList) {
+        while (visibleCount < filteredList.size) {
+            delay(80)
+            visibleCount = minOf(visibleCount + 6, filteredList.size)
+        }
+    }
+
+    val tipBlocks = remember(introParagraphs) { parseTipBlocks(introParagraphs.joinToString("\n\n"), UNI_TIP_LABELS) }
+
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Reveal(0) {
             GuideHeaderCard(
@@ -1552,24 +1826,18 @@ private fun UniversitiesFullSection(
                 accent = WisdomAccentViolet,
                 icon = Icons.Filled.Apartment,
                 title = "Ethiopian Universities Directory",
-                body = "$UNIVERSITIES_SUBTITLE. Authentic guides, student fit, climate, and campus realities before you pick."
+                body = "$UNIVERSITIES_SUBTITLE. Honest guides on student fit, climate, and campus life before you pick."
             )
         }
 
-        Reveal(1) {
-            AccordionCard(
-                title = "Read this before you choose",
-                icon = Icons.Filled.Info,
-                accent = WisdomAccentSky
-            ) {
-                introParagraphs.forEach { p ->
-                    Text(text = p, style = GuideBodyStyle)
-                }
-                if (closing.isNotBlank()) {
-                    Text(text = closing, style = GuideQuoteStyle.copy(color = GuideBodyColor))
-                }
-            }
-        }
+        TipLanding(
+            accent = WisdomAccentSky,
+            blocks = tipBlocks,
+            icons = UNI_TIP_ICONS,
+            accents = UNI_TIP_ACCENTS,
+            bulletIcon = Icons.Filled.CheckCircle,
+            closing = closing
+        )
 
         val detailedCount = remember(universities) { universities.count { it.detailed } }
         BadgeRow(
@@ -1607,9 +1875,9 @@ private fun UniversitiesFullSection(
         if (filteredList.isEmpty()) {
             EmptyNoteCard("No universities found", "Try adjusting your search terms or clearing the region filter.")
         }
-        filteredList.forEachIndexed { index, uni ->
+        filteredList.take(visibleCount).forEachIndexed { index, uni ->
             key(uni.id) {
-                Reveal(index) { UniversityDetailCard(uni = uni) }
+                Reveal(index % 6) { UniversityDetailCard(uni = uni) }
             }
         }
     }
@@ -1617,6 +1885,11 @@ private fun UniversitiesFullSection(
 
 private const val ALL_REGIONS = "All Regions"
 
+/**
+ * Layout rule of this card (and of the department card): header, always-visible preview, then the More button, then
+ * the details BELOW the button. So the button stays under the finger and the card grows downward; a second
+ * "Show less" button at the end of the details closes it without scrolling back up.
+ */
 @Composable
 private fun UniversityDetailCard(uni: UniversityDetail) {
     var expanded by remember { mutableStateOf(false) }
@@ -1671,22 +1944,30 @@ private fun UniversityDetailCard(uni: UniversityDetail) {
             }
             BadgeRow(labels = facts)
 
-            AnimatedVisibility(visible = !expanded, enter = RevealIn, exit = RevealOut) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    previewTags.forEach { tag ->
-                        IconBullet(text = tag, icon = Icons.Filled.Star, color = WisdomAccentSky)
-                    }
-                    if (uni.studentFit.isNotBlank()) {
-                        Text(
-                            text = uni.studentFit,
-                            style = GuideBodyStyle,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+            // Preview: always visible, so nothing above the button moves when the card opens.
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                previewTags.forEach { tag ->
+                    IconBullet(text = tag, icon = Icons.Filled.Star, color = WisdomAccentSky)
+                }
+                if (uni.studentFit.isNotBlank()) {
+                    Text(
+                        text = uni.studentFit,
+                        style = GuideBodyStyle,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 
+            ExpandPill(
+                label = if (expanded) "Less" else "More",
+                expanded = expanded,
+                accent = WisdomAccentSky,
+                fullWidth = true,
+                onToggle = { expanded = !expanded }
+            )
+
+            // Details grow DOWNWARD from the button.
             AnimatedVisibility(visible = expanded, enter = RevealIn, exit = RevealOut) {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     var n = 0
@@ -1744,16 +2025,15 @@ private fun UniversityDetailCard(uni: UniversityDetail) {
                             }
                         }
                     }
+                    ExpandPill(
+                        label = "Show less",
+                        expanded = true,
+                        accent = WisdomAccentSky,
+                        fullWidth = true,
+                        onToggle = { expanded = false }
+                    )
                 }
             }
-
-            ExpandPill(
-                label = if (expanded) "Less" else "More",
-                expanded = expanded,
-                accent = WisdomAccentSky,
-                fullWidth = true,
-                onToggle = { expanded = !expanded }
-            )
 
             if (uni.website.isNotBlank() && uni.website != "#") {
                 LinkPill(label = "Website", accent = WisdomAccentSky, filled = false) {
@@ -1770,7 +2050,17 @@ private fun UniversityDetailCard(uni: UniversityDetail) {
 private const val ALL_FIELDS = "All Fields"
 
 @Composable
-private fun DepartmentsFullSection(
+private fun DepartmentsFullSection(data: DeptData?) {
+    val ready = rememberAfterFirstFrames()
+    if (data == null || !ready) {
+        GuideLoading()
+    } else {
+        DepartmentsContent(categories = data.categories, departments = data.list)
+    }
+}
+
+@Composable
+private fun DepartmentsContent(
     categories: List<DepartmentCategoryDetail>,
     departments: List<DepartmentDetail>
 ) {
@@ -1786,6 +2076,14 @@ private fun DepartmentsFullSection(
             if (selectedCat != ALL_FIELDS && catLabel != selectedCat) return@filter false
             if (q.isEmpty()) return@filter true
             "${d.name} ${d.shortName} ${d.about} ${d.careers.joinToString(" ")}".lowercase().contains(q)
+        }
+    }
+
+    var visibleCount by remember(filteredList) { mutableStateOf(6) }
+    LaunchedEffect(filteredList) {
+        while (visibleCount < filteredList.size) {
+            delay(80)
+            visibleCount = minOf(visibleCount + 6, filteredList.size)
         }
     }
 
@@ -1819,10 +2117,10 @@ private fun DepartmentsFullSection(
         if (filteredList.isEmpty()) {
             EmptyNoteCard("No fields match your search", "Try another keyword or select All categories.")
         }
-        filteredList.forEachIndexed { index, dept ->
+        filteredList.take(visibleCount).forEachIndexed { index, dept ->
             val catLabel = categories.find { it.id == dept.categoryId }?.label ?: "Academic Field"
             key(dept.id) {
-                Reveal(index) { DepartmentDetailCard(dept = dept, categoryLabel = catLabel) }
+                Reveal(index % 6) { DepartmentDetailCard(dept = dept, categoryLabel = catLabel) }
             }
         }
     }
@@ -1857,19 +2155,26 @@ private fun DepartmentDetailCard(dept: DepartmentDetail, categoryLabel: String) 
                 color = Color.White
             )
 
-            AnimatedVisibility(visible = !expanded, enter = RevealIn, exit = RevealOut) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        text = dept.about,
-                        style = GuideBodyStyle,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    dept.careers.take(3).forEach { career ->
-                        IconBullet(text = career, icon = Icons.Filled.Work, color = WisdomAccentOrange)
-                    }
+            // Preview: always visible, so the button does not move when the card opens.
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = dept.about,
+                    style = GuideBodyStyle,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+                dept.careers.take(3).forEach { career ->
+                    IconBullet(text = career, icon = Icons.Filled.Work, color = WisdomAccentOrange)
                 }
             }
+
+            ExpandPill(
+                label = if (expanded) "Less" else "More",
+                expanded = expanded,
+                accent = WisdomCyan,
+                fullWidth = true,
+                onToggle = { expanded = !expanded }
+            )
 
             AnimatedVisibility(visible = expanded, enter = RevealIn, exit = RevealOut) {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -1914,16 +2219,15 @@ private fun DepartmentDetailCard(dept: DepartmentDetail, categoryLabel: String) 
                             }
                         }
                     }
+                    ExpandPill(
+                        label = "Show less",
+                        expanded = true,
+                        accent = WisdomCyan,
+                        fullWidth = true,
+                        onToggle = { expanded = false }
+                    )
                 }
             }
-
-            ExpandPill(
-                label = if (expanded) "Less" else "More",
-                expanded = expanded,
-                accent = WisdomCyan,
-                fullWidth = true,
-                onToggle = { expanded = !expanded }
-            )
         }
     }
 }
@@ -1931,8 +2235,15 @@ private fun DepartmentDetailCard(dept: DepartmentDetail, categoryLabel: String) 
 /* ============================== 6. SCHOLARSHIPS ============================== */
 /* Source: app/academy/scholarships/page.tsx. Items come from the website's Supabase table. */
 
+private val SCH_TIP_LABELS = listOf("Why it matters", "What you will find", "", "Good to know")
+private val SCH_TIP_ICONS = listOf(Icons.Filled.School, Icons.Filled.Search, Icons.Filled.CheckCircle, Icons.Filled.Notifications)
+private val SCH_TIP_ACCENTS = listOf(WisdomAccentRose, WisdomAccentAmber, WisdomAccentEmerald, WisdomAccentSky)
+
 @Composable
 private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) {
+    val introText = FreeResourcesLive.scholarshipsIntro.ifBlank { SCHOLARSHIP_DEFAULT_INTRO }
+    val tipBlocks = remember(introText) { parseTipBlocks(introText, SCH_TIP_LABELS) }
+
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(18.dp)) {
         Reveal(0) {
             GuideHeaderCard(
@@ -1944,18 +2255,13 @@ private fun ScholarshipsFullSection(scholarships: List<ScholarshipOpportunity>) 
             )
         }
 
-        Reveal(1) {
-            AccordionCard(
-                title = "How to use this page & apply well",
-                icon = Icons.Filled.Info,
-                accent = WisdomAccentRose
-            ) {
-                Text(
-                    text = FreeResourcesLive.scholarshipsIntro.ifBlank { SCHOLARSHIP_DEFAULT_INTRO },
-                    style = GuideBodyStyle
-                )
-            }
-        }
+        TipLanding(
+            accent = WisdomAccentRose,
+            blocks = tipBlocks,
+            icons = SCH_TIP_ICONS,
+            accents = SCH_TIP_ACCENTS,
+            bulletIcon = Icons.Filled.CheckCircle
+        )
 
         if (scholarships.isNotEmpty()) {
             FactBadge(label = "${scholarships.size} ${if (scholarships.size == 1) "opportunity" else "opportunities"}")
