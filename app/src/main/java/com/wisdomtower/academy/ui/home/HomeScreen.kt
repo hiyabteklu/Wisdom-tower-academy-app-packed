@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,6 +48,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -314,6 +316,7 @@ fun HomeScreen(
  *  - signed out: "New here? Create a free account" on the left, "Sign in" button on the right;
  *  - signed in: "Welcome back, <name>" on the left, "My Learning" button on the right.
  * M11 slice 6: the line fades up first (wisdomReveal, index 0).
+ * S3 part 2: "Create a free account" is a button for TalkBack with a 48 dp touch target.
  */
 @Composable
 private fun HeroSection(
@@ -378,7 +381,9 @@ private fun HeroSection(
                     color = WisdomCyan,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable(onClick = onSignUp)
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .clickable(role = Role.Button, onClick = onSignUp)
                 )
             }
             WisdomSecondaryButton(
@@ -403,6 +408,8 @@ private fun HeroSection(
  * "Other resources" tile (2026-10-14, iOS style): big rounded glass tile tinted with the guide's colour, a round icon,
  * a heavy 18 sp title (two lines reserved so both tiles of a row are equally tall), and a round arrow. It rises in
  * softly when it first appears and presses in like the login button. Titles are the website's, unchanged.
+ * S3 part 2: the tile is ONE button for TalkBack (role Button); the icons are decorative, so it is read as
+ * "<title>, button".
  */
 @Composable
 private fun ResourceTile(
@@ -442,7 +449,12 @@ private fun ResourceTile(
             .clip(shape)
             .background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.18f), WisdomGlassFill)))
             .border(BorderStroke(1.dp, accent.copy(alpha = 0.4f)), shape)
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                role = Role.Button,
+                onClick = onClick
+            )
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
