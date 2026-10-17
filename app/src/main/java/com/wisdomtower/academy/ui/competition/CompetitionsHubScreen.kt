@@ -45,6 +45,7 @@ import com.wisdomtower.academy.data.competition.CountdownKind
 import com.wisdomtower.academy.data.competition.SubmitResult
 import com.wisdomtower.academy.ui.study.ScreenBackButton
 import com.wisdomtower.academy.ui.theme.WisdomGlassCard
+import com.wisdomtower.academy.ui.theme.WisdomMessageCard
 import com.wisdomtower.academy.ui.theme.wisdomReveal
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -244,10 +245,10 @@ fun CompetitionsHubScreen(
                 CircularProgressIndicator(color = CyanAccent, strokeWidth = 3.dp)
             } else if (contests.isEmpty()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) { // UX-CONSISTENCY-2026-10-17
-                    Text(
-                        text = errorText ?: "No competitions right now.",
-                        color = MutedText,
-                        fontSize = 14.sp
+                    WisdomMessageCard( // S6-msgcard-comp
+                        message = errorText ?: "No competitions right now.",
+                        isError = errorText != null,
+                        onRetry = errorText?.let { { reloadKey += 1 } }
                     )
                     com.wisdomtower.academy.ui.auth.SignedOutSignInPill(topPadding = 14.dp)
                 }
