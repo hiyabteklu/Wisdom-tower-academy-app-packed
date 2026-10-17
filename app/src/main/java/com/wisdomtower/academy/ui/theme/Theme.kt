@@ -107,7 +107,7 @@ fun MyApplicationTheme(
   CompositionLocalProvider(LocalDensity provides liftedDensity) {
     MaterialTheme(colorScheme = colorScheme, typography = Typography) {
       Box(
-        modifier = Modifier.fillMaxSize().background(WisdomNavy),
+        modifier = Modifier.fillMaxSize().appBackdrop(),
         contentAlignment = Alignment.TopCenter
       ) { // S8-width-cap
         Box(modifier = Modifier.widthIn(max = APP_CONTENT_MAX_WIDTH).fillMaxWidth().fillMaxHeight()) {

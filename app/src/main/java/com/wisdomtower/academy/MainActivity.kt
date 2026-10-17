@@ -73,6 +73,7 @@ import com.wisdomtower.academy.ui.drawer.FaqScreen
 import com.wisdomtower.academy.ui.drawer.PrivacyScreen
 import com.wisdomtower.academy.ui.drawer.TermsScreen
 import com.wisdomtower.academy.ui.theme.WisdomNavy
+import com.wisdomtower.academy.ui.theme.appBackdrop
 import com.wisdomtower.academy.ui.theme.WisdomTabLayer
 import com.wisdomtower.academy.data.auth.AuthStateManager
 import com.wisdomtower.academy.ui.notifications.NotificationsScreen
@@ -311,7 +312,7 @@ private const val SOFT_NAV_JS =
 
 private const val CRITICAL_CHROME_STYLE =
     "<style id=\"wta-critical-hide\">" +
-    "html,body{background-color:#060B15!important;color-scheme:dark!important;}" +
+    "html,body{background-color:transparent!important;color-scheme:dark!important;}" +
     "header:not([data-ai-tutor-header]),header:not([data-ai-tutor-header]).fixed.top-0,header:not([data-ai-tutor-header])[data-site-header],.site-header,[data-site-header],[role=\"banner\"]:not([data-ai-tutor-header])," +
     "nav[aria-label=\"Main\"],nav.hidden.md\\:flex,.site-nav,.site-navigation,[data-site-nav]," +
     "body > footer,footer.site-footer,[data-site-footer],[role=\"contentinfo\"],footer:not([data-ai-tutor-root] footer)," +
@@ -333,16 +334,16 @@ private const val EARLY_HIDE_CHROME_JS =
         "if(document.documentElement){" +
             "document.documentElement.classList.add('wta-native-app','wta-app-mode');" +
             "document.documentElement.setAttribute('data-wta-app','1');" +
-            "document.documentElement.style.backgroundColor='#060B15';" +
+            "document.documentElement.style.backgroundColor='transparent';" +
         "}" +
         "if(document.body){" +
             "document.body.classList.add('wta-native-app','wta-app-mode');" +
             "document.body.setAttribute('data-wta-app','1');" +
-            "document.body.style.backgroundColor='#060B15';" +
+            "document.body.style.backgroundColor='transparent';" +
         "}" +
         "var id='wta-app-chrome';var s=document.getElementById(id);" +
         "if(!s){s=document.createElement('style');s.id=id;var head=document.head||document.documentElement;if(head){head.insertBefore(s,head.firstChild);}}" +
-        "s.textContent='html,body{background-color:#060B15!important;color-scheme:dark!important;}header:not([data-ai-tutor-header]),header:not([data-ai-tutor-header]).fixed.top-0,header:not([data-ai-tutor-header])[data-site-header],body > footer,footer.site-footer,[data-site-footer],.site-header,.site-footer,footer:not([data-ai-tutor-root] footer)," +
+        "s.textContent='html,body{background-color:transparent!important;color-scheme:dark!important;}header:not([data-ai-tutor-header]),header:not([data-ai-tutor-header]).fixed.top-0,header:not([data-ai-tutor-header])[data-site-header],body > footer,footer.site-footer,[data-site-footer],.site-header,.site-footer,footer:not([data-ai-tutor-root] footer)," +
         "nav[aria-label=\"Main\"],nav.hidden.md\\\\:flex,.site-nav,.site-navigation,[data-site-nav],[role=\"banner\"]:not([data-ai-tutor-header]),[role=\"contentinfo\"]," +
         ".hide-on-app,.app-hidden,[data-hide-on-app],[data-hide-app],.web-only,[data-web-only]," +
         "#nprogress,.nprogress,#nprogress .bar,[data-nprogress],#nextjs-toploader,.nextjs-toploader," +
@@ -363,7 +364,7 @@ private const val NATIVE_CHROME_JS =
         "if(document.body){document.body.classList.add('wta-native-app');}" +
         "var id='wta-app-chrome';var s=document.getElementById(id);" +
         "if(!s){s=document.createElement('style');s.id=id;var head=document.head||document.documentElement;if(head){head.insertBefore(s,head.firstChild);}}" +
-        "s.textContent='html,body{background-color:#060B15!important;color-scheme:dark!important;}' +" +
+        "s.textContent='html,body{background-color:transparent!important;color-scheme:dark!important;}' +" +
         "'header:not([data-ai-tutor-header]),header:not([data-ai-tutor-header]).fixed.top-0,header:not([data-ai-tutor-header])[data-site-header],body > footer,footer.site-footer,[data-site-footer],.site-header,.site-footer,footer:not([data-ai-tutor-root] footer),' +" +
         "'nav[aria-label=\"Main\"],nav.hidden.md\\\\:flex,.site-nav,.site-navigation,[data-site-nav],[role=\"banner\"]:not([data-ai-tutor-header]),[role=\"contentinfo\"],' +" +
         "'.hide-on-app,.app-hidden,[data-hide-on-app],[data-hide-app],.web-only,[data-web-only],' +" +
@@ -1991,7 +1992,7 @@ fun MainScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BarBg)
+            .appBackdrop()
     ) {
         com.wisdomtower.academy.ui.theme.AtmosphereBackground(modifier = Modifier.fillMaxSize())
         Scaffold(
@@ -2225,7 +2226,7 @@ fun MainScreen(
                 AndroidView(
                     factory = { ctx ->
                         WebView(ctx).apply {
-                            setBackgroundColor(AndroidColor.parseColor("#060B15"))
+                            setBackgroundColor(AndroidColor.TRANSPARENT)
                             setLayerType(View.LAYER_TYPE_HARDWARE, null)
                             layoutParams = ViewGroup.LayoutParams(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -3214,7 +3215,7 @@ fun MainScreen(
                     HomeScreen(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(WisdomNavy)
+                            .appBackdrop()
                             .zIndex(10f),
                         isLoggedIn = isLoggedIn,
                         userName = currentProfile?.fullName ?: currentUser?.fullName,
@@ -3227,7 +3228,7 @@ fun MainScreen(
                     LearningScreen(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(WisdomNavy)
+                            .appBackdrop()
                             .zIndex(10f),
                         isLoggedIn = isLoggedIn,
                         userProfile = currentProfile,
@@ -3278,14 +3279,14 @@ fun MainScreen(
                             isLoggedIn = isLoggedIn,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(10f)
                         )
                     } else {
                         PackagesScreen(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(10f),
                             packageList = catalogPackages,
                             onSelectPackage = { pkg ->
@@ -3317,7 +3318,7 @@ fun MainScreen(
                         },
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(WisdomNavy)
+                            .appBackdrop()
                             .zIndex(18f)
                     )
                 }
@@ -3327,7 +3328,7 @@ fun MainScreen(
                     AccountScreen(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(WisdomNavy)
+                            .appBackdrop()
                             .zIndex(10f),
                         isLoggedIn = isLoggedIn,
                         userName = currentProfile?.fullName ?: currentUser?.fullName,
@@ -3345,7 +3346,7 @@ fun MainScreen(
                     SettingsScreen(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(WisdomNavy)
+                            .appBackdrop()
                             .zIndex(10f),
                         onNavigateToUrl = handleGlobalNav
                     )
@@ -3358,7 +3359,7 @@ fun MainScreen(
                         onBack = { activeGuideSlug = null },
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(WisdomNavy)
+                            .appBackdrop()
                             .zIndex(15f)
                     )
                 }
@@ -3369,7 +3370,7 @@ fun MainScreen(
                         onBack = { showCompetitions = false },
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(WisdomNavy)
+                            .appBackdrop()
                             .zIndex(17f)
                     )
                 }
@@ -3386,7 +3387,7 @@ fun MainScreen(
                         },
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(WisdomNavy)
+                            .appBackdrop()
                             .zIndex(18f)
                     )
                 }
@@ -3404,7 +3405,7 @@ fun MainScreen(
                         },
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(WisdomNavy)
+                            .appBackdrop()
                             .zIndex(17f)
                     )
                 }
@@ -3421,35 +3422,35 @@ fun MainScreen(
                             onBack = { activeDrawerScreen = null },
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(25f)
                         )
                         "contact" -> ContactScreen(
                             onBack = { activeDrawerScreen = null },
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(25f)
                         )
                         "faq" -> FaqScreen(
                             onBack = { activeDrawerScreen = null },
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(25f)
                         )
                         "privacy" -> PrivacyScreen(
                             onBack = { activeDrawerScreen = null },
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(25f)
                         )
                         "terms" -> TermsScreen(
                             onBack = { activeDrawerScreen = null },
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(25f)
                         )
                     }
@@ -3466,42 +3467,42 @@ fun MainScreen(
                             courseContext = activeWorkspace?.first,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(120f)
                         )
                         "calculator" -> NativeCalculatorScreen(
                             onBack = { activeStudyTool = null },
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(120f)
                         )
                         "timer" -> NativeTimerScreen(
                             onBack = { activeStudyTool = null },
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(120f)
                         )
                         "planner" -> NativePlannerScreen(
                             onBack = { activeStudyTool = null },
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(120f)
                         )
                         "notes" -> NativeNotebookScreen(
                             onBack = { activeStudyTool = null },
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(120f)
                         )
                         "targets" -> NativeTargetsScreen(
                             onBack = { activeStudyTool = null },
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(120f)
                         )
                         "status" -> NativeStatusScreen(
@@ -3513,7 +3514,7 @@ fun MainScreen(
                             dailyGoalMinutes = currentProfile?.dailyStudyGoalMinutes?.takeIf { it > 0 } ?: 45,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(WisdomNavy)
+                                .appBackdrop()
                                 .zIndex(120f)
                         )
                     }
@@ -3572,7 +3573,7 @@ fun MainScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF060B15))
+                    .appBackdrop()
                     .imePadding()
             ) {
                 // Dedicated Thin Native Header Bar with Back / Title / Done button
@@ -3652,13 +3653,13 @@ fun MainScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .background(Color(0xFF060B15))
+                        .appBackdrop()
                 ) {
                     activeToolOverlayUrl?.let { toolUrl ->
                         AndroidView(
                             factory = { ctx ->
                                 WebView(ctx).apply {
-                                    setBackgroundColor(AndroidColor.parseColor("#060B15"))
+                                    setBackgroundColor(AndroidColor.TRANSPARENT)
                                     setLayerType(View.LAYER_TYPE_HARDWARE, null)
                                     layoutParams = ViewGroup.LayoutParams(
                                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -3953,7 +3954,7 @@ fun MainScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color(0xFF060B15)),
+                                .appBackdrop(),
                             contentAlignment = Alignment.Center
                         ) {
                             CustomCenteredLoader()

@@ -63,7 +63,7 @@ fun WisdomTabLayer(
             modifier = Modifier
                 .fillMaxSize()
                 .zIndex(if (wanted) 11f else 10f)
-                .background(WisdomNavy)
+                .appBackdrop()
         ) {
             Box(
                 modifier = Modifier
