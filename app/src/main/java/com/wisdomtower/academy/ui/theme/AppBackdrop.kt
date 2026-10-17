@@ -16,6 +16,14 @@ import androidx.compose.ui.graphics.Color
  * [clearPageBackground] also installs a small script that turns every dark navy panel, card, bar, button and strip
  * of the page into see-through glass (see [GLASS_JS]), so no page file needs its own edit and new pages are covered
  * automatically. Accent colours (green, orange, cyan, red) and inline highlights are left alone.
+ *
+ * Slice BG-BLINK (2026-10-17, owner: "it blinks the solid color on every click"): hypothesis for the cause, two parts.
+ * (a) The script re-ran 120 ms AFTER a class change, so a new or changed panel was painted solid for that time.
+ * (b) A page with a CSS background transition: after the old glass was lifted to measure the real colour, the
+ * measured value was the start of a transition (so nothing was recognised) and, after glass was set again, the
+ * panel faded from solid to glass. Fix: the script now runs INSIDE the mutation callback (before the next paint) and
+ * finishes background-colour / background-image transitions straight away, before measuring and after applying.
+ * Glass strength raised from 5 to 8 percent (owner: glass is too faint on the textured background).
  */
 object AppBackdrop {
     /** The plain page colour of the chosen option. Reading it in a composable follows the choice live. */
@@ -30,21 +38,24 @@ object AppBackdrop {
 
     /**
      * Turns every OPAQUE DARK-BLUE background (computed colour, blue is the strongest channel and nothing above 110,
-     * so black, navy and ink-blue; not green, red, orange or cyan) of a block element into white 5 percent glass, and a
+     * so black, navy and ink-blue; not green, red, orange or cyan) of a block element into white 8 percent glass, and a
      * navy-only gradient into the same glass. A full-screen wrapper becomes transparent instead. Inline elements
-     * (highlights, code chips) are skipped. It re-runs (debounced) whenever a class changes or nodes are added, so
-     * selected / correct / wrong states keep working: the old inline value is restored before every pass.
+     * (highlights, code chips) are skipped. It re-runs (inside the mutation callback, so before the next paint)
+     * whenever a class changes or nodes are added, so selected / correct / wrong states keep working: the old inline
+     * value is restored before every pass. Background transitions are finished at once so no solid colour fades in.
      * Light (day) pages have no dark-blue fills, so nothing changes there.
      * No dollar sign and no triple quote may appear in this script (Kotlin raw string).
      */
     private const val GLASS_JS = """
 (function(){
  if(window.__wtGlass){window.__wtGlass.run();return;}
- var KEY='data-wtg',GLASS='rgba(255,255,255,0.05)',timer=null,busy=false;
+ var KEY='data-wtg',GLASS='rgba(255,255,255,0.08)',timer=null,busy=false;
  function parse(s){var m=s&&s.match(/rgba?\(([^)]+)\)/);if(!m)return null;
   var p=m[1].split(/[ ,\/]+/).filter(Boolean).map(parseFloat);
   return {r:p[0],g:p[1],b:p[2],a:(p.length>3&&!isNaN(p[3]))?p[3]:1};}
  function navy(c){return !!c&&c.a>=0.6&&c.b>=c.g&&c.b>=c.r&&Math.max(c.r,c.g,c.b)<=110;}
+ function settle(){try{var a=document.getAnimations(),i,t;
+  for(i=0;i<a.length;i++){t=a[i].transitionProperty;if(t&&t.indexOf('background')===0)a[i].finish();}}catch(err){}}
  function restore(e){var o=e.__wtOrig;
   if(o){e.style.removeProperty('background-color');e.style.removeProperty('background-image');
    if(o.c)e.style.setProperty('background-color',o.c,o.cp);
@@ -57,6 +68,7 @@ object AppBackdrop {
    if(els.length>4000){busy=false;return;}
    var i,e,cs,bc,bi,r,jobs=[];
    for(i=0;i<els.length;i++){if(els[i].hasAttribute(KEY))restore(els[i]);}
+   settle();
    var W=window.innerWidth,H=window.innerHeight;
    for(i=0;i<els.length;i++){
     e=els[i];var tg=e.tagName;
@@ -81,9 +93,10 @@ object AppBackdrop {
     if(jobs[i][1]===2||jobs[i][2])e.style.setProperty('background-image','none','important');
     e.setAttribute(KEY,'1');
    }
+   settle();
   }catch(err){}
   busy=false;}
- function sched(){clearTimeout(timer);timer=setTimeout(run,120);}
+ function sched(){run();clearTimeout(timer);timer=setTimeout(run,150);}
  try{new MutationObserver(sched).observe(document.documentElement,
   {childList:true,subtree:true,attributes:true,attributeFilter:['class']});}catch(err){}
  window.__wtGlass={run:run};
