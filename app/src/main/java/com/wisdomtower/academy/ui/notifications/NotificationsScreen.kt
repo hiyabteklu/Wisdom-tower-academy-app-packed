@@ -53,6 +53,7 @@ import com.wisdomtower.academy.data.auth.AuthStateManager
 import com.wisdomtower.academy.data.model.NativeNotificationItem
 import com.wisdomtower.academy.data.model.NotificationCategory
 import com.wisdomtower.academy.data.repository.NotificationRepository
+import com.wisdomtower.academy.ui.auth.SignInPill
 import com.wisdomtower.academy.ui.theme.WisdomAccentSky
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
@@ -285,15 +286,7 @@ fun NotificationsScreen(
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = 4.dp, bottom = 14.dp)
                         )
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(WisdomAccentSky)
-                                .clickable { onSignIn() }
-                                .padding(horizontal = 20.dp, vertical = 9.dp)
-                        ) {
-                            Text("Sign In to Account", color = WisdomDarkOnCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
+                        SignInPill(label = "Sign In to Account", onClick = onSignIn) // S5-signin
                     }
                     Spacer(Modifier.height(20.dp))
                 }
