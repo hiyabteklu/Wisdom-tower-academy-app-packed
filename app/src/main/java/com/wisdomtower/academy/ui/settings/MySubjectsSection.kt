@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -30,6 +31,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,6 +58,9 @@ import com.wisdomtower.academy.ui.theme.WisdomMuted
  * Quick-fill pills for Freshman only PRE-SELECT subjects from the website's own lists; the student can always edit.
  * No number of subjects is claimed.
  *
+ * TalkBack (S3 part 3b, 2026-10-17): header is a button with spoken "Expanded" / "Collapsed"; package and subject
+ * pills are checkboxes (on / off); quick-fill pills and "Clear" are buttons. Look and logic unchanged.
+ *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -73,7 +81,8 @@ fun MySubjectsSection() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded }
+                    .semantics { stateDescription = if (expanded) "Expanded" else "Collapsed" }
+                    .clickable(role = Role.Button) { expanded = !expanded }
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -195,7 +204,8 @@ private fun PackagePicker(pkg: MySubjectsPackage, picks: Set<String>, onChange: 
                 fontSize = 11.5.sp,
                 color = WisdomCyan,
                 modifier = Modifier
-                    .clickable { onChange(picks - packageKeys) }
+                    .semantics { contentDescription = "Clear " + pkg.label }
+                    .clickable(role = Role.Button) { onChange(picks - packageKeys) }
                     .padding(8.dp)
             )
         }
@@ -239,6 +249,12 @@ private fun PackagePicker(pkg: MySubjectsPackage, picks: Set<String>, onChange: 
 @Composable
 private fun SubjectPill(text: String, selected: Boolean, outlined: Boolean = false, onClick: () -> Unit) {
     val shape = RoundedCornerShape(50)
+    // Quick-fill pills (outlined) do an action, so they are buttons. The others switch on and off, so they are checkboxes.
+    val tapModifier = if (outlined) {
+        Modifier.clickable(role = Role.Button, onClick = onClick)
+    } else {
+        Modifier.toggleable(value = selected, role = Role.Checkbox, onValueChange = { onClick() })
+    }
     Box(
         modifier = Modifier
             .clip(shape)
@@ -253,7 +269,7 @@ private fun SubjectPill(text: String, selected: Boolean, outlined: Boolean = fal
                 BorderStroke(1.dp, if (selected) Color.White else if (outlined) WisdomCyan.copy(alpha = 0.4f) else WisdomBorderWhite),
                 shape
             )
-            .clickable(onClick = onClick)
+            .then(tapModifier)
             .padding(horizontal = 12.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center
     ) {

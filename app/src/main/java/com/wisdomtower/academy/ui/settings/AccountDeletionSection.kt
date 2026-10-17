@@ -37,6 +37,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +59,8 @@ import kotlinx.coroutines.launch
  * The student must type DELETE; the call goes to the website route through [AccountDeletionClient];
  * on success this phone is signed out and the Settings values stored on the phone are cleared.
  * M11 slice 7: the confirmation dialog scales in and fades (wisdomDialogEnter, 200 ms); closing is the platform's instant dismiss.
+ * TalkBack (S3 part 3b, 2026-10-17): the "Delete my account" row is a button and the dialog's error line is announced
+ * when it appears. Texts, look and logic unchanged.
  * NOT compiled, NOT tested on a phone.
  */
 @Composable
@@ -91,7 +97,7 @@ fun AccountDeletionSection(settingsPrefs: SharedPreferences) {
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
                 .border(BorderStroke(1.dp, WisdomAccentRose.copy(alpha = 0.6f)), RoundedCornerShape(12.dp))
-                .clickable {
+                .clickable(role = Role.Button) {
                     typed = ""
                     error = null
                     showDialog = true
@@ -144,7 +150,13 @@ fun AccountDeletionSection(settingsPrefs: SharedPreferences) {
                         )
                     )
                     if (error != null) {
-                        Text(text = error.orEmpty(), fontSize = 11.5.sp, color = WisdomAccentRose, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            text = error.orEmpty(),
+                            fontSize = 11.5.sp,
+                            color = WisdomAccentRose,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+                        )
                     }
                 }
             },
