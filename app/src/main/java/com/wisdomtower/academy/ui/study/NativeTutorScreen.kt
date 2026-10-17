@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.os.SystemClock
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
@@ -13,7 +12,6 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -64,11 +62,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -85,6 +80,7 @@ import com.wisdomtower.academy.data.content.TutorEvent
 import com.wisdomtower.academy.data.content.TutorMessage
 import com.wisdomtower.academy.data.content.TutorSession
 import com.wisdomtower.academy.data.content.TutorSessionStore
+import com.wisdomtower.academy.ui.theme.AppBackdrop
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
 import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomCyan
@@ -138,8 +134,8 @@ private class TutorStreamHolder {
  * C10 (owner decision 2026-10-15): while a RANKED competition exam is open (ExamLockdown.active) this screen draws
  * nothing, shows a short notice and calls onBack. The calculator is a different screen and is never blocked.
  *
- * Custom background (owner request 2026-10-16): if `assets/backgrounds/tutor_bg.jpg` exists it is drawn full screen
- * with a dark scrim, the chat WebView is see-through and `tutor.html` gets the class `bgimg`.
+ * Background (plan B1, owner request 2026-10-17): the picture that was added on 2026-10-16 is gone. The screen draws the
+ * shared solid app colour ([AtmosphereBackground]) and the chat WebView uses the same colour ([AppBackdrop]).
  *
  * FULL-SCREEN LAYOUT (owner request 2026-10-17: "double header and footers make the usable screen small"): there is no
  * toolbar row and no composer row any more. The chat page fills the whole area; the controls float on top of it:
@@ -175,9 +171,6 @@ fun NativeTutorScreen(
     val context = LocalContext.current
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
-
-    // Optional custom background picture (null when assets/backgrounds/tutor_bg.jpg is not there).
-    val backdrop = remember { loadTutorBackdrop(context) }
 
     val initial = remember {
         TutorSessionStore.load(context) ?: TutorSessionStore.newSession().let { listOf(it) to it.id }
@@ -446,27 +439,11 @@ fun NativeTutorScreen(
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
 
-        // Optional custom picture + dark scrim (keeps the text readable), drawn behind everything else.
-        if (backdrop != null) {
-            Image(
-                bitmap = backdrop,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(listOf(Color(0x66050A14), Color(0x99050A14))))
-            )
-        }
-
         // Chat page fills everything; the controls float on top of it.
         Box(modifier = Modifier.fillMaxSize().imePadding()) {
             TutorWebView(
                 bridge = bridge,
                 webRef = webRef,
-                transparent = backdrop != null,
                 onReady = { pageReady = true },
                 onGone = { pageReady = false },
                 modifier = Modifier.fillMaxSize()
@@ -683,18 +660,6 @@ private fun MenuIcon(icon: ImageVector, description: String, tint: Color = Color
     }
 }
 
-/**
- * Reads `assets/backgrounds/tutor_bg.jpg` once. Returns null when the file is missing or cannot be decoded, so the
- * screen keeps its normal look. No R.drawable reference on purpose: the build stays green whether or not the picture
- * has been added to the repository yet.
- */
-private fun loadTutorBackdrop(context: Context): ImageBitmap? =
-    try {
-        context.assets.open("backgrounds/tutor_bg.jpg").use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
-    } catch (e: Exception) {
-        null
-    }
-
 /** Receives the messages of `notes/tutor.html` (`window.WTBridge.*`), on a WebView thread. */
 private class TutorBridge(
     private val onSend: (String) -> Unit,
@@ -716,7 +681,6 @@ private class TutorBridge(
 private fun TutorWebView(
     bridge: Any,
     webRef: Array<WebView?>,
-    transparent: Boolean,
     onReady: () -> Unit,
     onGone: () -> Unit,
     modifier: Modifier
@@ -725,8 +689,7 @@ private fun TutorWebView(
         modifier = modifier,
         factory = { ctx ->
             WebView(ctx).apply {
-                // See-through when a custom background picture is drawn behind the page (class "bgimg" below).
-                setBackgroundColor(if (transparent) android.graphics.Color.TRANSPARENT else 0xFF0A101D.toInt())
+                setBackgroundColor(AppBackdrop.webViewColor(ctx))
                 settings.javaScriptEnabled = true
                 settings.allowFileAccess = true
                 settings.blockNetworkLoads = true
@@ -734,9 +697,7 @@ private fun TutorWebView(
                 addJavascriptInterface(bridge, "WTBridge")
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String?) {
-                        if (transparent) {
-                            view.evaluateJavascript("document.documentElement.classList.add('bgimg');", null)
-                        }
+                        AppBackdrop.clearPageBackground(view)
                         onReady()
                     }
 

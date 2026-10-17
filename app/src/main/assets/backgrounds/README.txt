@@ -1,6 +1,4 @@
-Default background of the whole app: tutor_bg.jpg (this folder, app/src/main/assets/backgrounds/).
-Every screen and the app shell draw it through AtmosphereBackground (ui/theme/WisdomComponents.kt) with a dark scrim
-so text stays readable; the local pages (notes, flashcards, quiz, competition exam and review) are see-through
-(ui/theme/AppBackdrop.kt). The AI Tutor screen used it first.
-If the file is missing, every screen keeps the old dark look with the two soft glow orbs.
-Tip: use an already soft/blurred, dark picture, portrait, about 1080 px wide, under 300 KB (the current one is larger).
+The picture tutor_bg.jpg in this folder is NO LONGER USED by the app (owner request 2026-10-17: it looked cluttered).
+Every screen now uses one clean solid colour (ui/theme/AppBackdrop.kt, drawn by AtmosphereBackground).
+See docs/PLAN_SOLID_BACKGROUND_OPTIONS.md (5 colour options and a Settings picker are planned).
+The file stays in the repository until the owner says it may be deleted.

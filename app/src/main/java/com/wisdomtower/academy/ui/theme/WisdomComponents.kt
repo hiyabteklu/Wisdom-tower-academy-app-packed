@@ -3,7 +3,6 @@ package com.wisdomtower.academy.ui.theme
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,14 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -228,91 +220,21 @@ fun WisdomOpenButton(
     }
 }
 
-/** Dark tint over the app picture (same values the AI Tutor used since 2026-10-16): top 40 percent, bottom 60 percent. */
-private val BackdropScrimTop = Color(0x66050A14)
-private val BackdropScrimBottom = Color(0x99050A14)
-
 /**
- * The app background that every screen and the app shell draw.
+ * The app background that every screen and the app shell draw: ONE clean solid colour ([AppBackdrop.color], Midnight
+ * #0A101D by default).
  *
- * DEFAULT PICTURE (owner request 2026-10-17): when `assets/backgrounds/tutor_bg.jpg` exists (see [AppBackdrop]) it is drawn
- * full screen (crop) with a dark vertical scrim so the text stays readable, on EVERY screen. The AI Tutor used the same
- * picture alone before. When the picture is missing, the original look below is used unchanged.
- *
- * ORIGINAL LOOK: two soft glow orbs (cyan top-left, purple middle-right) on the dark page colour.
- *
- * GLASS area 7 (2026-10-13, docs/GLASS_PLAN.md): the orbs are now drawn with radial gradients that fade to fully
- * transparent at their own edge. Before, each orb was a solid circle with `Modifier.blur(...)`: the blur is cut at the
- * square box of the circle (hard rectangle edges, seen in the owner's screenshots) and does nothing on Android 11 and
- * older (hard circle). Gradients look the same on every phone and are cheaper than a blur on every screen.
- * Same colours, same centres (cyan at 130dp / 70dp, purple at 280dp / 240dp from the top-left corner) and about the
- * same strength as the old blurred look. Hypothesis: the strength may need a small tweak after the owner sees it.
+ * B1 (2026-10-17, docs/PLAN_SOLID_BACKGROUND_OPTIONS.md, owner request): the picture and the two soft glow orbs are gone
+ * (the owner found them cluttered). A flat dark navy gives the see-through glass cards a clean base. Plan B2 will let
+ * the student choose between 5 colours in Settings; only [AppBackdrop] changes for that.
  */
 @Composable
 fun AtmosphereBackground(
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val picture = remember { AppBackdrop.get(context) }
-    if (picture != null) {
-        Box(
-            modifier = modifier
-                .background(WisdomBackground)
-                .clipToBounds()
-        ) {
-            Image(
-                bitmap = picture,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(listOf(BackdropScrimTop, BackdropScrimBottom)))
-            )
-        }
-    } else {
-        Box(
-            modifier = modifier
-                .background(WisdomBackground)
-                .clipToBounds()
-                .drawBehind {
-                    // Orb 1: cyan glow top
-                    drawGlowOrb(
-                        color = WisdomCyan,
-                        peakAlpha = 0.11f,
-                        center = Offset(130.dp.toPx(), 70.dp.toPx()),
-                        radius = 220.dp.toPx()
-                    )
-                    // Orb 2: purple glow middle right
-                    drawGlowOrb(
-                        color = WisdomAccentPurple,
-                        peakAlpha = 0.08f,
-                        center = Offset(280.dp.toPx(), 240.dp.toPx()),
-                        radius = 190.dp.toPx()
-                    )
-                }
-        )
-    }
-}
-
-/** One soft glow: strongest in the centre, smooth bell-shaped fall-off, exactly transparent at [radius]. */
-private fun DrawScope.drawGlowOrb(color: Color, peakAlpha: Float, center: Offset, radius: Float) {
-    drawCircle(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                color.copy(alpha = peakAlpha),
-                color.copy(alpha = peakAlpha * 0.91f),
-                color.copy(alpha = peakAlpha * 0.68f),
-                color.copy(alpha = peakAlpha * 0.42f),
-                color.copy(alpha = peakAlpha * 0.21f),
-                color.copy(alpha = 0f)
-            ),
-            center = center,
-            radius = radius
-        ),
-        radius = radius,
-        center = center
+    Box(
+        modifier = modifier
+            .background(AppBackdrop.color)
+            .clipToBounds()
     )
 }
