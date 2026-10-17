@@ -221,12 +221,13 @@ fun WisdomOpenButton(
 }
 
 /**
- * The app background that every screen and the app shell draw: ONE clean solid colour ([AppBackdrop.color], Midnight
- * #0A101D by default).
+ * The app background that every screen and the app shell draw: the background the student chose in Settings
+ * (ui/theme/AppBackground.kt): slightly blue, black, or a smooth space look made of soft glows. Midnight (blue) is the
+ * default.
  *
- * B1 (2026-10-17, docs/PLAN_SOLID_BACKGROUND_OPTIONS.md, owner request): the picture and the two soft glow orbs are gone
- * (the owner found them cluttered). A flat dark navy gives the see-through glass cards a clean base. Plan B2 will let
- * the student choose between 5 colours in Settings; only [AppBackdrop] changes for that.
+ * 2026-10-17 rework: the five options were all nearly the same flat navy, so the owner asked for real differences. There
+ * is still no picture file and no dots or stars; the look is drawn from soft, low-opacity glows ([appBackdrop]), and it
+ * redraws at once when the choice changes.
  */
 @Composable
 fun AtmosphereBackground(
@@ -234,7 +235,7 @@ fun AtmosphereBackground(
 ) {
     Box(
         modifier = modifier
-            .background(AppBackdrop.color)
+            .appBackdrop()
             .clipToBounds()
     )
 }

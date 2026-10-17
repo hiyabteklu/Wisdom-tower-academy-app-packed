@@ -49,12 +49,14 @@ import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomExpandable
 import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
+import com.wisdomtower.academy.ui.theme.appBackdrop
 import com.wisdomtower.academy.ui.theme.wisdomAnimatedColor
 
 /**
  * B3 "Background" card for the Settings screen (docs/PLAN_SOLID_BACKGROUND_OPTIONS.md). Five round swatches with their
- * names; the chosen one is ringed. Tapping applies the colour to the whole app at once and saves it
- * ([AppBackground.select]). Same glass card, header and smooth expand as the other Settings sections.
+ * names; each swatch is a small preview of the real look (blue, black, galaxy, nebula, dusk) and the chosen one is
+ * ringed. Tapping applies it to the whole app at once and saves it ([AppBackground.select]). Same glass card, header and
+ * smooth expand as the other Settings sections.
  *
  * Texts: only the section title and the 5 option names (the subtitle shows the chosen name). Nothing else is invented.
  * It is a separate file because SettingsScreen.kt is too big to resend; one line in SettingsScreen.kt calls it
@@ -173,7 +175,7 @@ private fun BackgroundSwatch(
     ) {
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(52.dp)
                 .border(BorderStroke(2.dp, ring), CircleShape)
                 .padding(4.dp),
             contentAlignment = Alignment.Center
@@ -182,7 +184,7 @@ private fun BackgroundSwatch(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
-                    .background(option.color)
+                    .appBackdrop(option)
                     .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)), CircleShape)
             )
         }
