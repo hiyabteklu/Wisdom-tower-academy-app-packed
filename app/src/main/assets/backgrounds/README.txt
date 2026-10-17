@@ -1,4 +1,4 @@
-The picture tutor_bg.jpg that used to be in this folder was deleted on 2026-10-17 (owner request: it looked cluttered, and the owner approved deleting it).
-Every screen uses one clean solid colour: the student picks one of 5 in Settings > Background (ui/theme/AppBackground.kt and AppBackdrop.kt, drawn by AtmosphereBackground).
-See docs/PLAN_SOLID_BACKGROUND_OPTIONS.md.
-This folder holds no pictures now. It can stay as a note or be removed later with the owner's yes.
+Background pictures. The app draws the one the student picks in Settings > Display & Theme > Background.
+The 5 options are: Dark, BG 1 (bg_1.png), BG 2 (bg_2.png), BG 3 (bg_3.png), Blue.
+To change a picture, replace its file here and keep the file name. Code: ui/theme/AppBackground.kt and AppBackdrop.kt.
+Day mode was removed on 2026-10-17 (the glass design needs a dark page).
