@@ -180,14 +180,15 @@ fun Modifier.appBackdrop(option: AppBackgroundOption? = null): Modifier = this.d
  *
  * The saved value is read once when this object is first used (the Application already exists by then), so no state is
  * written while a screen is composing.
+ *
+ * IMPORTANT (this order caused a startup crash once): properties of an `object` are set up top to bottom, so anything
+ * that [readSaved] uses must be a constant or the enum itself, never a property declared further down in this object.
  */
 object AppBackground {
     private const val PREFS_NAME = "wt_app_background_prefs"
     private const val KEY = "wt_app_background"
 
-    private var state by mutableStateOf(readSaved())
-
-    /** The 5 options in display order: Dark, BG 1, BG 2, BG 3, Blue. */
+    /** The 5 options in display order: Dark, BG 1, BG 2, BG 3, Blue. Declared BEFORE [state] on purpose. */
     val options: List<AppBackgroundOption> = listOf(
         AppBackgroundOption.Black,
         AppBackgroundOption.Photo1,
@@ -195,6 +196,8 @@ object AppBackground {
         AppBackgroundOption.Photo3,
         AppBackgroundOption.Midnight
     )
+
+    private var state by mutableStateOf(readSaved())
 
     /** The option in use now. Reading it inside a composable or a draw block makes that follow later changes. */
     val selected: AppBackgroundOption
@@ -214,6 +217,6 @@ object AppBackground {
         val default = AppBackgroundOption.Midnight
         val app = runCatching { WisdomTowerApplication.instance }.getOrNull() ?: return default
         val name = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY, null)
-        return options.firstOrNull { it.name == name } ?: default
+        return AppBackgroundOption.values().firstOrNull { it.name == name } ?: default
     }
 }
