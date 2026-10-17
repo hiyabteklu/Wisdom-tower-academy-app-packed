@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -33,6 +34,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -78,6 +80,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
@@ -113,6 +123,10 @@ import kotlinx.coroutines.launch
  * Glass look (session log 2026-10-13 J, docs/GLASS_PLAN.md): see-through card with a bright top edge,
  * sliding segmented tabs, glass fields, glossy cyan button with a press effect, soft entrance and
  * smooth open/close of the sign-up fields. Only the look and motion changed; texts and logic did not.
+ *
+ * TalkBack (S3 part 2b, 2026-10-17): roles and spoken states only (tabs, dropdown, level options,
+ * buttons, terms checkbox name, tappable links as TalkBack actions, error notice announced).
+ * No look, text or logic change.
  *
  * STATUS: written, NOT yet compiled or tested on a device.
  */
@@ -443,7 +457,10 @@ fun NativeSignInScreen(
                                         ),
                                         pickerShape
                                     )
-                                    .clickable { levelPickerOpen = !levelPickerOpen }
+                                    .semantics {
+                                        stateDescription = if (levelPickerOpen) "Expanded" else "Collapsed"
+                                    }
+                                    .clickable(role = Role.DropdownList) { levelPickerOpen = !levelPickerOpen }
                                     .padding(horizontal = 14.dp, vertical = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -495,10 +512,15 @@ fun NativeSignInScreen(
                                                     .background(
                                                         if (isSelected) Color(0x3306B6D4) else Color.Transparent
                                                     )
-                                                    .clickable {
-                                                        educationLevel = option
-                                                        levelPickerOpen = false
-                                                    }
+                                                    .selectable(
+                                                        selected = isSelected,
+                                                        role = Role.RadioButton,
+                                                        onClick = {
+                                                            educationLevel = option
+                                                            levelPickerOpen = false
+                                                        }
+                                                    )
+                                                    .heightIn(min = 48.dp)
                                                     .padding(horizontal = 16.dp, vertical = 12.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
@@ -563,7 +585,7 @@ fun NativeSignInScreen(
                                     color = Slate400,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.clickable { showReset = true }
+                                    modifier = Modifier.clickable(role = Role.Button) { showReset = true }
                                 )
                             }
                         } else null
@@ -604,6 +626,9 @@ fun NativeSignInScreen(
                                 Checkbox(
                                     checked = agreedToTerms,
                                     onCheckedChange = { agreedToTerms = it },
+                                    modifier = Modifier.semantics {
+                                        contentDescription = "Accept Terms of Service and Privacy Policy"
+                                    },
                                     colors = CheckboxDefaults.colors(
                                         checkedColor = WisdomCyan,
                                         uncheckedColor = Slate400,
@@ -627,7 +652,7 @@ fun NativeSignInScreen(
                         }
                     }
 
-                    // Notice box (glass)
+                    // Notice box (glass). Announced by TalkBack when it appears (errors, success).
                     AnimatedVisibility(
                         visible = notice != null,
                         enter = reveal,
@@ -642,6 +667,7 @@ fun NativeSignInScreen(
                                         .clip(noticeShape)
                                         .background(Color.White.copy(alpha = 0.06f))
                                         .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)), noticeShape)
+                                        .semantics { liveRegion = LiveRegionMode.Polite }
                                         .padding(12.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
@@ -659,7 +685,7 @@ fun NativeSignInScreen(
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Medium,
                                             textDecoration = TextDecoration.Underline,
-                                            modifier = Modifier.clickable { n.onAction.invoke() }
+                                            modifier = Modifier.clickable(role = Role.Button) { n.onAction.invoke() }
                                         )
                                     }
                                 }
@@ -799,9 +825,11 @@ private fun ModeTab(
     )
     Box(
         modifier = modifier
-            .clickable(
+            .selectable(
+                selected = selected,
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
+                role = Role.Tab,
                 onClick = onClick
             )
             .padding(horizontal = 16.dp, vertical = 10.dp),
@@ -857,6 +885,7 @@ private fun GlassPrimaryButton(
                 interactionSource = interaction,
                 indication = null,
                 enabled = enabled,
+                role = Role.Button,
                 onClick = onClick
             )
             .padding(horizontal = 24.dp, vertical = 15.dp),
@@ -977,6 +1006,8 @@ internal fun AuthField(
 /**
  * Plain text where the given labels are cyan, underlined and tappable. Uses only stable APIs
  * (tap position -> text offset) so it does not depend on the Compose version.
+ * TalkBack cannot "see" tap-position links, so each link is also offered as a TalkBack action
+ * (actions menu) with the link's own label.
  */
 @Composable
 private fun TappableText(
@@ -1012,15 +1043,24 @@ private fun TappableText(
         fontSize = fontSize,
         textAlign = textAlign,
         onTextLayout = { layout = it },
-        modifier = modifier.pointerInput(text) {
-            detectTapGestures { position ->
-                val result = layout ?: return@detectTapGestures
-                val offset = result.getOffsetForPosition(position)
-                currentLinks.firstOrNull { link ->
-                    val start = text.indexOf(link.label)
-                    start >= 0 && offset >= start && offset < start + link.label.length
-                }?.action?.invoke()
+        modifier = modifier
+            .semantics {
+                customActions = currentLinks.map { link ->
+                    CustomAccessibilityAction(link.label) {
+                        link.action()
+                        true
+                    }
+                }
             }
-        }
+            .pointerInput(text) {
+                detectTapGestures { position ->
+                    val result = layout ?: return@detectTapGestures
+                    val offset = result.getOffsetForPosition(position)
+                    currentLinks.firstOrNull { link ->
+                        val start = text.indexOf(link.label)
+                        start >= 0 && offset >= start && offset < start + link.label.length
+                    }?.action?.invoke()
+                }
+            }
     )
 }
