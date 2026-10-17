@@ -814,6 +814,11 @@ fun SettingsScreen(
                 }
             }
 
+            // B3: Background colour picker (docs/PLAN_SOLID_BACKGROUND_OPTIONS.md)
+            item(key = "section_background") {
+                BackgroundSection()
+            }
+
             // SECTION 5: Offline Data & Cloud Sync
             item(key = "section_5_storage") {
                 SettingsAccordionCard(
