@@ -28,6 +28,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -40,6 +41,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -75,6 +81,10 @@ import kotlin.math.max
  *
  * Glass look (docs/GLASS_PLAN.md area 8): the three inner panels (course rows, grade-scale table, result box) use the
  * shared glass tokens instead of dark fills, so they match the glass card around them.
+ *
+ * S3 part 2 (2026-10-17, docs/SESSION_2026-10-17_S3_PART2_PACKAGES.md): TalkBack. The header is a button that says
+ * "Expanded" / "Collapsed"; Grade scale, Add course, the grade-type switch, the remove icon and the dropdowns have roles
+ * and 48 dp targets; the two number fields and the grade-type switch have spoken labels (not shown on screen).
  */
 private data class GpaGradeBand(
     val min: Double,
@@ -164,7 +174,10 @@ fun GpaCalculatorCard() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { isOpen = !isOpen },
+                    .semantics(mergeDescendants = true) {
+                        stateDescription = if (isOpen) "Expanded" else "Collapsed"
+                    }
+                    .clickable(role = Role.Button) { isOpen = !isOpen },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -224,9 +237,10 @@ fun GpaCalculatorCard() {
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
+                                .minimumInteractiveComponentSize()
                                 .clip(RoundedCornerShape(10.dp))
                                 .border(BorderStroke(1.dp, WisdomAccentPurple.copy(alpha = 0.4f)), RoundedCornerShape(10.dp))
-                                .clickable { showScale = !showScale }
+                                .clickable(role = Role.Button) { showScale = !showScale }
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
@@ -256,9 +270,10 @@ fun GpaCalculatorCard() {
                     val canAdd = rows.size < subjects.size
                     Box(
                         modifier = Modifier
+                            .minimumInteractiveComponentSize()
                             .clip(RoundedCornerShape(10.dp))
                             .border(BorderStroke(1.dp, WisdomAccentPurple.copy(alpha = 0.4f)), RoundedCornerShape(10.dp))
-                            .clickable(enabled = canAdd) {
+                            .clickable(enabled = canAdd, role = Role.Button) {
                                 rows.add(GpaRow(nextId))
                                 nextId += 1
                             }
@@ -428,8 +443,9 @@ private fun GpaRowEditor(
                 contentDescription = "Remove course",
                 tint = if (canRemove) WisdomMuted else WisdomMuted.copy(alpha = 0.25f),
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .size(20.dp)
-                    .clickable(enabled = canRemove, onClick = onRemove)
+                    .clickable(enabled = canRemove, role = Role.Button, onClick = onRemove)
             )
         }
 
@@ -442,6 +458,7 @@ private fun GpaRowEditor(
                 value = row.credits,
                 onChange = { row.credits = it },
                 placeholder = "Cr",
+                description = "Credits",
                 modifier = Modifier.weight(0.7f)
             )
 
@@ -456,6 +473,7 @@ private fun GpaRowEditor(
                     value = row.percent,
                     onChange = { row.percent = it },
                     placeholder = "%",
+                    description = "Grade in percent",
                     modifier = Modifier.weight(1.3f)
                 )
                 else -> GpaDropdown(
@@ -468,13 +486,20 @@ private fun GpaRowEditor(
 
             Box(
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color.White.copy(alpha = 0.04f))
                     .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)), RoundedCornerShape(8.dp))
-                    .clickable { row.mode = (row.mode + 1) % 3 }
+                    .clickable(role = Role.Button) { row.mode = (row.mode + 1) % 3 }
                     .padding(horizontal = 8.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
+                // Spoken label (not shown): the letters L / % / Pt alone mean nothing to TalkBack.
+                val modeSpoken = when (row.mode) {
+                    0 -> "Grade input: letter. Tap to change."
+                    1 -> "Grade input: percent. Tap to change."
+                    else -> "Grade input: points. Tap to change."
+                }
                 Text(
                     text = when (row.mode) {
                         0 -> "L"
@@ -483,7 +508,8 @@ private fun GpaRowEditor(
                     },
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = WisdomMuted
+                    color = WisdomMuted,
+                    modifier = Modifier.clearAndSetSemantics { contentDescription = modeSpoken }
                 )
             }
 
@@ -509,10 +535,11 @@ private fun GpaDropdown(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .minimumInteractiveComponentSize()
                 .clip(RoundedCornerShape(10.dp))
                 .background(Color.White.copy(alpha = 0.04f))
                 .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)), RoundedCornerShape(10.dp))
-                .clickable { open = true }
+                .clickable(role = Role.DropdownList) { open = true }
                 .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -552,6 +579,7 @@ private fun GpaNumberField(
     value: String,
     onChange: (String) -> Unit,
     placeholder: String,
+    description: String,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -563,7 +591,12 @@ private fun GpaNumberField(
         contentAlignment = Alignment.Center
     ) {
         if (value.isEmpty()) {
-            Text(text = placeholder, fontSize = 12.sp, color = WisdomMuted)
+            Text(
+                text = placeholder,
+                fontSize = 12.sp,
+                color = WisdomMuted,
+                modifier = Modifier.clearAndSetSemantics { }
+            )
         }
         BasicTextField(
             value = value,
@@ -579,7 +612,9 @@ private fun GpaNumberField(
             ),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             cursorBrush = SolidColor(WisdomCyan),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = description }
         )
     }
 }
