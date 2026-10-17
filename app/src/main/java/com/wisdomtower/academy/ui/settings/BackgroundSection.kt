@@ -1,6 +1,7 @@
 package com.wisdomtower.academy.ui.settings
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -12,14 +13,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.Icon
@@ -34,12 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.ui.theme.AppBackground
@@ -49,16 +51,14 @@ import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomExpandable
 import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import com.wisdomtower.academy.ui.theme.WisdomMuted
-import com.wisdomtower.academy.ui.theme.appBackdrop
 import com.wisdomtower.academy.ui.theme.wisdomAnimatedColor
 
 /**
- * B3 "Background" card for the Settings screen (docs/PLAN_SOLID_BACKGROUND_OPTIONS.md). Five round swatches with their
- * names; each swatch is a small preview of the real look (blue, black, galaxy, nebula, dusk) and the chosen one is
- * ringed. Tapping applies it to the whole app at once and saves it ([AppBackground.select]). Same glass card, header and
- * smooth expand as the other Settings sections.
+ * "Background" card for the Settings screen. BG-PICKER (owner order 2026-10-17): only two choices are left, Dark and
+ * BG 2, shown as two icon buttons inside one smooth pill; the highlight slides from one icon to the other. Tapping
+ * applies it to the whole app at once and saves it ([AppBackground.select]). Same glass card, header and smooth expand
+ * as the other Settings sections. The subtitle shows the chosen name; the icon buttons carry the names for screen readers.
  *
- * Texts: only the section title and the 5 option names (the subtitle shows the chosen name). Nothing else is invented.
  * It is a separate file because SettingsScreen.kt is too big to resend; one line in SettingsScreen.kt calls it
  * (added by scripts/patch_b3_background_section.py).
  *
@@ -135,65 +135,70 @@ fun BackgroundSection() {
                         .fillMaxWidth()
                         .background(Color.White.copy(alpha = 0.02f))
                         .border(BorderStroke(1.dp, WisdomBorderWhite.copy(alpha = 0.4f)))
+                        .padding(vertical = 14.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 14.dp),
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        AppBackground.options.forEach { option ->
-                            BackgroundSwatch(
-                                option = option,
-                                isSelected = option == chosen,
-                                modifier = Modifier.weight(1f),
-                                onPick = { AppBackground.select(context, option) }
-                            )
-                        }
-                    }
+                    BackgroundPill(
+                        chosen = chosen,
+                        onPick = { AppBackground.select(context, it) }
+                    )
                 }
             }
         }
     }
 }
 
+private fun iconFor(option: AppBackgroundOption): ImageVector =
+    if (option == AppBackgroundOption.Black) Icons.Filled.DarkMode else Icons.Filled.Image
+
+/** One rounded pill holding the icon buttons; a highlight pill slides under the chosen one. */
 @Composable
-private fun BackgroundSwatch(
-    option: AppBackgroundOption,
-    isSelected: Boolean,
-    modifier: Modifier = Modifier,
-    onPick: () -> Unit
-) {
-    val ring = wisdomAnimatedColor(isSelected, WisdomCyan, Color.Transparent)
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .selectable(selected = isSelected, role = Role.RadioButton, onClick = onPick)
-            .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+private fun BackgroundPill(chosen: AppBackgroundOption, onPick: (AppBackgroundOption) -> Unit) {
+    val options = AppBackground.options
+    val slotWidth = 68.dp
+    val slotHeight = 42.dp
+    val pillShape = RoundedCornerShape(50)
+    val index = options.indexOf(chosen).coerceAtLeast(0)
+    val offset by animateDpAsState(
+        targetValue = slotWidth * index,
+        animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
+        label = "backgroundPillOffset"
+    )
+
+    Box(
+        modifier = Modifier
+            .clip(pillShape)
+            .background(Color.White.copy(alpha = 0.08f))
+            .border(BorderStroke(1.dp, WisdomBorderWhite), pillShape)
+            .padding(4.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(52.dp)
-                .border(BorderStroke(2.dp, ring), CircleShape)
-                .padding(4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .appBackdrop(option)
-                    .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)), CircleShape)
-            )
-        }
-        Text(
-            text = option.label,
-            fontSize = 11.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) Color.White else WisdomMuted,
-            textAlign = TextAlign.Center
+                .offset(x = offset)
+                .size(width = slotWidth, height = slotHeight)
+                .clip(pillShape)
+                .background(WisdomCyan.copy(alpha = 0.22f))
+                .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.6f)), pillShape)
         )
+        Row {
+            options.forEach { option ->
+                val isSelected = option == chosen
+                val tint = wisdomAnimatedColor(isSelected, WisdomCyan, WisdomMuted)
+                Box(
+                    modifier = Modifier
+                        .size(width = slotWidth, height = slotHeight)
+                        .clip(pillShape)
+                        .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onPick(option) }),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = iconFor(option),
+                        contentDescription = option.label,
+                        tint = tint,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
     }
 }
