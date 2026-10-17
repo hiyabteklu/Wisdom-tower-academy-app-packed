@@ -41,7 +41,8 @@ import com.wisdomtower.academy.ui.auth.SignInPill
  *  - [onRetry]    shows a small Retry button (label [retryLabel]); 48 dp touch target, announced as a button
  *  - [showSignIn] shows the shared [SignInPill] under the message (label [signInLabel]); [onSignIn] null = the
  *                 app's normal sign-in route (SignInNavigator)
- * Written, not compiled, not seen on a device.
+ * L2 (day / night): the title uses [WisdomInk]; the error text is the soft pink `FDA4AF` at night (unchanged) and the
+ * deep rose of the day palette by day (5:1 or more on the pale card), because the pink would be invisible on white.
  */
 @Composable
 fun WisdomMessageCard(
@@ -58,7 +59,11 @@ fun WisdomMessageCard(
     val shape = RoundedCornerShape(20.dp)
     val fill = if (isError) Color(0x22F43F5E) else WisdomGlassFill
     val edge = if (isError) Color(0xFFF43F5E).copy(alpha = 0.35f) else WisdomGlassBorder
-    val messageColor = if (isError) Color(0xFFFDA4AF) else WisdomMuted
+    val messageColor = if (isError) {
+        if (AppThemeMode.isDark) Color(0xFFFDA4AF) else WisdomLightPalette.rose
+    } else {
+        WisdomMuted
+    }
     val live = if (isError) Modifier.semantics { liveRegion = LiveRegionMode.Polite } else Modifier
 
     Column(
@@ -72,7 +77,7 @@ fun WisdomMessageCard(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (title != null) {
-            Text(text = title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(text = title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = WisdomInk)
             Spacer(modifier = Modifier.height(8.dp))
         }
         Text(

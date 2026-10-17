@@ -24,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -37,6 +36,7 @@ import coil.request.ImageRequest
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomDark
 import com.wisdomtower.academy.ui.theme.WisdomGlassCard
+import com.wisdomtower.academy.ui.theme.WisdomInk
 import com.wisdomtower.academy.ui.theme.wisdomReveal
 
 /**
@@ -50,6 +50,8 @@ import com.wisdomtower.academy.ui.theme.wisdomReveal
  *
  * S3 (TalkBack): the whole card is ONE button (Role.Button from [WisdomGlassCard]) named by its title; the picture is
  * decorative and the inner "Open" label is hidden from TalkBack so nothing is read twice. Looks are unchanged.
+ *
+ * L2 (day / night): the title is [WisdomInk] (white at night, deep navy by day); everything else already used tokens.
  */
 @Composable
 fun OpenCard(
@@ -110,7 +112,7 @@ fun OpenCard(
                     text = title,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = WisdomInk,
                     minLines = if (subtitle.isNullOrBlank()) 2 else 1,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
