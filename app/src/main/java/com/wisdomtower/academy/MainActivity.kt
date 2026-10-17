@@ -232,6 +232,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -2107,7 +2110,7 @@ fun MainScreen(
                                     border = BorderStroke(1.dp, if (isTimerRunning) Accent.copy(alpha = 0.6f) else Color(0x66F59E0B)),
                                     modifier = Modifier
                                         .padding(end = 4.dp)
-                                        .clickable {
+                                        .clickable(role = androidx.compose.ui.semantics.Role.Button) { // S3-a11y
                                             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                             showTimerControlDialog = true
                                         }
@@ -4360,11 +4363,13 @@ private fun AliveBottomNav(
                                 .clip(trackShape)
                                 .clickable(
                                     interactionSource = interactionSource,
-                                    indication = null
+                                    indication = null,
+                                    role = androidx.compose.ui.semantics.Role.Tab // S3-a11y
                                 ) {
                                     view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
                                     if (index != selectedIndex) onItemSelected(index, item)
-                                },
+                                }
+                                .semantics { this.selected = selected },
                             contentAlignment = Alignment.Center
                         ) {
                             Row(
@@ -4404,7 +4409,7 @@ private fun AliveBottomNav(
                                         fontWeight = FontWeight.SemiBold,
                                         maxLines = 1,
                                         softWrap = false,
-                                        modifier = Modifier.padding(start = 6.dp)
+                                        modifier = Modifier.clearAndSetSemantics { }.padding(start = 6.dp) // S3-a11y: the icon already names the tab
                                     )
                                 }
                             }

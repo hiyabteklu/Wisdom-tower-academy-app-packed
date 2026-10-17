@@ -711,6 +711,7 @@ internal fun ScreenBackButton(onClick: () -> Unit, modifier: Modifier = Modifier
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
+                role = androidx.compose.ui.semantics.Role.Button, // S3-a11y
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center
