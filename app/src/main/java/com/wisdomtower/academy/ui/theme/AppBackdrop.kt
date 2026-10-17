@@ -29,6 +29,13 @@ import androidx.compose.ui.graphics.Color
  * dark colour showed from the start of loading until the glass script ran. [hidePageUntilReady] (called from
  * onPageStarted by scripts/patch_backdrop_loading.py) makes the WebView invisible, so the native backdrop shows, and
  * [clearPageBackground] fades it in once the glass script has run (safety reveal after 1.5 s).
+ *
+ * Slice BG-POPUP (2026-10-17, owner: "pop ups overlap the text behind, dim the background, raise glass"): cause found.
+ * The full-screen dark backdrop of a pop-up (for example `.ovl` in competition_exam.html, rgba(2,6,23,.82)) was treated
+ * like a page wrapper and made transparent, so nothing dimmed the page, and the pop-up box itself became 8 percent
+ * glass, so the text behind showed through it. Now a full-screen FIXED layer that is partly see-through is a scrim: it
+ * becomes a 55 percent black dim, and every dark panel inside it becomes a 82 percent navy panel (readable). Normal
+ * glass strength raised from 8 to 16 percent. To go back: glass 0.08, remove the scrim / panel branches in the script.
  */
 object AppBackdrop {
     /** The plain page colour of the chosen option. Reading it in a composable follows the choice live. */
@@ -43,8 +50,10 @@ object AppBackdrop {
 
     /**
      * Turns every OPAQUE DARK-BLUE background (computed colour, blue is the strongest channel and nothing above 110,
-     * so black, navy and ink-blue; not green, red, orange or cyan) of a block element into white 8 percent glass, and a
-     * navy-only gradient into the same glass. A full-screen wrapper becomes transparent instead. Inline elements
+     * so black, navy and ink-blue; not green, red, orange or cyan) of a block element into white 16 percent glass, and a
+     * navy-only gradient into the same glass. A full-screen wrapper becomes transparent instead, EXCEPT a full-screen
+     * fixed layer that is partly see-through (a pop-up backdrop): that becomes a dim, and the dark panels inside it
+     * become solid-looking navy so their text is readable. Inline elements
      * (highlights, code chips) are skipped. It re-runs (inside the mutation callback, so before the next paint)
      * whenever a class changes or nodes are added, so selected / correct / wrong states keep working: the old inline
      * value is restored before every pass. Background transitions are finished at once so no solid colour fades in.
@@ -54,7 +63,7 @@ object AppBackdrop {
     private const val GLASS_JS = """
 (function(){
  if(window.__wtGlass){window.__wtGlass.run();return;}
- var KEY='data-wtg',GLASS='rgba(255,255,255,0.08)',timer=null,busy=false;
+ var KEY='data-wtg',GLASS='rgba(255,255,255,0.16)',SCRIM='rgba(0,0,0,0.55)',PANEL='rgba(12,20,36,0.82)',timer=null,busy=false;
  function parse(s){var m=s&&s.match(/rgba?\(([^)]+)\)/);if(!m)return null;
   var p=m[1].split(/[ ,\/]+/).filter(Boolean).map(parseFloat);
   return {r:p[0],g:p[1],b:p[2],a:(p.length>3&&!isNaN(p[3]))?p[3]:1};}
@@ -71,7 +80,7 @@ object AppBackdrop {
   try{
    var els=document.body.querySelectorAll('*');
    if(els.length>4000){busy=false;return;}
-   var i,e,cs,bc,bi,r,jobs=[];
+   var i,j,e,cs,bc,bi,r,jobs=[],scrims=[];
    for(i=0;i<els.length;i++){if(els[i].hasAttribute(KEY))restore(els[i]);}
    settle();
    var W=window.innerWidth,H=window.innerHeight;
@@ -88,13 +97,19 @@ object AppBackdrop {
      if(ok)hit=2;}
     if(!hit)continue;
     r=e.getBoundingClientRect();
-    jobs.push([e,hit,(r.width*r.height>0.6*W*H)]);
+    var full=(r.width*r.height>0.6*W*H);
+    var scrim=full&&hit===1&&cs.position==='fixed'&&!!bc&&bc.a<1;
+    if(scrim)scrims.push(e);
+    jobs.push([e,hit,full,scrim]);
    }
    for(i=0;i<jobs.length;i++){
     e=jobs[i][0];
+    var inScrim=false;
+    if(!jobs[i][3]){for(j=0;j<scrims.length;j++){if(scrims[j]!==e&&scrims[j].contains(e)){inScrim=true;break;}}}
     e.__wtOrig={c:e.style.getPropertyValue('background-color'),cp:e.style.getPropertyPriority('background-color'),
                 i:e.style.getPropertyValue('background-image'),ip:e.style.getPropertyPriority('background-image')};
-    e.style.setProperty('background-color',jobs[i][2]?'transparent':GLASS,'important');
+    var col=jobs[i][3]?SCRIM:(jobs[i][2]?'transparent':(inScrim?PANEL:GLASS));
+    e.style.setProperty('background-color',col,'important');
     if(jobs[i][1]===2||jobs[i][2])e.style.setProperty('background-image','none','important');
     e.setAttribute(KEY,'1');
    }

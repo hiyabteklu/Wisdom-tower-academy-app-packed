@@ -19,13 +19,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * "Glass" look of the Targets screen (owner reference, 2026-10-13): a very see-through white tint with a thin
- * white edge, so the glow of [AtmosphereBackground] shows through. Night values copied from `NativeTargetsScreen`:
- *  - panel / row fill   : white 4%   ([WisdomGlassFill])
- *  - pill / button fill : white 6%   ([WisdomGlassFillStrong])
- *  - quiet (done) fill  : white 2%   ([WisdomGlassFillQuiet])
- *  - edge               : white 8%   ([WisdomGlassBorder])
+ * "Glass" look of the Targets screen (owner reference, 2026-10-13): a see-through white tint with a thin
+ * white edge, so the glow of [AtmosphereBackground] shows through. Night values:
+ *  - panel / row fill   : white 12%  ([WisdomGlassFill])
+ *  - pill / button fill : white 16%  ([WisdomGlassFillStrong])
+ *  - quiet (done) fill  : white 7%   ([WisdomGlassFillQuiet])
+ *  - edge               : white 18%  ([WisdomGlassBorder])
  *  - corners            : 16dp for rows, 24dp for big panels, fully round for pills
+ * BG-POPUP (2026-10-17, owner: "increase the glass opacity, I am not seeing much difference"): the night values were
+ * 4 / 6 / 2 / 8 percent. To go back to them, use those four numbers.
  * Plan and order of the areas: docs/GLASS_PLAN.md.
  *
  * L1 (docs/DAY_NIGHT_PLAN.md): by day the glass is frosted white (a see-through white card on the light glow) with a thin
@@ -33,13 +35,13 @@ import androidx.compose.ui.unit.dp
  * These are getters: read them while composing or drawing, not once at class load.
  */
 val WisdomGlassFill: Color
-    get() = if (AppThemeMode.isDark) Color.White.copy(alpha = 0.04f) else Color.White.copy(alpha = 0.72f)
+    get() = if (AppThemeMode.isDark) Color.White.copy(alpha = 0.12f) else Color.White.copy(alpha = 0.72f)
 val WisdomGlassFillStrong: Color
-    get() = if (AppThemeMode.isDark) Color.White.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.88f)
+    get() = if (AppThemeMode.isDark) Color.White.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.88f)
 val WisdomGlassFillQuiet: Color
-    get() = if (AppThemeMode.isDark) Color.White.copy(alpha = 0.02f) else Color.White.copy(alpha = 0.5f)
+    get() = if (AppThemeMode.isDark) Color.White.copy(alpha = 0.07f) else Color.White.copy(alpha = 0.5f)
 val WisdomGlassBorder: Color
-    get() = if (AppThemeMode.isDark) Color.White.copy(alpha = 0.08f) else WisdomLightPalette.ink.copy(alpha = 0.12f)
+    get() = if (AppThemeMode.isDark) Color.White.copy(alpha = 0.18f) else WisdomLightPalette.ink.copy(alpha = 0.12f)
 
 /**
  * Same shape of call as [WisdomModernCard], but see-through glass instead of the almost solid navy.
