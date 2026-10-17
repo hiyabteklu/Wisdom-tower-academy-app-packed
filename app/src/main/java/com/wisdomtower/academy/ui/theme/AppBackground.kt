@@ -30,12 +30,12 @@ class BackdropGlow(val x: Float, val y: Float, val radius: Float, val color: Col
 /** How dark the shade over a picture background is (0 = none, 1 = black). Keeps white text and glass cards readable. */
 private const val PHOTO_SCRIM_ALPHA = 0.35f
 
-/** Longest side, in pixels, a picture is decoded at. The PNG files are bigger than any phone screen needs. */
+/** Longest side, in pixels, a picture is decoded at. The picture files are bigger than any phone screen needs. */
 private const val PHOTO_MAX_SIDE = 1280
 
 /**
  * The 5 backgrounds the student can choose from, in this order: Dark, the three pictures (BG 1 to BG 3, the files
- * app/src/main/assets/backgrounds/bg_1.png to bg_3.png), Blue.
+ * app/src/main/assets/backgrounds/bg_1.jpg to bg_3.jpg), Blue.
  *
  * Day mode was removed (owner order 2026-10-17), so there are no light looks any more.
  * The saved choice is the constant NAME, so keep the names Black and Midnight (older installs saved them): an unknown
@@ -51,9 +51,9 @@ enum class AppBackgroundOption(
     val photoAsset: String? = null
 ) {
     Black("Dark", Color(0xFF000000)),
-    Photo1("BG 1", Color(0xFF070C16), photoAsset = "backgrounds/bg_1.png"),
-    Photo2("BG 2", Color(0xFF070C16), photoAsset = "backgrounds/bg_2.png"),
-    Photo3("BG 3", Color(0xFF070C16), photoAsset = "backgrounds/bg_3.png"),
+    Photo1("BG 1", Color(0xFF070C16), photoAsset = "backgrounds/bg_1.jpg"),
+    Photo2("BG 2", Color(0xFF070C16), photoAsset = "backgrounds/bg_2.jpg"),
+    Photo3("BG 3", Color(0xFF070C16), photoAsset = "backgrounds/bg_3.jpg"),
     Midnight(
         "Blue", Color(0xFF0A1530),
         listOf(BackdropGlow(0.5f, -0.05f, 0.95f, Color(0xFF2F6BFF), 0.20f))
