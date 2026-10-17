@@ -170,7 +170,7 @@ fun BrandLoader(
             if (showCard && ready) {
                 Modifier
                     .clip(RoundedCornerShape(radius))
-                    .background(Color(0xE6111827))
+                    .background(Color(0x66111827))
                     .padding(pad)
             } else {
                 Modifier

@@ -385,7 +385,7 @@ private fun PdfPages(file: File, resourceId: String?, modifier: Modifier) {
                 .align(Alignment.BottomEnd)
                 .padding(12.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(Color(0xFF111B2E).copy(alpha = 0.85f))
+                .background(Color(0x4D111B2E).copy(alpha = 0.85f))
                 .padding(horizontal = 10.dp, vertical = 5.dp)
         )
     }

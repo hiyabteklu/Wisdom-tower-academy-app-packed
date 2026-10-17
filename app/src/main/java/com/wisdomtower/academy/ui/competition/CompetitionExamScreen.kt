@@ -354,7 +354,7 @@ fun CompetitionExamScreen(
     if (showAwayWarning && !submittedOk) {
         AlertDialog(
             onDismissRequest = { },
-            containerColor = Color(0xFF0F1829),
+            containerColor = Color(0xB30F1829),
             title = {
                 Text(
                     text = "You left the exam window",

@@ -1423,7 +1423,7 @@ private fun StoryCover(imageUrl: String, description: String) {
             .fillMaxWidth()
             .aspectRatio(1.6f)
             .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-            .background(Color(0xFF0B1426)),
+            .background(Color(0x4D0B1426)),
         contentAlignment = Alignment.Center
     ) {
         Icon(

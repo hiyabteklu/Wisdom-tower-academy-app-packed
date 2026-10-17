@@ -54,7 +54,7 @@ internal fun HubGateDialog(
                 .wisdomDialogEnter()
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF111B2E))
+                .background(Color(0x4D111B2E))
                 .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(24.dp))
                 .padding(horizontal = 24.dp, vertical = 28.dp),
             horizontalAlignment = Alignment.CenterHorizontally

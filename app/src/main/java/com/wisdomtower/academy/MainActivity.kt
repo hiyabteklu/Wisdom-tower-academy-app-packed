@@ -3993,7 +3993,7 @@ fun MainScreen(
                         )
                         .background(
                             Brush.verticalGradient(
-                                listOf(Color(0xF2152238), Color(0xF20D1829))
+                                listOf(Color(0x66152238), Color(0x660D1829))
                             )
                         )
                         .border(

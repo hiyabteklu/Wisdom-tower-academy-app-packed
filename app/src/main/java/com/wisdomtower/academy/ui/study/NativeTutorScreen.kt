@@ -587,7 +587,7 @@ fun NativeTutorScreen(
                     .fillMaxHeight()
                     .fillMaxWidth(0.88f)
                     .clip(RoundedCornerShape(topStart = 24.dp, bottomStart = 24.dp))
-                    .background(Brush.verticalGradient(listOf(Color(0xF2152238), Color(0xF20D1829))))
+                    .background(Brush.verticalGradient(listOf(Color(0x66152238), Color(0x660D1829))))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -600,7 +600,7 @@ fun NativeTutorScreen(
             AlertDialog(
                 modifier = Modifier.wisdomDialogEnter(),
                 onDismissRequest = { showClearConfirm = false },
-                containerColor = Color(0xFF0E172A),
+                containerColor = Color(0xB30E172A),
                 titleContentColor = Color.White,
                 textContentColor = Color(0xFFCBD5E1),
                 title = { Text("Clear this chat?", fontWeight = FontWeight.Bold) },

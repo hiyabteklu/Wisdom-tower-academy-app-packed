@@ -608,7 +608,7 @@ fun ContactScreen(
                                 ExposedDropdownMenu(
                                     expanded = topicDropdownExpanded,
                                     onDismissRequest = { topicDropdownExpanded = false },
-                                    modifier = Modifier.background(Color(0xFF0F172A))
+                                    modifier = Modifier.background(Color(0x4D0F172A))
                                 ) {
                                     topics.forEach { (value, label) ->
                                         DropdownMenuItem(

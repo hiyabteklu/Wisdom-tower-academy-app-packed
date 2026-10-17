@@ -252,7 +252,7 @@ fun NativeTimerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                     modifier = Modifier
                                         .width(80.dp)
                                         .clip(RoundedCornerShape(50))
-                                        .background(Color(0xFF020617).copy(alpha = 0.80f))
+                                        .background(Color(0x4D020617).copy(alpha = 0.80f))
                                         .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)), RoundedCornerShape(50))
                                         .padding(horizontal = 12.dp, vertical = 8.dp)
                                 )
