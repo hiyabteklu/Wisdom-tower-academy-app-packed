@@ -1,4 +1,4 @@
-The picture tutor_bg.jpg in this folder is NO LONGER USED by the app (owner request 2026-10-17: it looked cluttered).
-Every screen now uses one clean solid colour (ui/theme/AppBackdrop.kt, drawn by AtmosphereBackground).
-See docs/PLAN_SOLID_BACKGROUND_OPTIONS.md (5 colour options and a Settings picker are planned).
-The file stays in the repository until the owner says it may be deleted.
+The picture tutor_bg.jpg that used to be in this folder was deleted on 2026-10-17 (owner request: it looked cluttered, and the owner approved deleting it).
+Every screen uses one clean solid colour: the student picks one of 5 in Settings > Background (ui/theme/AppBackground.kt and AppBackdrop.kt, drawn by AtmosphereBackground).
+See docs/PLAN_SOLID_BACKGROUND_OPTIONS.md.
+This folder holds no pictures now. It can stay as a note or be removed later with the owner's yes.
