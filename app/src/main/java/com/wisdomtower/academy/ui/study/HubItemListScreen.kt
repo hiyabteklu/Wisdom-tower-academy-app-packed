@@ -69,6 +69,7 @@ import com.wisdomtower.academy.ui.theme.WisdomGlassCard
 import com.wisdomtower.academy.ui.theme.WisdomGlassFill
 import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomMuted
+import com.wisdomtower.academy.ui.theme.WisdomMessageCard
 import com.wisdomtower.academy.ui.theme.wisdomReveal
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -281,15 +282,12 @@ fun HubItemListScreen(
             val current = result
             when {
                 !loggedIn -> item(key = "hub_list_signin") {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) { // UX-CONSISTENCY-2026-10-17
-                        MessageCard(
-                            title = "Sign in to open",
-                            message = "Create a free account to unlock books, notes, questions, and exams. " +
-                                "No payment required for registered students.",
-                            onRetry = null
-                        )
-                        com.wisdomtower.academy.ui.auth.SignInPill(modifier = Modifier.padding(top = 14.dp))
-                    }
+                    WisdomMessageCard( // S6-msgcard: card and Sign in pill in one
+                        title = "Sign in to open",
+                        message = "Create a free account to unlock books, notes, questions, and exams. " +
+                            "No payment required for registered students.",
+                        showSignIn = true
+                    )
                 }
 
                 current == null -> item(key = "hub_list_loading") {
@@ -659,44 +657,7 @@ private fun itemCount(item: LearningResource): Int? = runCatching {
 
 @Composable
 private fun MessageCard(title: String?, message: String, onRetry: (() -> Unit)?) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .background(WisdomGlassFill)
-            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(20.dp))
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (title != null) {
-            Text(text = title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-        Text(
-            text = message,
-            fontSize = 13.sp,
-            color = WisdomMuted,
-            textAlign = TextAlign.Center
-        )
-        if (onRetry != null) {
-            Spacer(modifier = Modifier.height(14.dp))
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(WisdomCyan.copy(alpha = 0.12f))
-                    .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.45f)), RoundedCornerShape(10.dp))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple(color = WisdomCyan.copy(alpha = 0.25f)),
-                        onClick = onRetry
-                    )
-                    .padding(horizontal = 18.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "Retry", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = WisdomCyan)
-            }
-        }
-    }
+    WisdomMessageCard(message = message, title = title, onRetry = onRetry) // S6-msgcard
 }
 
 /** The round back button used at the top of the study screens (glass look, same as the Targets screen). */
