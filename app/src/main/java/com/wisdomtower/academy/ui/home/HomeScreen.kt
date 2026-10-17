@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.wisdomtower.academy.ui.auth.SignInPill
 import com.wisdomtower.academy.ui.packages.ENTRANCE_BASE_PATH
 import com.wisdomtower.academy.ui.packages.ENTRANCE_IMAGE_ASSET
 import com.wisdomtower.academy.ui.packages.OpenCard
@@ -386,20 +387,7 @@ private fun HeroSection(
                         .clickable(role = Role.Button, onClick = onSignUp)
                 )
             }
-            WisdomSecondaryButton(
-                text = "Sign in",
-                onClick = onSignIn,
-                borderColor = WisdomAccentAmber.copy(alpha = 0.45f),
-                textColor = WisdomAccentAmber,
-                icon = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Login,
-                        contentDescription = null,
-                        tint = WisdomAccentAmber,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            )
+            SignInPill(onClick = onSignIn) // S5-signin: the shared Sign in pill
         }
     }
 }

@@ -64,6 +64,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.wisdomtower.academy.data.competition.ExamLockdown
 import com.wisdomtower.academy.data.model.UserProfile
+import com.wisdomtower.academy.ui.auth.SignInPill
 import com.wisdomtower.academy.ui.packages.CATALOG_PACKAGES
 import com.wisdomtower.academy.ui.packages.NativePackage
 import com.wisdomtower.academy.ui.packages.OpenCard
@@ -357,28 +358,16 @@ fun LearningScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .minimumInteractiveComponentSize()
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .background(Color.White)
-                                        .clickable(role = Role.Button) { onNavigateToUrl("/login") }
-                                        .padding(vertical = 8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(text = "Sign In", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                                }
+                                SignInPill(label = "Sign In", onClick = { onNavigateToUrl("/login") }) // S5-signin
 
                                 Box(
                                     modifier = Modifier
-                                        .weight(1f)
                                         .minimumInteractiveComponentSize()
-                                        .clip(RoundedCornerShape(20.dp))
+                                        .clip(RoundedCornerShape(50))
                                         .background(WisdomGlassFillStrong)
-                                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)), RoundedCornerShape(20.dp))
+                                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)), RoundedCornerShape(50))
                                         .clickable(role = Role.Button) { onNavigateToUrl("/signup") }
-                                        .padding(vertical = 8.dp),
+                                        .padding(horizontal = 20.dp, vertical = 9.dp), // S5-signin: same size as the Sign In pill
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(text = "Create Account", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
