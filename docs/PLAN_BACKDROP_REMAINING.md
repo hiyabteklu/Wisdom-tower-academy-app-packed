@@ -1,16 +1,22 @@
 # PLAN: chosen background on EVERY screen (remaining areas) - 2026-10-17
 
+## STATUS (edited in place)
+- [x] Step 0: `patch_backdrop_all.py` merged (PR #57, 2026-10-17 14:33 UTC; `patch_backdrop_everywhere.py` PR #56 before it). Build result not seen by the agent.
+- [~] BG1 AppBackdrop.kt transparent WebViews: written, commit 41e53e0b, NOT compiled / not tested. Log: `docs/SESSION_2026-10-17_BG1_TRANSPARENT_WEBVIEWS.md`.
+- [ ] BG6 bottom nav track  - [ ] BG2 drawer  - [ ] BG3 quiz + competition_exam html  - [ ] BG4 flashcards html  - [ ] BG5 tutor  - [ ] BG7 dialogs and leftovers
+Next chat: BG6 (check `AliveBottomNav` for P20 first), one slice only.
+
 READ THIS FIRST in the next chat. Owner rule, said twice: NO EXCEPTIONS. The chosen background (Dark, BG 1-3, Blue) must show behind every screen, tool, form, page, the drawer and the bottom navigation track. Owner uses a phone only (no computer), limit of the free plan is near, so every slice must be small and written down.
 
-## Step 0 (owner, 1 minute, nothing else works before it)
-GitHub > repo Wisdom-tower-academy-app-packed > Actions > Apply pending patches > Run workflow: script `patch_backdrop_all.py`, branch `claude/backdrop-all`. Then ask Claude to check the branch (get_file_contents with ref) and open the pull request when the build is green. It runs `patch_backdrop_everywhere.py` first (MainActivity overlay fills, Theme.kt, WisdomTabLayer.kt, WebView colours) and turns the tool panels and form fields into glass. Not compiled, not run yet.
+## Step 0 (owner, 1 minute) - DONE, see STATUS
+GitHub > repo Wisdom-tower-academy-app-packed > Actions > Apply pending patches > Run workflow: script `patch_backdrop_all.py`, branch `claude/backdrop-all`. It runs `patch_backdrop_everywhere.py` first (MainActivity overlay fills, Theme.kt, WisdomTabLayer.kt, WebView colours) and turns the tool panels and form fields into glass.
 
 ## What the owner showed (screenshots 2026-10-17, 5:39 to 5:41) and the plan per area
 
 ### A. Notes reader (Chapter 1 Vector Analysis page): flat navy
 - Files: `ui/study/NotesReaderScreen.kt`, `assets/notes/*.html`, overlay in `MainActivity.kt` (Study workspace, zIndex 18, `.background(WisdomNavy)`).
 - Cause 1: the MainActivity overlay fill (fixed by Step 0). Cause 2: the page picture is a CSS `url(file:///android_asset/...)` in `AppBackground.cssBackground`; a WebView page that was not loaded from a file:// origin may not be allowed to read it, so only the plain colour shows (hypothesis, strong).
-- Fix (slice BG1, ONE small file, fixes A, C, D, E and the competition pages at once): in `ui/theme/AppBackdrop.kt` make `webViewColor(context)` return `android.graphics.Color.TRANSPARENT`, and make `clearPageBackground(view)` inject only `html{background:transparent !important}body{background:transparent !important}` (no picture url, no glows). The picture is then drawn natively by `AtmosphereBackground` behind the transparent WebView. Check that each WebView screen has `AtmosphereBackground` behind it (Notes, Flashcards, Quiz, Competition exam/review, Tutor have it per docs/SESSION_2026-10-17_APP_BACKGROUND.md); if one does not, add `AtmosphereBackground(modifier = Modifier.fillMaxSize())` as the first child of its Box.
+- Fix (slice BG1, DONE 41e53e0b, not tested): in `ui/theme/AppBackdrop.kt` `webViewColor(context)` returns `android.graphics.Color.TRANSPARENT`, and `clearPageBackground(view)` injects only `html{background:transparent !important}body{background:transparent !important}`. The picture is drawn natively by `AtmosphereBackground` behind the transparent WebView. All six WebView screens have `AtmosphereBackground` (checked).
 
 ### B. Drawer (hamburger menu: Tools, Support & About): panel is almost solid navy
 - File: `MainActivity.kt` (drawer panel). From `docs/SESSION_2026-10-13_F.md`: panel is a gradient `0xF2152238` to `0xF20D1829` (95 percent opaque) with a white 10 percent edge, scrim `0x66030812`.
@@ -39,7 +45,7 @@ GitHub > repo Wisdom-tower-academy-app-packed > Actions > Apply pending patches 
 - Re-search the whole `ui/` folder for `0xFF0` navy fills and for `.background(Color(0xFF` to catch leftovers; list them in this file.
 
 ## Order of work (one slice per chat)
-Step 0 (owner runs the patch) > BG1 (AppBackdrop.kt, the biggest win) > BG6 (bottom nav) > BG2 (drawer) > BG3 / BG4 / BG5 (HTML pages and tutor) > BG7 (dialogs, leftovers).
+Step 0 (done) > BG1 (done, untested) > BG6 (bottom nav) > BG2 (drawer) > BG3 / BG4 / BG5 (HTML pages and tutor) > BG7 (dialogs, leftovers).
 
 ## Rules for the next Claude
 - Never resend MainActivity.kt (261 KB): use a patch script in `scripts/` and tell the owner to run Actions > Apply pending patches; then verify the branch with `get_file_contents` using `ref`.
