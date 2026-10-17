@@ -24,9 +24,13 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-/** Website text `DEFAULT_INTRO` (website-reference/src/app/academy/scholarships/page.tsx), shown when the admin has not written an intro. */
+/**
+ * Shown when the admin has not written an intro. 2026-10-17: lightly polished for a more human tone (same ideas,
+ * same bullets). The Tip card on the Scholarships tab splits it at blank lines; a paragraph whose lines start with
+ * a bullet becomes a checklist.
+ */
 const val SCHOLARSHIP_DEFAULT_INTRO =
-    "Scholarships can change what is possible for secondary and university learners: lower fees, cover materials, or open doors to programs abroad.\n\nThis page collects opportunities relevant for Ethiopian students and the wider region: local awards, national schemes, and international programs that accept applicants from Africa. Each card is practical: who it is for, what it covers, deadlines when we have them, and a direct link to apply or learn more.\n\nHow to use this page\n• Read eligibility notes carefully: many awards are limited by grade, field, gender, or need.\n• Start early. Strong applications need transcripts, recommendations, and a clear personal statement.\n• Keep a simple tracker of deadlines, required documents, and status.\n• Prefer official sites and verified partners.\n\nWe add and update listings over time. If you know of a solid scholarship that is missing, use Contact us and send the official link."
+    "A scholarship can change what is possible for you: lower fees, covered materials, or a door open to a program abroad.\n\nThis page collects opportunities for Ethiopian students and the wider region: local awards, national schemes, and international programs that accept applicants from Africa. Every card tells you who it is for, what it covers, the deadline when we have it, and where to apply.\n\nHow to use this page\n• Read the eligibility notes carefully: many awards are limited by grade, field, gender, or need.\n• Start early. Strong applications need transcripts, recommendations, and a clear personal statement.\n• Keep a simple tracker of deadlines, required documents, and status.\n• Stick to official sites and verified partners.\n\nWe keep adding and updating listings. If you know a good scholarship that is missing, use Contact us and send the official link."
 
 /**
  * REAL Success Stories and Scholarships, read from the SAME Supabase tables as the website
