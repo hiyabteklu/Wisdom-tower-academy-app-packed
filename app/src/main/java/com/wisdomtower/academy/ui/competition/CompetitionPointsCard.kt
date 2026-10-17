@@ -15,6 +15,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,9 @@ import com.wisdomtower.academy.ui.theme.wisdomReveal
 // The list shows the 5 newest entries the server returned, in the server's order.
 // Session UI_AB (M11 slice 3, 2026-10-16): the card rises in once with wisdomReveal when the data arrives, instead of
 // popping in. The numbers are drawn at their real value from the first frame (they never count up).
+// TalkBack (S3 part 2c, 2026-10-17): the header row and each entry row are merged into one spoken line
+// ("Competition points, 120" / "<title>, plus 10 points"), so the number is not read apart from its label and
+// a title cut short with an ellipsis is still spoken in full. Look and data unchanged.
 // Status: written, not compiled, not seen on a device.
 // Note: do not write a slash followed by a star inside any comment, Kotlin nests comments.
 @Composable
@@ -63,7 +68,11 @@ fun CompetitionPointsCard(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "Competition points, " + p.total.toString()
+                    },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -84,7 +93,11 @@ fun CompetitionPointsCard(modifier: Modifier = Modifier) {
             val shown = p.items.take(5)
             for (item in shown) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = item.title + ", plus " + item.points.toString() + " points"
+                        },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(

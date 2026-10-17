@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,6 +37,8 @@ import com.wisdomtower.academy.data.admin.AdminAccess
  * the signed-in account is an admin ([AdminAccess.isAdmin]). [userKey] only restarts the check when the
  * signed-in account changes; it is never stored. Tapping calls [onOpen] (the Account screen sends "/admin").
  * Purple, like the website's Admin button.
+ *
+ * TalkBack (S3 part 2c, 2026-10-17): the row is announced as a button (Role.Button). Nothing else changed.
  *
  * STATUS: `[~]` written, NOT compiled, NOT tested on a device.
  */
@@ -53,7 +56,7 @@ fun AdminEntryButton(userKey: String?, onOpen: () -> Unit) {
             .clip(shape)
             .background(accent.copy(alpha = 0.12f))
             .border(BorderStroke(1.dp, accent.copy(alpha = 0.45f)), shape)
-            .clickable(onClick = onOpen)
+            .clickable(role = Role.Button, onClick = onOpen)
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
