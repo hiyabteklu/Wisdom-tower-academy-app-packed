@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -32,7 +33,10 @@ val WisdomGlassFillStrong = Color.White.copy(alpha = 0.06f)
 val WisdomGlassFillQuiet = Color.White.copy(alpha = 0.02f)
 val WisdomGlassBorder = Color.White.copy(alpha = 0.08f)
 
-/** Same shape of call as [WisdomModernCard], but see-through glass instead of the almost solid navy. */
+/**
+ * Same shape of call as [WisdomModernCard], but see-through glass instead of the almost solid navy.
+ * S3 (TalkBack): a tappable card is announced as a button (Role.Button).
+ */
 @Composable
 fun WisdomGlassCard(
     modifier: Modifier = Modifier,
@@ -47,6 +51,7 @@ fun WisdomGlassCard(
     val clickModifier = if (onClick != null) {
         Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
+            role = Role.Button,
             indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
             onClick = onClick
         )

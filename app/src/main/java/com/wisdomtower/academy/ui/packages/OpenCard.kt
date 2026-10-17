@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,6 +47,9 @@ import com.wisdomtower.academy.ui.theme.wisdomReveal
  *
  * GLASS (2026-10-13, owner request, docs/GLASS_PLAN.md area 3): the card body is the see-through glass of the
  * Targets screen ([WisdomGlassCard]) instead of the almost solid navy. Picture, texts and the Open button are unchanged.
+ *
+ * S3 (TalkBack): the whole card is ONE button (Role.Button from [WisdomGlassCard]) named by its title; the picture is
+ * decorative and the inner "Open" label is hidden from TalkBack so nothing is read twice. Looks are unchanged.
  */
 @Composable
 fun OpenCard(
@@ -90,7 +94,7 @@ fun OpenCard(
                             .data(image)
                             .crossfade(true)
                             .build(),
-                        contentDescription = title,
+                        contentDescription = null, // S3: the title below names the card; avoids reading it twice
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -147,7 +151,8 @@ fun OpenCard(
                         text = "Open",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = WisdomCyan
+                        color = WisdomCyan,
+                        modifier = Modifier.clearAndSetSemantics { } // S3: the whole card is ONE button named by its title
                     )
                 }
             }

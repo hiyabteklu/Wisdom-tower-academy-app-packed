@@ -15,7 +15,7 @@
 - **S0 (owner only, start NOW, longest wait).** Closed test: 12 testers, 14 continuous days (checklist 3B). Also use Play's automatic pre-launch report (crashes, accessibility). Store pictures and texts (checklist 3E) and release signing secrets (checklist 1) still to be done by the owner.
 
 ### UI improvements
-- **S3. Accessibility (TalkBack).** About 86 icons have `contentDescription = null` versus about 41 labelled; no clickable declares a role (0 uses of `Role.Button` / `semantics`). Plan: first the shared pieces (`OpenCard`, `SignInPill`, round back buttons `ScreenBackButton`, bottom nav, message cards) get `Role.Button` + a spoken label; decorative icons stay null; then the icon-only buttons in the top bar (bell, trophy, menu). Minimum touch target 48dp. Acceptance: with TalkBack on, every control on Home, Learning, Packages, Account, Settings is announced with a name and "button".
+- **S3. Accessibility (TalkBack).** About 86 icons have `contentDescription = null` versus about 41 labelled; no clickable declares a role (0 uses of `Role.Button` / `semantics`). Plan: first the shared pieces (`OpenCard`, `SignInPill`, round back buttons `ScreenBackButton`, bottom nav, message cards) get `Role.Button` + a spoken label; decorative icons stay null; then the icon-only buttons in the top bar (bell, trophy, menu). Minimum touch target 48dp. Acceptance: with TalkBack on, every control on Home, Learning, Packages, Account, Settings is announced with a name and "button". **PART 1 WRITTEN 2026-10-17 (shared pieces: glass card, Wisdom buttons, OpenCard, SignInPill on `main`; ScreenBackButton, bottom nav tabs and timer chip by `scripts/patch_s3_accessibility.py`, owner runs the Action). See `docs/SESSION_2026-10-17_S3_ACCESSIBILITY.md`. PART 2 open: the screens' own plain clickables and icon-only buttons (Home, Learning, Packages, Account, Settings).**
 - **S4. Text size.** About 53 places use 8 to 10 sp. Raise anything the student has to read to 12 sp or more (labels can be 11 sp), then check with the phone font size set to Large and Largest: no clipped or overlapping text, long titles ellipsize. Respect `UI_POLISH_TASKS.md` G1 to G9 (no invented text, forbidden files).
 - **S5. One Sign in look.** Home (`HomeScreen.kt`), Learning guest banner (`LearningScreen.kt`) and Notifications (`NotificationsScreen.kt`) each have their own sign-in button style. Move them to `SignInPill` (keep their Sign Up buttons). Pure refactor, no text changes.
 - **S6. Shared loading / error / empty card.** Screens build their own message cards (`MessageCard` in `HubItemListScreen.kt`, `StPanel` in `NativeStatusScreen.kt`, plain `Text` in `CompetitionsHubScreen.kt`, notifications). Make one shared composable (message, optional Retry, optional Sign in pill) and use it on the hub list, status, competitions, notifications first. Keep the glass look.
@@ -31,7 +31,7 @@
 | S1 | Exact alarm permission | DONE 2026-10-17 (log `docs/SESSION_2026-10-17_S1_EXACT_ALARM.md`) |
 | S2 | Account deletion verify | DONE in code 2026-10-17 (log `docs/SESSION_2026-10-17_S2_ACCOUNT_DELETION.md`); owner: one TEST-account phone test + enter `/delete-account` URL in Play Console |
 | S0 | Closed test / store assets / signing (owner) | open |
-| S3 | Accessibility | open |
+| S3 | Accessibility | part 1 WRITTEN 2026-10-17 (log `docs/SESSION_2026-10-17_S3_ACCESSIBILITY.md`); owner runs `patch_s3_accessibility.py` (branch `fix/s3-accessibility`); part 2 (screens) open |
 | S4 | Text size | open |
 | S5 | One Sign in look | open |
 | S6 | Shared message card | open |

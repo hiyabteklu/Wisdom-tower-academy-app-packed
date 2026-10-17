@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -70,6 +71,9 @@ fun Modifier.wisdomPressScale(source: MutableInteractionSource, pressedScale: Fl
  *
  * 2026-10-14: a card that is tappable ([onClick] given) now presses in softly (scale 0.975). A card without [onClick]
  * is exactly as before (no extra state, so long lists stay cheap).
+ *
+ * S3 (TalkBack): the four tappable components in this file (card, primary, secondary and open buttons) are announced
+ * as buttons (Role.Button). Looks are unchanged.
  */
 @Composable
 fun WisdomModernCard(
@@ -99,6 +103,7 @@ fun WisdomModernCard(
                 .border(BorderStroke(borderWidth, borderColor), shape)
                 .clickable(
                     interactionSource = interaction,
+                    role = Role.Button,
                     indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
                     onClick = onClick
                 ),
@@ -124,6 +129,7 @@ fun WisdomPrimaryButton(
             .background(WisdomPrimaryBtnGradient)
             .clickable(
                 interactionSource = interaction,
+                role = Role.Button,
                 indication = ripple(color = Color.White.copy(alpha = 0.3f)),
                 onClick = onClick
             )
@@ -163,6 +169,7 @@ fun WisdomSecondaryButton(
             .background(WisdomGlassFillStrong)
             .clickable(
                 interactionSource = interaction,
+                role = Role.Button,
                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
                 onClick = onClick
             )
@@ -201,6 +208,7 @@ fun WisdomOpenButton(
             .background(WisdomCyan.copy(alpha = 0.08f))
             .clickable(
                 interactionSource = interaction,
+                role = Role.Button,
                 indication = ripple(color = WisdomCyan.copy(alpha = 0.3f)),
                 onClick = onClick
             )
