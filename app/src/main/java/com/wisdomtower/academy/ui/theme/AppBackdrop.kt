@@ -10,8 +10,12 @@ import androidx.compose.ui.graphics.toArgb
  * 2026-10-17: the 5 options are now blue, black and three soft space looks, see [AppBackgroundOption]).
  *
  * Native screens draw it through [AtmosphereBackground]. Every local-page WebView (notes, flashcards, quiz, competition
- * exam and review, AI Tutor) calls [webViewColor] and [clearPageBackground]: the WebView keeps the plain colour and the
- * page gets the same soft glows as CSS, so a page looks like the native screens and does not depend on what is behind it.
+ * exam and review, AI Tutor) calls [webViewColor] and [clearPageBackground].
+ *
+ * Slice BG1 (docs/PLAN_BACKDROP_REMAINING.md, 2026-10-17): the WebView and the page are now fully TRANSPARENT. The
+ * picture is drawn natively by [AtmosphereBackground] behind the WebView. Before, the page tried to load the picture
+ * itself with a CSS file:///android_asset url, which a page loaded from another origin is not allowed to read, so only
+ * the flat colour showed.
  */
 object AppBackdrop {
     /** The plain page colour of the chosen option. Reading it in a composable follows the choice live. */
@@ -24,14 +28,13 @@ object AppBackdrop {
             "if(!s){s=d.createElement('style');s.id='wt-appbg';(d.head||d.documentElement).appendChild(s);}" +
             "s.textContent='" + css + "';})();"
 
-    /** Background colour for a WebView that shows a local page (the plain colour of the chosen option). */
-    fun webViewColor(context: Context): Int = color.toArgb()
+    /** Background colour for a WebView that shows a local page: transparent, so the native backdrop shows through. */
+    @Suppress("UNUSED_PARAMETER")
+    fun webViewColor(context: Context): Int = android.graphics.Color.TRANSPARENT
 
-    /** Call from onPageFinished of a local-page WebView: gives the page the chosen background (colour and soft glows). */
+    /** Call from onPageFinished of a local-page WebView: makes the page itself see-through (no colour, no picture). */
     fun clearPageBackground(view: WebView) {
-        val bg = AppBackground.selected.cssBackground
-        val css = "html{background:" + bg + " !important;background-attachment:fixed !important;" +
-            "background-repeat:no-repeat !important}body{background:transparent !important}"
+        val css = "html{background:transparent !important}body{background:transparent !important}"
         view.evaluateJavascript(clearPageJs(css), null)
     }
 }
