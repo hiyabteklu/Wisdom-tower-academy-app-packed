@@ -253,7 +253,7 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .padding(horizontal = 10.dp, vertical = 8.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color(0xFF0A1122))
+                .background(Color.White.copy(alpha = 0.04f))
                 .border(BorderStroke(1.dp, Color(0xFF22D3EE).copy(alpha = 0.30f)), RoundedCornerShape(24.dp))
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -369,7 +369,7 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     .fillMaxWidth()
                     .weight(1f)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF070E1C))
+                    .background(Color.White.copy(alpha = 0.04f))
                     .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)), RoundedCornerShape(16.dp))
             ) {
                 // Header row: corner + day headers (stays in place while the hours scroll)
@@ -403,7 +403,7 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
                 // Scrolling part: hour rail + one column per day
                 Row(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(scrollState)) {
-                    Column(modifier = Modifier.width(38.dp).background(Color(0xFF070E1C))) {
+                    Column(modifier = Modifier.width(38.dp).background(Color.White.copy(alpha = 0.04f))) {
                         for (h in 0 until 24) {
                             Box(
                                 modifier = Modifier.fillMaxWidth().height(HOUR_HEIGHT).padding(end = 3.dp),

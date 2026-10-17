@@ -895,8 +895,8 @@ private fun GuideSearchField(value: String, onChange: (String) -> Unit, placehol
             focusedTextColor = Color.White,
             unfocusedTextColor = Color.White,
             cursorColor = WisdomCyan,
-            focusedContainerColor = Color(0xFF0F172A),
-            unfocusedContainerColor = Color(0xFF0F172A)
+            focusedContainerColor = Color.White.copy(alpha = 0.06f),
+            unfocusedContainerColor = Color.White.copy(alpha = 0.06f)
         ),
         singleLine = true
     )
