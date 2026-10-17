@@ -3535,11 +3535,11 @@ fun MainScreen(
                         .fillMaxSize()
                         .zIndex(95f)
                 ) {
-                    val loaderBg = if (isInitialLoading) BarBg else Color.Transparent
+                    // BG-LOADING: the start-up loader draws the chosen app background, not a solid navy fill
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(loaderBg),
+                            .then(if (isInitialLoading) Modifier.appBackdrop() else Modifier),
                         contentAlignment = Alignment.Center
                     ) {
                         CustomCenteredLoader()

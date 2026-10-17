@@ -330,6 +330,11 @@ fun CompetitionExamScreen(
                     settings.domStorageEnabled = false
                     addJavascriptInterface(bridge, "WTBridge")
                     webViewClient = object : WebViewClient() {
+                        // BG-LOADING: hide the page until the glass script has run, the native backdrop shows meanwhile
+                        override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
+                            AppBackdrop.hidePageUntilReady(view)
+                        }
+
                         override fun onPageFinished(view: WebView, url: String?) {
                             AppBackdrop.clearPageBackground(view)
                             pageReady = true
