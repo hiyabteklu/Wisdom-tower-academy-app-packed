@@ -462,7 +462,7 @@ private fun ResetCard(content: @Composable ColumnScope.() -> Unit) {
             .border(BorderStroke(1.dp, Color(0x33FFFFFF)), cardShape)
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF131F38), Color(0xFF0E172A), Color(0xFF0A101D))
+                    listOf(Color.White.copy(alpha = 0.07f), Color.White.copy(alpha = 0.04f), Color.White.copy(alpha = 0.03f))
                 )
             )
     ) {

@@ -8,4 +8,4 @@ import androidx.compose.ui.graphics.Color
  * contrast. A getter: read it while composing, not once at class load.
  */
 val WisdomFieldSurface: Color
-    get() = if (AppThemeMode.isDark) Color(0xFF0F1829) else Color(0xFFF8FAFC)
+    get() = if (AppThemeMode.isDark) Color.White.copy(alpha = 0.06f) else Color(0xFFF8FAFC)

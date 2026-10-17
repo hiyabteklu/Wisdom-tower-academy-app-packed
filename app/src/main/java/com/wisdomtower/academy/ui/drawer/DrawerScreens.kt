@@ -478,8 +478,8 @@ fun ContactScreen(
         unfocusedBorderColor = WisdomBorderWhite,
         focusedTextColor = Color.White,
         unfocusedTextColor = Color.White,
-        focusedContainerColor = Color(0xFF0F172A),
-        unfocusedContainerColor = Color(0xFF0F172A)
+        focusedContainerColor = Color.White.copy(alpha = 0.06f),
+        unfocusedContainerColor = Color.White.copy(alpha = 0.06f)
     )
 
     Box(modifier = modifier.fillMaxSize()) {

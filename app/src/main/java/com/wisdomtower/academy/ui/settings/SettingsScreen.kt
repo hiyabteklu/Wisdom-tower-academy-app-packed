@@ -1136,8 +1136,8 @@ private fun ToggleRow(
 private fun settingsFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = WisdomCyan,
     unfocusedBorderColor = WisdomBorderWhite,
-    focusedContainerColor = Color(0xFF0F1829),
-    unfocusedContainerColor = Color(0xFF0F1829),
+    focusedContainerColor = Color.White.copy(alpha = 0.06f),
+    unfocusedContainerColor = Color.White.copy(alpha = 0.06f),
     focusedTextColor = Color.White,
     unfocusedTextColor = Color.White,
     focusedLabelColor = WisdomCyan,

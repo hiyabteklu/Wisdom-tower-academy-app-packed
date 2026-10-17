@@ -634,7 +634,7 @@ private fun UniversityPicker(selected: String, onSelect: (String) -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(shape)
-                .background(Color(0xFF0F1829))
+                .background(Color.White.copy(alpha = 0.06f))
                 .border(BorderStroke(1.dp, if (expanded) WisdomCyan else WisdomBorderWhite), shape)
                 .semantics(mergeDescendants = true) {
                     stateDescription = if (expanded) "Expanded" else "Collapsed"
@@ -991,8 +991,8 @@ private fun LogOutButton(onClick: () -> Unit) {
 private fun fieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = WisdomCyan,
     unfocusedBorderColor = WisdomBorderWhite,
-    focusedContainerColor = Color(0xFF0F1829),
-    unfocusedContainerColor = Color(0xFF0F1829),
+    focusedContainerColor = Color.White.copy(alpha = 0.06f),
+    unfocusedContainerColor = Color.White.copy(alpha = 0.06f),
     focusedTextColor = Color.White,
     unfocusedTextColor = Color.White,
     focusedLabelColor = WisdomCyan,

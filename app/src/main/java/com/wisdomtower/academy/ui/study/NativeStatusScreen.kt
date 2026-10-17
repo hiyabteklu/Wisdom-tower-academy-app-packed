@@ -503,7 +503,7 @@ private fun StPanel(borderColor: Color, content: @Composable ColumnScope.() -> U
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(StPanelBg.copy(alpha = 0.85f))
+            .background(Color.White.copy(alpha = 0.04f))
             .border(BorderStroke(1.dp, borderColor), RoundedCornerShape(24.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),

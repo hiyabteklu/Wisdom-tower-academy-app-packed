@@ -211,7 +211,7 @@ fun NativeNotebookScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFF0C1626).copy(alpha = 0.85f))
+                        .background(Color.White.copy(alpha = 0.04f))
                         .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(24.dp))
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -304,7 +304,7 @@ fun NativeNotebookScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFF0C1626).copy(alpha = 0.85f))
+                        .background(Color.White.copy(alpha = 0.04f))
                         .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(24.dp))
                         .padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -394,7 +394,7 @@ fun NativeNotebookScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xFF0C1626).copy(alpha = 0.85f))
+                        .background(Color.White.copy(alpha = 0.04f))
                         .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)), RoundedCornerShape(24.dp))
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
