@@ -8,12 +8,14 @@ import androidx.compose.ui.graphics.Color
  * The app background as the rest of the code sees it (plan B2 of docs/PLAN_SOLID_BACKGROUND_OPTIONS.md, reworked
  * 2026-10-17: the 5 options are now blue, black and three soft space looks, see [AppBackgroundOption]).
  *
- * Native screens draw it through [AtmosphereBackground]. Every local-page WebView (notes, flashcards, quiz, competition
- * exam and review, AI Tutor) calls [webViewColor] and [clearPageBackground]. Since slice BG1 of
- * docs/PLAN_BACKDROP_REMAINING.md (2026-10-17) the WebView and its page are TRANSPARENT: the chosen picture is drawn
- * natively by [AtmosphereBackground] behind the WebView, so pictures (BG 1-3) show on every page. Before BG1 the page
- * painted a CSS colour and a file:// picture url, which a page not loaded from a file:// origin cannot read, so only a
- * flat navy showed.
+ * Native screens draw it through [AtmosphereBackground]. Every local-page WebView (notes, flashcards, quiz, question
+ * banks, competition exam and review, AI Tutor) calls [webViewColor] and [clearPageBackground].
+ *
+ * Slice BG1 (2026-10-17): the WebView and its page are TRANSPARENT, the chosen picture is drawn natively behind it.
+ * Slice BG-WEB (2026-10-17, owner: "make the background literally everywhere", ONE place for all web pages):
+ * [clearPageBackground] also installs a small script that turns every dark navy panel, card, bar, button and strip
+ * of the page into see-through glass (see [GLASS_JS]), so no page file needs its own edit and new pages are covered
+ * automatically. Accent colours (green, orange, cyan, red) and inline highlights are left alone.
  */
 object AppBackdrop {
     /** The plain page colour of the chosen option. Reading it in a composable follows the choice live. */
@@ -26,17 +28,81 @@ object AppBackdrop {
             "if(!s){s=d.createElement('style');s.id='wt-appbg';(d.head||d.documentElement).appendChild(s);}" +
             "s.textContent='" + css + "';})();"
 
+    /**
+     * Turns every OPAQUE DARK-BLUE background (computed colour, blue is the strongest channel and nothing above 110,
+     * so black, navy and ink-blue; not green, red, orange or cyan) of a block element into white 5 percent glass, and a
+     * navy-only gradient into the same glass. A full-screen wrapper becomes transparent instead. Inline elements
+     * (highlights, code chips) are skipped. It re-runs (debounced) whenever a class changes or nodes are added, so
+     * selected / correct / wrong states keep working: the old inline value is restored before every pass.
+     * Light (day) pages have no dark-blue fills, so nothing changes there.
+     * No dollar sign and no triple quote may appear in this script (Kotlin raw string).
+     */
+    private const val GLASS_JS = """
+(function(){
+ if(window.__wtGlass){window.__wtGlass.run();return;}
+ var KEY='data-wtg',GLASS='rgba(255,255,255,0.05)',timer=null,busy=false;
+ function parse(s){var m=s&&s.match(/rgba?\(([^)]+)\)/);if(!m)return null;
+  var p=m[1].split(/[ ,\/]+/).filter(Boolean).map(parseFloat);
+  return {r:p[0],g:p[1],b:p[2],a:(p.length>3&&!isNaN(p[3]))?p[3]:1};}
+ function navy(c){return !!c&&c.a>=0.6&&c.b>=c.g&&c.b>=c.r&&Math.max(c.r,c.g,c.b)<=110;}
+ function restore(e){var o=e.__wtOrig;
+  if(o){e.style.removeProperty('background-color');e.style.removeProperty('background-image');
+   if(o.c)e.style.setProperty('background-color',o.c,o.cp);
+   if(o.i)e.style.setProperty('background-image',o.i,o.ip);}
+  e.removeAttribute(KEY);e.__wtOrig=null;}
+ function run(){
+  if(busy||!document.body)return;busy=true;
+  try{
+   var els=document.body.querySelectorAll('*');
+   if(els.length>4000){busy=false;return;}
+   var i,e,cs,bc,bi,r,jobs=[];
+   for(i=0;i<els.length;i++){if(els[i].hasAttribute(KEY))restore(els[i]);}
+   var W=window.innerWidth,H=window.innerHeight;
+   for(i=0;i<els.length;i++){
+    e=els[i];var tg=e.tagName;
+    if(tg==='SCRIPT'||tg==='STYLE'||tg==='IMG'||tg==='CANVAS'||tg==='VIDEO')continue;
+    cs=getComputedStyle(e);
+    if(cs.display==='inline'||cs.display==='none')continue;
+    bc=parse(cs.backgroundColor);bi=cs.backgroundImage;var hit=0;
+    if(navy(bc))hit=1;
+    else if(bi&&bi.indexOf('gradient(')>-1){
+     var cols=bi.match(/rgba?\([^)]+\)/g)||[],ok=cols.length>0,k;
+     for(k=0;k<cols.length;k++){if(!navy(parse(cols[k]))){ok=false;break;}}
+     if(ok)hit=2;}
+    if(!hit)continue;
+    r=e.getBoundingClientRect();
+    jobs.push([e,hit,(r.width*r.height>0.6*W*H)]);
+   }
+   for(i=0;i<jobs.length;i++){
+    e=jobs[i][0];
+    e.__wtOrig={c:e.style.getPropertyValue('background-color'),cp:e.style.getPropertyPriority('background-color'),
+                i:e.style.getPropertyValue('background-image'),ip:e.style.getPropertyPriority('background-image')};
+    e.style.setProperty('background-color',jobs[i][2]?'transparent':GLASS,'important');
+    if(jobs[i][1]===2||jobs[i][2])e.style.setProperty('background-image','none','important');
+    e.setAttribute(KEY,'1');
+   }
+  }catch(err){}
+  busy=false;}
+ function sched(){clearTimeout(timer);timer=setTimeout(run,120);}
+ try{new MutationObserver(sched).observe(document.documentElement,
+  {childList:true,subtree:true,attributes:true,attributeFilter:['class']});}catch(err){}
+ window.__wtGlass={run:run};
+ run();
+})();
+"""
+
     /** Background colour for a WebView that shows a local page: transparent, the native backdrop shows through. */
     @Suppress("UNUSED_PARAMETER")
     fun webViewColor(context: Context): Int = android.graphics.Color.TRANSPARENT
 
     /**
-     * Call from onPageFinished of a local-page WebView: makes the page itself transparent (no colour, no picture url, no glows).
-     * Every caller must have [AtmosphereBackground] behind its WebView (checked 2026-10-17: Notes, Flashcards, Quiz,
-     * Competition exam and review, AI Tutor all have it).
+     * Call from onPageFinished of a local-page WebView: makes the page itself transparent and turns its dark-blue
+     * panels into glass. Every caller must have [AtmosphereBackground] behind its WebView (checked 2026-10-17:
+     * Notes, Flashcards, Quiz, Competition exam and review, AI Tutor all have it).
      */
     fun clearPageBackground(view: WebView) {
         val css = "html{background:transparent !important}body{background:transparent !important}"
         view.evaluateJavascript(clearPageJs(css), null)
+        view.evaluateJavascript(GLASS_JS, null)
     }
 }
