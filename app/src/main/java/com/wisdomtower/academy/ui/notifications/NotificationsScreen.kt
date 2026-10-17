@@ -270,25 +270,13 @@ fun NotificationsScreen(
             // Guest notice (website texts)
             if (!isLoggedIn) {
                 item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(WisdomGlassFill)
-                            .border(BorderStroke(1.dp, WisdomAccentSky.copy(alpha = 0.30f)), RoundedCornerShape(16.dp))
-                            .padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("Scholar Notifications", color = WisdomTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                        Text(
-                            "Sign in to receive targeted study reminders and see your enrollment updates.",
-                            color = WisdomMuted,
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 14.dp)
-                        )
-                        SignInPill(label = "Sign In to Account", onClick = onSignIn) // S5-signin
-                    }
+                    WisdomMessageCard( // S6-msgcard-notif
+                        title = "Scholar Notifications",
+                        message = "Sign in to receive targeted study reminders and see your enrollment updates.",
+                        showSignIn = true,
+                        signInLabel = "Sign In to Account",
+                        onSignIn = onSignIn
+                    )
                     Spacer(Modifier.height(20.dp))
                 }
             }
@@ -342,40 +330,19 @@ fun NotificationsScreen(
             // Empty state (website texts)
             if (!isRefreshing && shown.isEmpty()) {
                 item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(WisdomGlassFill)
-                            .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(16.dp))
-                            .padding(vertical = 56.dp, horizontal = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Notifications,
-                            contentDescription = null,
-                            tint = Color.White.copy(alpha = 0.20f),
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Text("No notifications", color = WisdomTextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        Text(
-                            text = if (filter == NoticeFilter.All) {
-                                "You're all caught up! New content alerts will appear here."
-                            } else {
-                                val name = when (filter) {
-                                    NoticeFilter.Material -> "material"
-                                    NoticeFilter.Contest -> "contest"
-                                    else -> "admin"
-                                }
-                                "No alerts found for category \"$name\"."
-                            },
-                            color = WisdomMuted,
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
+                    WisdomMessageCard( // S6-msgcard-notif
+                        title = "No notifications",
+                        message = if (filter == NoticeFilter.All) {
+                            "You're all caught up! New content alerts will appear here."
+                        } else {
+                            val name = when (filter) {
+                                NoticeFilter.Material -> "material"
+                                NoticeFilter.Contest -> "contest"
+                                else -> "admin"
+                            }
+                            "No alerts found for category \"$name\"."
+                        }
+                    )
                 }
             }
 
