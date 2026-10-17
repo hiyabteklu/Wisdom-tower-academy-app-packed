@@ -32,13 +32,16 @@ class BackdropGlow(val x: Float, val y: Float, val radius: Float, val color: Col
 private val BandColor = Color(0xFFA9C0FF)
 
 /**
- * The 5 backgrounds the student can choose from (plan B2/B3 of docs/PLAN_SOLID_BACKGROUND_OPTIONS.md, reworked on
+ * The backgrounds the student can choose from (plan B2/B3 of docs/PLAN_SOLID_BACKGROUND_OPTIONS.md, reworked on
  * 2026-10-17 after the owner saw the first five flat navy colours: "no difference, ugly").
  *
- * A slightly blue one, a pure black one, Galaxy (the owner's Milky Way photo, blurred smooth, see BackdropPhotos.kt), and
- * two smooth space looks made only of soft glows (nebula, dusk). No dots, no stars. [base] is the plain colour under the
- * look; it is also what native views that need one solid colour use.
- * The saved choice is the constant NAME, so keep the names (an unknown old name falls back to Midnight).
+ * NIGHT (5): a slightly blue one, a pure black one, Galaxy (the owner's Milky Way photo, blurred smooth, see
+ * BackdropPhotos.kt), and two smooth space looks made only of soft glows (nebula, dusk).
+ * DAY (5, L1 of docs/DAY_NIGHT_PLAN.md, [isDay] = true): five light looks made the same way, a pale page colour with
+ * one or two very soft, low-opacity glows (cloud, sky, mint, sand, lilac). Dark text has strong contrast on all of them.
+ * No dots, no stars. [base] is the plain colour under the look; it is also what native views that need one solid colour use.
+ * The saved choice is the constant NAME, so keep the names (an unknown old name falls back to the default of its mode:
+ * Midnight at night, Cloud by day).
  */
 enum class AppBackgroundOption(
     val label: String,
@@ -46,7 +49,9 @@ enum class AppBackgroundOption(
     val glows: List<BackdropGlow> = emptyList(),
     val bandAlpha: Float = 0f,
     /** Base64 of a small, already smooth JPEG that is stretched over the screen, or null. */
-    val photo: String? = null
+    val photo: String? = null,
+    /** True for the five day looks. */
+    val isDay: Boolean = false
 ) {
     Midnight(
         "Midnight", Color(0xFF0A1530),
@@ -70,21 +75,66 @@ enum class AppBackgroundOption(
             BackdropGlow(0.96f, 0.70f, 0.90f, Color(0xFFFF4F9A), 0.16f),
             BackdropGlow(0.10f, 0.92f, 0.75f, Color(0xFF3B4BFF), 0.18f)
         )
+    ),
+
+    // ---- DAY looks (L1) ----
+    Cloud(
+        "Cloud", Color(0xFFF4F7FB),
+        listOf(BackdropGlow(0.5f, -0.05f, 0.95f, Color(0xFF38BDF8), 0.22f)),
+        isDay = true
+    ),
+    Sky(
+        "Sky", Color(0xFFEAF3FF),
+        listOf(
+            BackdropGlow(0.85f, 0.00f, 0.90f, Color(0xFF3B82F6), 0.20f),
+            BackdropGlow(0.10f, 0.70f, 0.90f, Color(0xFF22D3EE), 0.16f)
+        ),
+        isDay = true
+    ),
+    Mint(
+        "Mint", Color(0xFFEEF9F4),
+        listOf(
+            BackdropGlow(0.20f, 0.00f, 0.90f, Color(0xFF10B981), 0.18f),
+            BackdropGlow(0.90f, 0.80f, 0.80f, Color(0xFF22D3EE), 0.12f)
+        ),
+        isDay = true
+    ),
+    Sand(
+        "Sand", Color(0xFFFBF5EA),
+        listOf(
+            BackdropGlow(0.80f, 0.00f, 0.90f, Color(0xFFF59E0B), 0.18f),
+            BackdropGlow(0.10f, 0.90f, 0.80f, Color(0xFFF97316), 0.10f)
+        ),
+        isDay = true
+    ),
+    Lilac(
+        "Lilac", Color(0xFFF4F0FF),
+        listOf(
+            BackdropGlow(0.20f, 0.00f, 0.90f, Color(0xFFA855F7), 0.16f),
+            BackdropGlow(0.95f, 0.70f, 0.90f, Color(0xFFEC4899), 0.10f)
+        ),
+        isDay = true
     );
 
     /** The plain colour (same as [base]). */
     val color: Color get() = base
 
-    /** The plain colour as #RRGGBB text. */
-    val hex: String get() = String.format(Locale.US, "#%06X", base.toArgb() and 0xFFFFFF)
+    /**
+     * The plain colour as #RRGGBB text. For a day look this is the default night colour on purpose: it is used for the
+     * local WebView pages (notes, quiz, tutor ...), whose text is still light, so they stay dark until slice L8 of
+     * docs/DAY_NIGHT_PLAN.md makes them follow day mode.
+     */
+    val hex: String
+        get() = if (isDay) Midnight.hex else String.format(Locale.US, "#%06X", base.toArgb() and 0xFFFFFF)
 
     /**
      * The same look as a CSS background value for the local WebView pages (notes, quiz, tutor ...), so a page shows the
      * same look as the native screens. Glow sizes use vmax (1% of the longer viewport side), like [BackdropGlow.radius];
-     * a photo is stretched to cover the screen.
+     * a photo is stretched to cover the screen. For a day look it returns the Midnight look (see [hex]).
      */
     val cssBackground: String
         get() {
+            if (isDay) return Midnight.cssBackground
             val layers = ArrayList<String>()
             if (photo != null) {
                 layers.add("url(data:image/jpeg;base64," + photo + ") center / cover no-repeat")
@@ -133,8 +183,9 @@ private object BackdropPhotos {
 
 /**
  * Draws a background: the plain colour, then the photo (Galaxy), then the soft glows, then (Nebula) a very faint diagonal
- * light sweep. With no [option] it draws the one the student chose and follows later changes at once (the choice is
- * Compose state read while drawing). Settings passes each option to draw its little preview circle.
+ * light sweep. With no [option] it draws the one the student chose for the current mode (day or night) and follows later
+ * changes at once (the choice and the mode are Compose state read while drawing). Settings passes each option to draw
+ * its little preview circle.
  */
 fun Modifier.appBackdrop(option: AppBackgroundOption? = null): Modifier = this.drawBehind {
     val opt = option ?: AppBackground.selected
@@ -177,39 +228,49 @@ fun Modifier.appBackdrop(option: AppBackgroundOption? = null): Modifier = this.d
 }
 
 /**
- * The ONE holder of the chosen background. The choice is saved in SharedPreferences (key [KEY], default Midnight) and
- * exposed as Compose state, so every [AtmosphereBackground] redraws the moment [select] is called.
+ * The ONE holder of the chosen backgrounds. There are two saved choices, one per mode: night (key [KEY_NIGHT], default
+ * Midnight, the same key as before L1, so an old choice is kept) and day (key [KEY_DAY], default Cloud). Both are
+ * Compose state and [selected] follows [AppThemeMode], so every [AtmosphereBackground] redraws the moment [select] or the
+ * day / night switch is used.
  *
- * The saved value is read once when this object is first used (the Application already exists by then), so no state is
+ * The saved values are read once when this object is first used (the Application already exists by then), so no state is
  * written while a screen is composing.
  */
 object AppBackground {
     private const val PREFS_NAME = "wt_app_background_prefs"
-    private const val KEY = "wt_app_background"
+    private const val KEY_NIGHT = "wt_app_background"
+    private const val KEY_DAY = "wt_app_background_day"
 
-    private var selectedState by mutableStateOf(readSaved())
+    private var nightState by mutableStateOf(readSaved(KEY_NIGHT, false, AppBackgroundOption.Midnight))
+    private var dayState by mutableStateOf(readSaved(KEY_DAY, true, AppBackgroundOption.Cloud))
 
-    /** All 5 options in display order (for the Settings picker). */
-    val options: List<AppBackgroundOption> = AppBackgroundOption.values().toList()
+    /** The 5 night options in display order. */
+    val nightOptions: List<AppBackgroundOption> = AppBackgroundOption.values().filter { !it.isDay }
 
-    /** The option in use now. Reading it inside a composable or a draw block makes that follow later changes. */
+    /** The 5 day options in display order. */
+    val dayOptions: List<AppBackgroundOption> = AppBackgroundOption.values().filter { it.isDay }
+
+    /** The 5 options of the mode in use now (for the Settings picker). */
+    val options: List<AppBackgroundOption>
+        get() = if (AppThemeMode.isDark) nightOptions else dayOptions
+
+    /** The option in use now (night or day choice, by the mode). Reading it inside a composable or a draw block makes that follow later changes. */
     val selected: AppBackgroundOption
-        get() = selectedState
+        get() = if (AppThemeMode.isDark) nightState else dayState
 
-    /** Applies the option to the whole app at once and saves it. */
+    /** Applies the option to the whole app at once and saves it (a day option is saved as the day choice, a night option as the night choice). */
     fun select(context: Context, option: AppBackgroundOption) {
-        selectedState = option
+        if (option.isDay) dayState = option else nightState = option
         context.applicationContext
             .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
-            .putString(KEY, option.name)
+            .putString(if (option.isDay) KEY_DAY else KEY_NIGHT, option.name)
             .apply()
     }
 
-    private fun readSaved(): AppBackgroundOption {
-        val app = runCatching { WisdomTowerApplication.instance }.getOrNull()
-            ?: return AppBackgroundOption.Midnight
-        val name = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY, null)
-        return AppBackgroundOption.values().firstOrNull { it.name == name } ?: AppBackgroundOption.Midnight
+    private fun readSaved(key: String, day: Boolean, default: AppBackgroundOption): AppBackgroundOption {
+        val app = runCatching { WisdomTowerApplication.instance }.getOrNull() ?: return default
+        val name = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(key, null)
+        return AppBackgroundOption.values().firstOrNull { it.name == name && it.isDay == day } ?: default
     }
 }
