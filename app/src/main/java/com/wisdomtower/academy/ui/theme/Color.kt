@@ -13,11 +13,13 @@ import androidx.compose.ui.graphics.Color
  * [WisdomLightPalette], chosen so that text has at least 4.5:1 contrast on the day backgrounds and icons at least 3:1.
  *
  * BG-TOKENS (2026-10-17, owner: the chosen background must show literally everywhere): the three NIGHT fill tokens
- * [card], [cardElevated] and [surfaceDeep] and the night [WisdomCardSurfaceGradient] are now 40 percent see-through
- * (alpha 0x66), so every screen that paints its cards, panels and surfaces with `WisdomCard`, `WisdomCardElevated`,
- * `WisdomDark` or the card gradient lets the chosen background show through. [navy] and [background] stay solid on
- * purpose (the status and navigation bars are painted with [navy]). Their RGB values are unchanged: to go back to the
- * old solid look, set the alpha bytes below back to FF (and E6 / F5 for the gradient).
+ * [card], [cardElevated] and [surfaceDeep] and the night [WisdomCardSurfaceGradient] are see-through, so every screen that
+ * paints its cards, panels and surfaces with `WisdomCard`, `WisdomCardElevated`, `WisdomDark` or the card gradient lets
+ * the chosen background show through. [navy] and [background] stay solid on purpose (the status and navigation bars are
+ * painted with [navy]). Their RGB values are unchanged.
+ * BG-STRENGTH (2026-10-17, owner: the glass is good but too faint against the textured background, raise slightly):
+ * alpha 0x66 (40 percent) became 0x85 (52 percent); the gradient 0x66 / 0x73 became 0x85 / 0x8F. To go back, set them to
+ * 66 / 66 / 66 and 66 / 73.
  *
  * Two NEW tokens cover what `Color.White` / `Color.Black` were used for in screens:
  *  - [WisdomInk]   = the foreground colour (white at night, deep navy by day). Use it for text, icons and white tints.
@@ -31,10 +33,10 @@ internal object WisdomDarkPalette {
     val cyan = Color(0xFF22E0FF)
     val cyanDark = Color(0xFF00C4E6)
     val background = Color(0xFF070C16)
-    val surfaceDeep = Color(0x660A101C)
+    val surfaceDeep = Color(0x850A101C)
     val navy = Color(0xFF060B15)
-    val card = Color(0x660C1424)
-    val cardElevated = Color(0x66162134)
+    val card = Color(0x850C1424)
+    val cardElevated = Color(0x85162134)
     val cardBorder = Color(0x3322E0FF)
     val cardBorderSubtle = Color(0x17FFFFFF)
     val borderWhite = Color(0x1AFFFFFF)
@@ -124,7 +126,7 @@ val WisdomHeroGradientBrush: Brush
 
 val WisdomCardSurfaceGradient: Brush
     get() = if (AppThemeMode.isDark) {
-        Brush.verticalGradient(colors = listOf(Color(0x66162134), Color(0x730E1624)))
+        Brush.verticalGradient(colors = listOf(Color(0x85162134), Color(0x8F0E1624)))
     } else {
         Brush.verticalGradient(colors = listOf(Color(0xF2FFFFFF), Color(0xF2F8FAFC)))
     }
