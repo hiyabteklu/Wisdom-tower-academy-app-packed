@@ -2,7 +2,6 @@ package com.wisdomtower.academy.ui.settings
 
 import android.content.Context
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -18,18 +17,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.NightsStay
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,7 +39,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontFamily
@@ -54,33 +48,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wisdomtower.academy.ui.theme.AppBackground
 import com.wisdomtower.academy.ui.theme.AppBackgroundOption
-import com.wisdomtower.academy.ui.theme.AppThemeMode
 import com.wisdomtower.academy.ui.theme.WisdomBorderWhite
 import com.wisdomtower.academy.ui.theme.WisdomCyan
-import com.wisdomtower.academy.ui.theme.WisdomDarkOnCyan
 import com.wisdomtower.academy.ui.theme.WisdomExpandable
 import com.wisdomtower.academy.ui.theme.WisdomGlassCard
-import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomInk
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import com.wisdomtower.academy.ui.theme.WisdomOnInk
-import com.wisdomtower.academy.ui.theme.WisdomPrimaryBtnGradient
 import com.wisdomtower.academy.ui.theme.WisdomTextPrimary
 import com.wisdomtower.academy.ui.theme.appBackdrop
 import com.wisdomtower.academy.ui.theme.wisdomAnimatedColor
 
 /**
- * L1 of docs/DAY_NIGHT_PLAN.md (owner order 2026-10-17): ONE Settings card for Display, Theme and Background.
+ * ONE Settings card for Display and Background (day mode was removed, owner order 2026-10-17, so the sun / moon switch is gone).
  *
- *  1. THEME       a sun / moon ICON switch (no text). Tap it: the whole app changes at once ([AppThemeMode]) and the choice is saved.
- *  2. BACKGROUND  the five round swatches of the mode in use now (night looks at night, day looks by day), see [AppBackground].
- *  3. FONT SIZE, 4. TYPOGRAPHY STYLE and LIVE SAMPLE PREVIEW: moved here unchanged from the old "Reading & Display" card
- *     (same texts, same saved setting `font_size` in `wt_settings_prefs`).
- *
- * It replaces the two cards "Reading & Display" and "Background" (scripts/patch_l1_display_section.py does the swap in
- * SettingsScreen.kt, which is too big to resend). Every colour here is a mode-aware token from Color.kt, so text keeps its
- * contrast in both modes. TalkBack: the switch is announced as a switch named "Day and night mode" with its state.
- * Texts that are new: the card title and the five day background names (the subtitle shows the chosen mode and background).
+ *  1. BACKGROUND  five round swatches: Dark, BG 1, BG 2, BG 3, Blue (see [AppBackground]). Tap one: the whole app changes at once and the choice is saved.
+ *  2. FONT SIZE, 3. TYPOGRAPHY STYLE and LIVE SAMPLE PREVIEW: unchanged (same texts, same saved setting `font_size` in `wt_settings_prefs`).
  */
 @Composable
 fun DisplayThemeSection() {
@@ -88,7 +71,6 @@ fun DisplayThemeSection() {
     val prefs = remember { context.getSharedPreferences("wt_settings_prefs", Context.MODE_PRIVATE) }
     var expanded by remember { mutableStateOf(false) }
     var fontSize by remember { mutableStateOf(prefs.getString("font_size", "normal") ?: "normal") }
-    val isDark = AppThemeMode.isDark
     val chosen = AppBackground.selected
 
     val edge by animateColorAsState(
@@ -139,11 +121,7 @@ fun DisplayThemeSection() {
                     }
                     Column {
                         Text(text = "Display & Theme", fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = WisdomTextPrimary)
-                        Text(
-                            text = (if (isDark) "Night mode" else "Day mode") + " · " + chosen.label,
-                            fontSize = 11.sp,
-                            color = WisdomMuted
-                        )
+                        Text(text = chosen.label, fontSize = 11.sp, color = WisdomMuted)
                     }
                 }
                 Icon(
@@ -162,10 +140,7 @@ fun DisplayThemeSection() {
                         .border(BorderStroke(1.dp, WisdomBorderWhite.copy(alpha = 0.4f)))
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        DisplayLabel("1. THEME")
-                        DayNightSwitch(isDark = isDark, onChange = { dark -> AppThemeMode.setDark(context, dark) })
-
-                        DisplayLabel("2. BACKGROUND")
+                        DisplayLabel("1. BACKGROUND")
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                             AppBackground.options.forEach { option ->
                                 DisplaySwatch(
@@ -177,7 +152,7 @@ fun DisplayThemeSection() {
                             }
                         }
 
-                        DisplayLabel("3. FONT SIZE")
+                        DisplayLabel("2. FONT SIZE")
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
                                 "compact" to ("Compact" to "15.5px"),
@@ -222,7 +197,7 @@ fun DisplayThemeSection() {
                             }
                         }
 
-                        DisplayLabel("4. TYPOGRAPHY STYLE")
+                        DisplayLabel("3. TYPOGRAPHY STYLE")
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -310,60 +285,6 @@ fun DisplayThemeSection() {
 @Composable
 private fun DisplayLabel(text: String) {
     Text(text = text, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
-}
-
-/**
- * The day / night switch, icons only: a pill with a sun on the left and a moon on the right, and a round cyan thumb that
- * slides under the active icon (springy, like the rest of the app). Tapping anywhere on the pill flips the mode. The
- * pill is 52 dp tall, so it is a comfortable touch target. The active icon is dark on the cyan thumb (white by day, see
- * [WisdomDarkOnCyan]), the inactive one is [WisdomMuted]; both have at least 3:1 contrast in both modes.
- */
-@Composable
-private fun DayNightSwitch(isDark: Boolean, onChange: (Boolean) -> Unit) {
-    val trackWidth = 108.dp
-    val trackHeight = 52.dp
-    val pad = 4.dp
-    val thumbSize = trackHeight - pad - pad
-    val thumbX by animateDpAsState(
-        targetValue = if (isDark) trackWidth - thumbSize - pad else pad,
-        animationSpec = spring(dampingRatio = 0.75f, stiffness = 500f),
-        label = "dayNightThumb"
-    )
-    val sunTint = wisdomAnimatedColor(!isDark, WisdomDarkOnCyan, WisdomMuted)
-    val moonTint = wisdomAnimatedColor(isDark, WisdomDarkOnCyan, WisdomMuted)
-
-    Box(
-        modifier = Modifier
-            .size(width = trackWidth, height = trackHeight)
-            .clip(CircleShape)
-            .background(WisdomGlassFillStrong)
-            .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
-            .toggleable(value = isDark, role = Role.Switch, onValueChange = onChange)
-            .semantics {
-                contentDescription = "Day and night mode"
-                stateDescription = if (isDark) "Night mode" else "Day mode"
-            }
-    ) {
-        Box(
-            modifier = Modifier
-                .offset(x = thumbX, y = pad)
-                .size(thumbSize)
-                .clip(CircleShape)
-                .background(WisdomPrimaryBtnGradient)
-        )
-        Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = pad),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(modifier = Modifier.size(thumbSize), contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.WbSunny, contentDescription = null, tint = sunTint, modifier = Modifier.size(24.dp))
-            }
-            Box(modifier = Modifier.size(thumbSize), contentAlignment = Alignment.Center) {
-                Icon(Icons.Filled.NightsStay, contentDescription = null, tint = moonTint, modifier = Modifier.size(24.dp))
-            }
-        }
-    }
 }
 
 @Composable
