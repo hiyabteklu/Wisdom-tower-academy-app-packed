@@ -258,7 +258,7 @@ import kotlinx.coroutines.delay
 private val BarBg = Color(0xFF060B15) // Deep navy, exactly matching website page background
 private val Accent = Color(0xFF22E0FF) // Website source of truth cyan
 private val AccentDark = Color(0xFF00C4E6)
-private val CardSurface = Color(0xFF0C1424) // Glass-like card surface
+private val CardSurface = Color(0x660C1424) // Glass-like card surface
 private val CardBorder = Color(0x3322E0FF) // Soft 1px cyan border
 private val CardBorderSubtle = Color(0x1F22E0FF) // Hairline quiet divider
 private val SurfaceColor = CardSurface
@@ -4320,15 +4320,8 @@ private fun AliveBottomNav(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp)
-                .shadow(
-                    elevation = 14.dp,
-                    shape = trackShape,
-                    ambientColor = Accent.copy(alpha = 0.25f),
-                    spotColor = Accent.copy(alpha = 0.25f)
-                )
                 .clip(trackShape)
-                .background(Brush.verticalGradient(listOf(NavTrackTop, NavTrackBottom)))
-                .border(BorderStroke(1.dp, CardBorder), trackShape)
+                .background(Color.White.copy(alpha = 0.06f)) // BG-NAV: glass track, no outline, no glow
         ) {
             Layout(
                 modifier = Modifier.fillMaxSize(),
