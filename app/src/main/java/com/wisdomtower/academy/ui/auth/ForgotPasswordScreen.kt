@@ -48,6 +48,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -74,6 +78,9 @@ import kotlinx.coroutines.launch
  * Three steps: ask for the e-mail, enter the e-mail code + new password, done.
  * Network code is in [SupabasePasswordResetClient]; the new password is set with
  * [SupabaseAccountClient.updatePassword].
+ *
+ * TalkBack (S3 part 2d, 2026-10-17): buttons say "button", error box and "Code accepted." and
+ * "Password updated!" are announced when they appear. Look, texts and logic unchanged.
  *
  * STATUS: written, NOT yet compiled or tested on a device (see session log BB).
  */
@@ -289,7 +296,8 @@ fun ForgotPasswordScreen(
                                 text = "Code accepted.",
                                 color = ResetCyanLight,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                             )
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -380,7 +388,8 @@ fun ForgotPasswordScreen(
                                 color = Color.White,
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
@@ -483,6 +492,7 @@ private fun ResetErrorBox(text: String) {
             .clip(shape)
             .border(BorderStroke(1.dp, Color(0x33EF4444)), shape)
             .background(Color(0x1AEF4444))
+            .semantics { liveRegion = LiveRegionMode.Polite }
             .padding(12.dp)
     ) {
         Text(text = text, color = Color(0xFFF87171), fontSize = 13.sp)
@@ -504,7 +514,7 @@ private fun ResetPrimaryButton(
             .fillMaxWidth()
             .clip(shape)
             .background(if (active) WisdomCyan else WisdomCyan.copy(alpha = 0.5f))
-            .clickable(enabled = active, onClick = onClick)
+            .clickable(enabled = active, role = Role.Button, onClick = onClick)
             .padding(horizontal = 24.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
@@ -553,7 +563,7 @@ private fun ResetSecondaryButton(
             .clip(shape)
             .border(BorderStroke(1.dp, Color(0x1AFFFFFF)), shape)
             .background(Color(0x0DFFFFFF))
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
