@@ -32,11 +32,14 @@ import androidx.core.view.WindowCompat
 // Night: the six values the app always had (the approved look), plus (BG-THEME, 2026-10-17, owner: background literally
 // everywhere, no pop up left) the Material "surface container" roles. Every default pop-up (AlertDialog, DropdownMenu,
 // TimePicker / clock, DatePicker, ModalBottomSheet, ExposedDropdown, Snackbar-like surfaces) takes its fill from these, so ONE
-// place makes all of them see-through: 70 percent navy for dialogs, menus and sheets, white glass for the clock dial and
+// place makes all of them see-through: navy for dialogs, menus and sheets, white glass for the clock dial and
 // other "highest" chips. A pop-up that writes its own containerColor in code is handled by the native sweep script instead.
-private val PopupGlassNavy = Color(0xB30F1829)
-private val PopupGlassNavyLow = Color(0x990F1829)
-private val PopupGlassChip = Color(0x33FFFFFF)
+// BG-READ (2026-10-17, owner: text mixes with what is beneath a pop-up, raise slightly): navy 70 percent became 82 percent
+// (0xD1), the low variant 60 percent became 75 percent (0xBF), the chip 20 percent became 25 percent (0x40).
+// To go back: B3 / 99 / 33.
+private val PopupGlassNavy = Color(0xD10F1829)
+private val PopupGlassNavyLow = Color(0xBF0F1829)
+private val PopupGlassChip = Color(0x40FFFFFF)
 
 private val DarkColorScheme =
   darkColorScheme(
