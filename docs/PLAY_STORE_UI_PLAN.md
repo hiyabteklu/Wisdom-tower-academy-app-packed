@@ -10,7 +10,7 @@
 ## 2. The slices (do in this order)
 
 ### Release risks (not UI, do first)
-- **S1. Exact-alarm permission.** `AndroidManifest.xml` declares `SCHEDULE_EXACT_ALARM` (and `RECEIVE_BOOT_COMPLETED`); `data/reminders/PlannerReminderScheduler.kt` (about line 88) uses `canScheduleExactAlarms()` / `setExactAndAllowWhileIdle`. Play restricts this permission to alarm and calendar apps and Android 14+ denies it by default, so review can flag it. Plan: switch planner reminders to inexact alarms (`setAndAllowWhileIdle`, or WorkManager if a dependency is already present; NO new dependency without owner OK), remove the permission and the receiver action for `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`, keep boot rescheduling. Then fix `PLAY_STORE_CHECKLIST.md` section 3C (permissions list must match the manifest). Test: set a planner reminder 2 minutes ahead, lock the phone, it still fires within a few minutes; reboot, reminders still scheduled.
+- **S1. Exact-alarm permission.** `AndroidManifest.xml` declares `SCHEDULE_EXACT_ALARM` (and `RECEIVE_BOOT_COMPLETED`); `data/reminders/PlannerReminderScheduler.kt` (about line 88) uses `canScheduleExactAlarms()` / `setExactAndAllowWhileIdle`. Play restricts this permission to alarm and calendar apps and Android 14+ denies it by default, so review can flag it. Plan: switch planner reminders to inexact alarms (`setAndAllowWhileIdle`, or WorkManager if a dependency is already present; NO new dependency without owner OK), remove the permission and the receiver action for `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`, keep boot rescheduling. Then fix `PLAY_STORE_CHECKLIST.md` section 3C (permissions list must match the manifest). Test: set a planner reminder 2 minutes ahead, lock the phone, it still fires within a few minutes; reboot, reminders still scheduled. **DONE 2026-10-17, see `docs/SESSION_2026-10-17_S1_EXACT_ALARM.md`.**
 - **S2. Account deletion check.** `PLAY_STORE_CHECKLIST.md` section 5 item 1 says it is missing, but `data/auth/AccountDeletionClient.kt` and `ui/settings/AccountDeletionSection.kt` exist. Verify it end to end (delete a test account; sign in again must fail), confirm the public web page/link Play Console asks for exists and is on the privacy page, then update section 5 of the checklist. Needs the owner for the website side (`WEBSITE_CHANGES.md` section 4).
 - **S0 (owner only, start NOW, longest wait).** Closed test: 12 testers, 14 continuous days (checklist 3B). Also use Play's automatic pre-launch report (crashes, accessibility). Store pictures and texts (checklist 3E) and release signing secrets (checklist 1) still to be done by the owner.
 
@@ -28,7 +28,7 @@
 | Slice | What | Status |
 |---|---|---|
 | patch | ECE cover, Sign in pill, password error | written, waiting for the owner to run the Action and merge |
-| S1 | Exact alarm permission | open |
+| S1 | Exact alarm permission | DONE 2026-10-17 (log `docs/SESSION_2026-10-17_S1_EXACT_ALARM.md`) |
 | S2 | Account deletion verify | open |
 | S0 | Closed test / store assets / signing (owner) | open |
 | S3 | Accessibility | open |
