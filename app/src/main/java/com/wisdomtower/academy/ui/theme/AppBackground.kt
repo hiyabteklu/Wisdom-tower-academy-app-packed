@@ -34,12 +34,13 @@ private const val PHOTO_SCRIM_ALPHA = 0.35f
 private const val PHOTO_MAX_SIDE = 1280
 
 /**
- * The 5 backgrounds the student can choose from, in this order: Dark, the three pictures (BG 1 to BG 3, the files
- * app/src/main/assets/backgrounds/bg_1.jpg to bg_3.jpg), Blue.
+ * The backgrounds the code knows. BG-PICKER (owner order 2026-10-17): the student can now choose only TWO of them,
+ * Dark ([Black]) and BG 2 ([Photo2]); see [AppBackground.options]. The other entries stay here on purpose (nothing is
+ * deleted) but are not offered and are never loaded from a saved choice.
  *
  * Day mode was removed (owner order 2026-10-17), so there are no light looks any more.
- * The saved choice is the constant NAME, so keep the names Black and Midnight (older installs saved them): an unknown
- * old name (Galaxy, Nebula, Dusk, Cloud ...) falls back to the default, Midnight (Blue).
+ * The saved choice is the constant NAME. A saved name that is not one of the two offered options falls back to the
+ * default, Dark.
  * [base] is the plain colour under the look; it is also what native views that need one solid colour use, and what shows
  * while a picture is still loading.
  */
@@ -139,9 +140,9 @@ private object BackdropPhotos {
 }
 
 /**
- * Draws a background: the plain colour, then the picture (BG 1 to 3) covering the screen with a dark shade over it, then
- * the soft glows (Blue). With no [option] it draws the one the student chose and follows later changes at once (the
- * choice is Compose state read while drawing). Settings passes each option to draw its little preview circle.
+ * Draws a background: the plain colour, then the picture covering the screen with a dark shade over it, then
+ * the soft glows. With no [option] it draws the one the student chose and follows later changes at once (the
+ * choice is Compose state read while drawing). Settings passes each option to draw its preview.
  */
 fun Modifier.appBackdrop(option: AppBackgroundOption? = null): Modifier = this.drawBehind {
     val opt = option ?: AppBackground.selected
@@ -174,27 +175,25 @@ fun Modifier.appBackdrop(option: AppBackgroundOption? = null): Modifier = this.d
 }
 
 /**
- * The ONE holder of the chosen background. The choice is saved in SharedPreferences (key [KEY], the same key as before,
- * so an old Black or Midnight choice is kept) and exposed as Compose state, so every [AtmosphereBackground] redraws the
- * moment [select] is used. Default: Midnight (Blue), the approved look.
+ * The ONE holder of the chosen background. The choice is saved in SharedPreferences (key [KEY], the same key as before)
+ * and exposed as Compose state, so every [AtmosphereBackground] redraws the moment [select] is used.
+ * Default: Dark. Only the two options in [options] can be chosen or loaded (BG-PICKER, owner order 2026-10-17).
  *
  * The saved value is read once when this object is first used (the Application already exists by then), so no state is
  * written while a screen is composing.
  *
  * IMPORTANT (this order caused a startup crash once): properties of an `object` are set up top to bottom, so anything
  * that [readSaved] uses must be a constant or the enum itself, never a property declared further down in this object.
+ * [options] is declared first and [readSaved] reads it, which is why it must stay above [state].
  */
 object AppBackground {
     private const val PREFS_NAME = "wt_app_background_prefs"
     private const val KEY = "wt_app_background"
 
-    /** The 5 options in display order: Dark, BG 1, BG 2, BG 3, Blue. Declared BEFORE [state] on purpose. */
+    /** The 2 options in display order: Dark, BG 2. Declared BEFORE [state] on purpose. */
     val options: List<AppBackgroundOption> = listOf(
         AppBackgroundOption.Black,
-        AppBackgroundOption.Photo1,
-        AppBackgroundOption.Photo2,
-        AppBackgroundOption.Photo3,
-        AppBackgroundOption.Midnight
+        AppBackgroundOption.Photo2
     )
 
     private var state by mutableStateOf(readSaved())
@@ -214,9 +213,9 @@ object AppBackground {
     }
 
     private fun readSaved(): AppBackgroundOption {
-        val default = AppBackgroundOption.Midnight
+        val default = AppBackgroundOption.Black
         val app = runCatching { WisdomTowerApplication.instance }.getOrNull() ?: return default
         val name = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY, null)
-        return AppBackgroundOption.values().firstOrNull { it.name == name } ?: default
+        return options.firstOrNull { it.name == name } ?: default
     }
 }
