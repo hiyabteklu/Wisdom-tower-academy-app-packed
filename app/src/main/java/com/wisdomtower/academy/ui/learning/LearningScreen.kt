@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -112,6 +114,10 @@ import com.wisdomtower.academy.ui.theme.wisdomReveal
  * notice is shown instead, and a tutor that was already open is closed. The calculator is never blocked.
  * Status: written, not compiled, not seen on a device. The website pop-up path (onOpenTool with tool=tutor) is a
  * fallback that no tile uses any more; MainActivity.kt routes every tutor link here through requestTutor.
+ *
+ * S3 part 2 (2026-10-17, docs/SESSION_2026-10-17_S3_PART2_LEARNING.md): every plain clickable here (guest Sign In /
+ * Create Account, "All Courses", "Browse Courses", the 8 tool tiles) now has role Button for TalkBack, and the small
+ * ones have a 48 dp touch target. Looks unchanged. Icons next to a text label stay decorative.
  *
  * Guest Scholar Banner if signed out.
  *
@@ -354,9 +360,10 @@ fun LearningScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
+                                        .minimumInteractiveComponentSize()
                                         .clip(RoundedCornerShape(20.dp))
                                         .background(Color.White)
-                                        .clickable { onNavigateToUrl("/login") }
+                                        .clickable(role = Role.Button) { onNavigateToUrl("/login") }
                                         .padding(vertical = 8.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -366,10 +373,11 @@ fun LearningScreen(
                                 Box(
                                     modifier = Modifier
                                         .weight(1f)
+                                        .minimumInteractiveComponentSize()
                                         .clip(RoundedCornerShape(20.dp))
                                         .background(WisdomGlassFillStrong)
                                         .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)), RoundedCornerShape(20.dp))
-                                        .clickable { onNavigateToUrl("/signup") }
+                                        .clickable(role = Role.Button) { onNavigateToUrl("/signup") }
                                         .padding(vertical = 8.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -500,10 +508,11 @@ fun LearningScreen(
 
                     Box(
                         modifier = Modifier
+                            .minimumInteractiveComponentSize()
                             .clip(RoundedCornerShape(20.dp))
                             .background(WisdomGlassFill)
                             .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(20.dp))
-                            .clickable { onNavigateToUrl("/packages") }
+                            .clickable(role = Role.Button) { onNavigateToUrl("/packages") }
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -557,9 +566,10 @@ fun LearningScreen(
                             )
                             Box(
                                 modifier = Modifier
+                                    .minimumInteractiveComponentSize()
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(Color.White.copy(alpha = 0.1f))
-                                    .clickable { onNavigateToUrl("/packages") }
+                                    .clickable(role = Role.Button) { onNavigateToUrl("/packages") }
                                     .padding(horizontal = 12.dp, vertical = 7.dp)
                             ) {
                                 Text(
@@ -617,6 +627,7 @@ private fun ToolTileButton(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(color = WisdomCyan.copy(alpha = 0.2f)),
+                role = Role.Button,
                 onClick = onClick
             )
             .padding(vertical = 10.dp, horizontal = 4.dp),
