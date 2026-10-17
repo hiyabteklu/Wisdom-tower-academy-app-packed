@@ -25,8 +25,9 @@ import java.util.Calendar
  * the timetable; [PlannerBootReceiver] calls it again after a reboot, an app update, a clock change or a time zone change
  * (alarms do not survive a reboot).
  *
- * Exactness: with the "alarms & reminders" permission the alarm is exact; without it (the user may switch it off in the
- * phone settings, Android 13+ starts with it off) the alarm still fires but the system may delay it by a few minutes.
+ * Exactness (S1, 2026-10-17): the alarm is NOT exact on purpose. Google Play allows the exact-alarm permission only
+ * for alarm and calendar apps, so the app does not declare it; the system may move a reminder by a few minutes, which
+ * is fine for a study reminder.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -84,17 +85,7 @@ object PlannerReminderScheduler {
         val m = parts.getOrNull(1)?.toIntOrNull() ?: 0
         val trigger = nextTriggerMillis(block.day, h * 60 + m, after)
         val pi = pendingIntent(app, block.id)
-        try {
-            val exact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()
-            if (exact) {
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi)
-            } else {
-                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi)
-            }
-        } catch (e: SecurityException) {
-            // The exact-alarm permission was taken away while we were setting it: use the relaxed alarm.
-            am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi)
-        }
+        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pi)
     }
 
     private fun cancel(app: Context, blockId: String) {
