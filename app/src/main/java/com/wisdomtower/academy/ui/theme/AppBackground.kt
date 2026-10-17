@@ -1,6 +1,8 @@
 package com.wisdomtower.academy.ui.theme
 
 import android.content.Context
+import android.graphics.BitmapFactory
+import android.util.Base64
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -9,7 +11,12 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import com.wisdomtower.academy.WisdomTowerApplication
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -21,38 +28,32 @@ import kotlin.math.roundToInt
  */
 class BackdropGlow(val x: Float, val y: Float, val radius: Float, val color: Color, val alpha: Float)
 
-/** Colour of the faint diagonal light sweep that Galaxy and Nebula have. */
+/** Colour of the faint diagonal light sweep that Nebula has. */
 private val BandColor = Color(0xFFA9C0FF)
 
 /**
  * The 5 backgrounds the student can choose from (plan B2/B3 of docs/PLAN_SOLID_BACKGROUND_OPTIONS.md, reworked on
  * 2026-10-17 after the owner saw the first five flat navy colours: "no difference, ugly").
  *
- * Now they really differ: a slightly blue one, a pure black one, and three smooth space looks made only of soft glows
- * (galaxy, nebula, dusk). Nothing is a picture file (no APK size), nothing has dots or stars. [base] is the plain colour
- * under the glows; the plain colour is also what native views that need one solid colour use.
+ * A slightly blue one, a pure black one, Galaxy (the owner's Milky Way photo, blurred smooth, see BackdropPhotos.kt), and
+ * two smooth space looks made only of soft glows (nebula, dusk). No dots, no stars. [base] is the plain colour under the
+ * look; it is also what native views that need one solid colour use.
  * The saved choice is the constant NAME, so keep the names (an unknown old name falls back to Midnight).
  */
 enum class AppBackgroundOption(
     val label: String,
     val base: Color,
     val glows: List<BackdropGlow> = emptyList(),
-    val bandAlpha: Float = 0f
+    val bandAlpha: Float = 0f,
+    /** Base64 of a small, already smooth JPEG that is stretched over the screen, or null. */
+    val photo: String? = null
 ) {
     Midnight(
         "Midnight", Color(0xFF0A1530),
         listOf(BackdropGlow(0.5f, -0.05f, 0.95f, Color(0xFF2F6BFF), 0.20f))
     ),
     Black("Black", Color(0xFF000000)),
-    Galaxy(
-        "Galaxy", Color(0xFF070A1C),
-        listOf(
-            BackdropGlow(0.12f, 0.08f, 0.80f, Color(0xFF6D4AFF), 0.30f),
-            BackdropGlow(0.95f, 0.48f, 0.85f, Color(0xFF1E7BFF), 0.24f),
-            BackdropGlow(0.30f, 1.00f, 0.90f, Color(0xFFC03FB5), 0.16f)
-        ),
-        0.05f
-    ),
+    Galaxy("Galaxy", Color(0xFF0B1226), photo = GALAXY_BACKDROP_BASE64),
     Nebula(
         "Nebula", Color(0xFF060F1A),
         listOf(
@@ -79,11 +80,15 @@ enum class AppBackgroundOption(
 
     /**
      * The same look as a CSS background value for the local WebView pages (notes, quiz, tutor ...), so a page shows the
-     * same glows as the native screens. Glow sizes use vmax (1% of the longer viewport side), like [BackdropGlow.radius].
+     * same look as the native screens. Glow sizes use vmax (1% of the longer viewport side), like [BackdropGlow.radius];
+     * a photo is stretched to cover the screen.
      */
     val cssBackground: String
         get() {
             val layers = ArrayList<String>()
+            if (photo != null) {
+                layers.add("url(data:image/jpeg;base64," + photo + ") center / cover no-repeat")
+            }
             glows.forEach { g ->
                 val c = rgb(g.color)
                 layers.add(
@@ -109,14 +114,45 @@ private fun num(v: Float): String = String.format(Locale.US, "%.3f", v)
 
 private fun pct(v: Float): String = String.format(Locale.US, "%.1f", v * 100f)
 
+/** Decodes each option's small photo once and keeps it. */
+private object BackdropPhotos {
+    private val cache = HashMap<String, ImageBitmap>()
+
+    @Synchronized
+    fun get(option: AppBackgroundOption): ImageBitmap? {
+        val data = option.photo ?: return null
+        cache[option.name]?.let { return it }
+        val decoded = runCatching {
+            val bytes = Base64.decode(data, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+        }.getOrNull() ?: return null
+        cache[option.name] = decoded
+        return decoded
+    }
+}
+
 /**
- * Draws a background: the plain colour, then the soft glows, then (Galaxy and Nebula) a very faint diagonal light sweep.
- * With no [option] it draws the one the student chose and follows later changes at once (the choice is Compose state read
- * while drawing). Settings passes each option to draw its little preview circle.
+ * Draws a background: the plain colour, then the photo (Galaxy), then the soft glows, then (Nebula) a very faint diagonal
+ * light sweep. With no [option] it draws the one the student chose and follows later changes at once (the choice is
+ * Compose state read while drawing). Settings passes each option to draw its little preview circle.
  */
 fun Modifier.appBackdrop(option: AppBackgroundOption? = null): Modifier = this.drawBehind {
     val opt = option ?: AppBackground.selected
     drawRect(color = opt.base)
+    val photo = BackdropPhotos.get(opt)
+    if (photo != null) {
+        // "Cover": scale the picture to fill the screen and crop the overflow evenly; High quality filtering keeps it smooth.
+        val scale = maxOf(size.width / photo.width, size.height / photo.height)
+        val srcW = (size.width / scale).roundToInt().coerceIn(1, photo.width)
+        val srcH = (size.height / scale).roundToInt().coerceIn(1, photo.height)
+        drawImage(
+            image = photo,
+            srcOffset = IntOffset((photo.width - srcW) / 2, (photo.height - srcH) / 2),
+            srcSize = IntSize(srcW, srcH),
+            dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+            filterQuality = FilterQuality.High
+        )
+    }
     val longSide = maxOf(size.width, size.height)
     opt.glows.forEach { g ->
         drawRect(
