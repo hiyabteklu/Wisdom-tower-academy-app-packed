@@ -242,7 +242,7 @@ fun NotesReaderScreen(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .alpha(coverAlpha)
-                                    .background(Color(0xFF0A101D)),
+                                    .background(Color(0x4D0A101D)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (showCoverLoader) {

@@ -500,7 +500,7 @@ fun NativeSignInScreen(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clip(listShape)
-                                            .background(Color(0xF2101A2E))
+                                            .background(Color(0x66101A2E))
                                             .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.16f)), listShape)
                                             .padding(vertical = 6.dp)
                                     ) {

@@ -186,7 +186,7 @@ fun NativeCalculatorScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         .padding(vertical = 12.dp)
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF040813))
+                        .background(Color(0x4D040813))
                         .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)), RoundedCornerShape(16.dp))
                         .heightIn(min = 88.dp)
                         .padding(14.dp),

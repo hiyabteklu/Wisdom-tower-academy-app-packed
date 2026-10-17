@@ -117,7 +117,7 @@ fun AccountDeletionSection(settingsPrefs: SharedPreferences) {
         AlertDialog(
             modifier = Modifier.wisdomDialogEnter(),
             onDismissRequest = { if (!busy) showDialog = false },
-            containerColor = Color(0xFF0F1829),
+            containerColor = Color(0xB30F1829),
             title = {
                 Text(text = "Delete your account?", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             },
