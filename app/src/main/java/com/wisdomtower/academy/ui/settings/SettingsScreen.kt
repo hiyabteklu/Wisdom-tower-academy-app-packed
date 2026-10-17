@@ -11,6 +11,14 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -281,7 +289,7 @@ fun SettingsScreen(
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(WisdomCyan.copy(alpha = 0.12f))
                                     .border(BorderStroke(1.dp, WisdomCyan.copy(alpha = 0.4f)), RoundedCornerShape(12.dp))
-                                    .clickable { onNavigateToUrl("/account") }
+                                    .clickable(role = Role.Button) { onNavigateToUrl("/account") }
                                     .padding(vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -298,7 +306,7 @@ fun SettingsScreen(
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(Color.White.copy(alpha = 0.05f))
                                     .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
-                                    .clickable { onNavigateToUrl("/account") }
+                                    .clickable(role = Role.Button) { onNavigateToUrl("/account") }
                                     .padding(vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -351,7 +359,8 @@ fun SettingsScreen(
                                                 .clip(RoundedCornerShape(10.dp))
                                                 .background(wisdomAnimatedColor(isSelected, Color.White, Color.White.copy(alpha = 0.04f)))
                                                 .border(BorderStroke(1.dp, wisdomAnimatedColor(isSelected, Color.White, WisdomBorderWhite)), RoundedCornerShape(10.dp))
-                                                .clickable {
+                                                .semantics { selected = isSelected }
+                                                    .clickable(role = Role.RadioButton) {
                                                     dailyGoalMinutes = mins
                                                     prefsStorage.edit().putInt("daily_study_goal_minutes", mins).apply()
                                                 }
@@ -422,7 +431,8 @@ fun SettingsScreen(
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(wisdomAnimatedColor(isSelected, Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.03f)))
                                         .border(BorderStroke(1.dp, wisdomAnimatedColor(isSelected, Color.White.copy(alpha = 0.5f), WisdomBorderWhite)), RoundedCornerShape(10.dp))
-                                        .clickable {
+                                        .semantics { selected = isSelected }
+                                            .clickable(role = Role.RadioButton) {
                                             studyWindow = id
                                             prefsStorage.edit().putString("preferred_study_time", id).apply()
                                         }
@@ -445,7 +455,8 @@ fun SettingsScreen(
                                         .clip(RoundedCornerShape(10.dp))
                                         .background(wisdomAnimatedColor(isSelected, Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.03f)))
                                         .border(BorderStroke(1.dp, wisdomAnimatedColor(isSelected, Color.White.copy(alpha = 0.5f), WisdomBorderWhite)), RoundedCornerShape(10.dp))
-                                        .clickable {
+                                        .semantics { selected = isSelected }
+                                            .clickable(role = Role.RadioButton) {
                                             studyWindow = id
                                             prefsStorage.edit().putString("preferred_study_time", id).apply()
                                         }
@@ -470,7 +481,7 @@ fun SettingsScreen(
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(WisdomCyan)
-                                    .clickable {
+                                    .clickable(role = Role.Button) {
                                         val base = currentProfile
                                         if (!isLoggedIn || base == null) {
                                             Toast.makeText(context, "Sign in to save your study goals", Toast.LENGTH_SHORT).show()
@@ -646,7 +657,7 @@ fun SettingsScreen(
                                     color = WisdomCyan,
                                     modifier = Modifier
                                         .padding(start = 8.dp)
-                                        .clickable {
+                                        .clickable(role = Role.Button) {
                                             soundVolume = 0.5f
                                             prefsStorage.edit().putFloat("sound_volume", 0.5f).apply()
                                         }
@@ -666,7 +677,7 @@ fun SettingsScreen(
                                         prefsStorage.edit().putFloat("sound_volume", it).apply()
                                     },
                                     valueRange = 0.05f..1f,
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.weight(1f).semantics { contentDescription = "Game audio volume" },
                                     colors = SliderDefaults.colors(
                                         thumbColor = Color.White,
                                         activeTrackColor = Color.White,
@@ -705,7 +716,8 @@ fun SettingsScreen(
                                         .clip(RoundedCornerShape(12.dp))
                                         .background(wisdomAnimatedColor(isSelected, Color.White, Color.White.copy(alpha = 0.04f)))
                                         .border(BorderStroke(1.dp, wisdomAnimatedColor(isSelected, Color.White, WisdomBorderWhite)), RoundedCornerShape(12.dp))
-                                        .clickable {
+                                        .semantics { selected = isSelected }
+                                            .clickable(role = Role.RadioButton) {
                                             fontSize = id
                                             prefsStorage.edit().putString("font_size", id).apply()
                                         }
@@ -820,6 +832,7 @@ fun SettingsScreen(
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(tone.copy(alpha = 0.15f))
                                     .border(BorderStroke(1.dp, tone.copy(alpha = 0.4f)), RoundedCornerShape(10.dp))
+                                    .semantics { liveRegion = LiveRegionMode.Polite }
                                     .padding(10.dp)
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -870,7 +883,7 @@ fun SettingsScreen(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(WisdomCyan)
-                                .clickable {
+                                .clickable(role = Role.Button) {
                                     val base = currentProfile
                                     if (isSyncing) return@clickable
                                     if (!isLoggedIn || base == null) {
@@ -952,6 +965,7 @@ fun SettingsScreen(
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(WisdomAccentEmerald.copy(alpha = 0.15f))
                                     .border(BorderStroke(1.dp, WisdomAccentEmerald.copy(alpha = 0.4f)), RoundedCornerShape(10.dp))
+                                    .semantics { liveRegion = LiveRegionMode.Polite }
                                     .padding(10.dp)
                             ) {
                                 Text(
@@ -970,6 +984,7 @@ fun SettingsScreen(
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(WisdomAccentRose.copy(alpha = 0.15f))
                                     .border(BorderStroke(1.dp, WisdomAccentRose.copy(alpha = 0.4f)), RoundedCornerShape(10.dp))
+                                    .semantics { liveRegion = LiveRegionMode.Polite }
                                     .padding(10.dp)
                             ) {
                                 Text(text = passwordError.orEmpty(), fontSize = 11.5.sp, color = WisdomAccentRose, fontWeight = FontWeight.SemiBold)
@@ -1008,7 +1023,7 @@ fun SettingsScreen(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(WisdomCyan)
-                                .clickable {
+                                .clickable(role = Role.Button) {
                                     if (passwordBusy) return@clickable
                                     passwordSuccess = false
                                     passwordError = null
@@ -1129,7 +1144,8 @@ private fun SettingsAccordionCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = onToggle)
+                    .semantics { stateDescription = if (isExpanded) "Expanded" else "Collapsed" }
+                    .clickable(role = Role.Button, onClick = onToggle)
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -1204,6 +1220,13 @@ private fun ToggleRow(
             .clip(RoundedCornerShape(12.dp))
             .background(Color.White.copy(alpha = 0.03f))
             .border(BorderStroke(1.dp, WisdomBorderWhite), RoundedCornerShape(12.dp))
+            .toggleable(
+                value = checked,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                role = Role.Switch,
+                onValueChange = onCheckedChange
+            )
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -1215,7 +1238,7 @@ private fun ToggleRow(
 
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = null,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.Black,
                 checkedTrackColor = Color.White,
