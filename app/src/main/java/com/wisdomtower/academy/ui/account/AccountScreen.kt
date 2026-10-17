@@ -45,6 +45,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +66,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -174,6 +179,10 @@ private val PillOnAccent = Color(0xFF06101F)
  *
  * Saving never touches `stream` or `avatarPreset`: whatever is already stored stays as it is.
  * Not ported: the website's Admin button (shown only for admin e-mails).
+ *
+ * S3 part 2 (2026-10-17, docs/SESSION_2026-10-17_S3_PART2_ACCOUNT.md): TalkBack. The three step headers and the
+ * university field say "Expanded" / "Collapsed"; the pills and university rows are radio buttons that say
+ * "selected"; Save and Log Out are buttons; pills and rows have a 48 dp touch target. Looks unchanged.
  */
 @Composable
 fun AccountScreen(
@@ -627,7 +636,10 @@ private fun UniversityPicker(selected: String, onSelect: (String) -> Unit) {
                 .clip(shape)
                 .background(Color(0xFF0F1829))
                 .border(BorderStroke(1.dp, if (expanded) WisdomCyan else WisdomBorderWhite), shape)
-                .clickable(onClick = { expanded = !expanded })
+                .semantics(mergeDescendants = true) {
+                    stateDescription = if (expanded) "Expanded" else "Collapsed"
+                }
+                .clickable(role = Role.DropdownList, onClick = { expanded = !expanded })
                 .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -699,7 +711,9 @@ private fun UniversityRow(name: String, selected: Boolean, onClick: () -> Unit) 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .heightIn(min = 48.dp)
+            .semantics { this.selected = selected }
+            .clickable(role = Role.RadioButton, onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -773,6 +787,7 @@ private fun PillOption(label: String, selected: Boolean, accent: Color, onClick:
 
     Row(
         modifier = Modifier
+            .minimumInteractiveComponentSize() // S3: 48 dp touch target, the pill looks the same
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -781,9 +796,11 @@ private fun PillOption(label: String, selected: Boolean, accent: Color, onClick:
             .clip(shape)
             .background(background)
             .border(BorderStroke(1.dp, borderColor), shape)
+            .semantics { this.selected = selected }
             .clickable(
                 interactionSource = interaction,
                 indication = null,
+                role = Role.RadioButton,
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     onClick()
@@ -849,7 +866,10 @@ private fun StepAccordionCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = onToggle)
+                    .semantics(mergeDescendants = true) {
+                        stateDescription = if (isExpanded) "Expanded" else "Collapsed"
+                    }
+                    .clickable(role = Role.Button, onClick = onToggle)
                     .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -925,7 +945,7 @@ private fun SaveProfileButton(onClick: () -> Unit) {
             }
             .clip(shape)
             .background(Brush.horizontalGradient(listOf(WisdomCyan, Color(0xFF38BDF8))))
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
@@ -951,7 +971,7 @@ private fun LogOutButton(onClick: () -> Unit) {
             .clip(shape)
             .background(WisdomAccentRose.copy(alpha = 0.12f))
             .border(BorderStroke(1.dp, WisdomAccentRose.copy(alpha = 0.45f)), shape)
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
