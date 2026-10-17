@@ -833,6 +833,7 @@ fun SettingsScreen(
                                     Text(text = syncMessage.orEmpty(), fontSize = 11.5.sp, color = tone, fontWeight = FontWeight.SemiBold)
                                 }
                             }
+                            com.wisdomtower.academy.ui.auth.SignedOutSignInPill() // UX-CONSISTENCY-2026-10-17
                         }
 
                         Row(
@@ -973,6 +974,7 @@ fun SettingsScreen(
                             ) {
                                 Text(text = passwordError.orEmpty(), fontSize = 11.5.sp, color = WisdomAccentRose, fontWeight = FontWeight.SemiBold)
                             }
+                            com.wisdomtower.academy.ui.auth.SignedOutSignInPill() // UX-CONSISTENCY-2026-10-17
                         }
 
                         Text(text = "Change Password", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color.White)

@@ -286,6 +286,7 @@ fun NativeStatusScreen(
                         color = StSlate300,
                         lineHeight = 19.sp
                     )
+                    com.wisdomtower.academy.ui.auth.SignInPill() // UX-CONSISTENCY-2026-10-17
                 }
             } else if (loading) {
                 Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {

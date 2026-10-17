@@ -243,11 +243,14 @@ fun CompetitionsHubScreen(
             if (loading && contests.isEmpty()) {
                 CircularProgressIndicator(color = CyanAccent, strokeWidth = 3.dp)
             } else if (contests.isEmpty()) {
-                Text(
-                    text = errorText ?: "No competitions right now.",
-                    color = MutedText,
-                    fontSize = 14.sp
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) { // UX-CONSISTENCY-2026-10-17
+                    Text(
+                        text = errorText ?: "No competitions right now.",
+                        color = MutedText,
+                        fontSize = 14.sp
+                    )
+                    com.wisdomtower.academy.ui.auth.SignedOutSignInPill(topPadding = 14.dp)
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
