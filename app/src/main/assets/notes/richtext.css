@@ -68,6 +68,15 @@ body :is(h1, h2, h3, .study-h1, .study-h2, .study-h3):not(.katex *) {
   font-style: var(--wt-content-font-style) !important;
 }
 
+/* NO-BOLD-QUESTIONS (2026-10-17, owner: questions, exams and question banks must not be bold): question text and answer
+ * choices are normal weight on every quiz / exam page. A **bold** word the author wrote inside a question keeps its
+ * own weight (the strong rule below). To go back: remove this rule. */
+.prompt,
+.prompt .study-p,
+.choice .ct {
+  font-weight: 400 !important;
+}
+
 /* Buttons, bars, tabs, chips, badges and labels keep clean upright sans-serif */
 body :is(button, .btn, .chip, .lbl, .eyebrow, .pill, .flag, .timer, .seg, .st, .qn, .choice .cl, .xbtn, .meta, .cpy, .sug, .prompt-btn, .sumbtn, .lockbadge, .tier, .cap, .tile):not(.katex *) {
   font-family: "WT Jakarta", -apple-system, Roboto, "Segoe UI", sans-serif !important;
@@ -95,4 +104,4 @@ table.study-table th, table.study-table td { border: 1px solid rgba(255,255,255,
 table.study-table th { background: rgba(255,255,255,.07); color: #fff; }
 .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
 .katex { color: #fff; font-size: 1.05em; }
-.math-fallback { color: #fde68a; }
+.math-fallback { color: #cffafe; }
