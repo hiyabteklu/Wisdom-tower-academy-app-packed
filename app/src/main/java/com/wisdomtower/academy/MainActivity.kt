@@ -3976,7 +3976,7 @@ fun MainScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0x66030812))
+                    .background(Color(0x8C030812)) // BG-READ: slightly stronger dim behind the drawer
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
@@ -3993,7 +3993,7 @@ fun MainScreen(
                         )
                         .background(
                             Brush.verticalGradient(
-                                listOf(Color(0x66152238), Color(0x660D1829))
+                                listOf(Color(0xD9152238), Color(0xD90D1829)) // BG-READ: 85 percent so text does not mix with what is behind
                             )
                         )
                         .border(
@@ -4321,7 +4321,7 @@ private fun AliveBottomNav(
                 .fillMaxWidth()
                 .height(52.dp)
                 .clip(trackShape)
-                .background(Color.White.copy(alpha = 0.06f)) // BG-NAV: glass track, no outline, no glow
+                .background(Color.White.copy(alpha = 0.09f)) // BG-NAV: glass track, no outline, no glow (BG-READ: 9 percent)
         ) {
             Layout(
                 modifier = Modifier.fillMaxSize(),
