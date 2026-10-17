@@ -175,7 +175,7 @@ fun DownloadGauge(
                     if (size >= 18.dp) {
                         Text(
                             text = "$pct%",
-                            fontSize = if (pct >= 100) 6.sp else if (size >= 24.dp) 8.sp else 7.sp,
+                            fontSize = if (pct >= 100) 12.sp else if (size >= 24.dp) 12.sp else 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = color,
                             maxLines = 1

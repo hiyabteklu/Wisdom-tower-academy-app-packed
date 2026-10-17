@@ -213,7 +213,7 @@ fun NotificationsScreen(
                                 Text(
                                     text = if (unreadCount > 9) "9+" else unreadCount.toString(),
                                     color = Color.White,
-                                    fontSize = 9.sp,
+                                    fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -451,9 +451,9 @@ private fun NoticeRow(n: NativeNotificationItem, onClick: () -> Unit) {
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(label.uppercase(), color = Color(0xFF94A3B8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(label.uppercase(), color = Color(0xFF94A3B8), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 if (dateText.isNotBlank()) {
-                    Text("  •  $dateText", color = Color(0xFF64748B), fontSize = 10.sp)
+                    Text("  •  $dateText", color = Color(0xFF64748B), fontSize = 12.sp)
                 }
                 if (!n.read) {
                     Spacer(Modifier.width(8.dp))

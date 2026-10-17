@@ -536,7 +536,7 @@ private fun StChip(text: String, color: Color) {
             .border(BorderStroke(1.dp, color.copy(alpha = 0.35f)), RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
-        Text(text, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = color, maxLines = 2)
+        Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color, maxLines = 2)
     }
 }
 
@@ -641,7 +641,7 @@ private fun StInfoCard(
                 .padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            Text(boxLabel.uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accent, letterSpacing = 0.6.sp)
+            Text(boxLabel.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = accent, letterSpacing = 0.6.sp)
             Text(boxText, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = StSlate200, lineHeight = 17.sp)
         }
     }

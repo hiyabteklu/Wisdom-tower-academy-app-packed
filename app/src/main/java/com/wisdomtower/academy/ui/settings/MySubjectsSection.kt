@@ -141,7 +141,7 @@ fun MySubjectsSection() {
                             Text("Pre-selected from your Academic Level. Change it any time.", fontSize = 11.sp, color = WisdomMuted, lineHeight = 15.sp)
                         }
 
-                        Text("WHAT ARE YOU STUDYING?", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
+                        Text("WHAT ARE YOU STUDYING?", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
                         FlowRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -165,9 +165,9 @@ fun MySubjectsSection() {
 
                         Text(
                             "Your other study time and attempts are kept. They count again if you pick those subjects again.",
-                            fontSize = 10.5.sp,
+                            fontSize = 12.sp,
                             color = WisdomMuted,
-                            lineHeight = 14.sp
+                            lineHeight = 15.sp
                         )
                     }
                 }

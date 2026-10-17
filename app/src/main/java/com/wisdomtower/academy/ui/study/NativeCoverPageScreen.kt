@@ -609,7 +609,7 @@ private fun TemplateThumb(name: String, premium: Boolean, bmp: Bitmap?, selected
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = if (premium) "\u2605 $name" else name,
-            fontSize = 10.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             color = if (selected) WisdomCyan else if (premium) Color(0xFFE8C766) else Color.White

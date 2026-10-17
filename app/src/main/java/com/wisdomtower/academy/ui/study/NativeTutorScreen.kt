@@ -817,7 +817,7 @@ private fun HistoryPanel(
                         Text(
                             text = formatSessionTime(s.updatedAt) + " • " + questions + (if (questions == 1) " question" else " questions") +
                                 (if (isActive) " • Active" else ""),
-                            fontSize = 10.sp,
+                            fontSize = 12.sp,
                             color = WisdomMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis

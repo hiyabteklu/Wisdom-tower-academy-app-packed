@@ -299,7 +299,7 @@ fun NativeTargetsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                             ) {
                                 Text(
                                     goal.priority.uppercase(),
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color(0xFFCBD5E1),
                                     maxLines = 1

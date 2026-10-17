@@ -600,7 +600,7 @@ private fun ProfileCompletionGauge(score: Int) {
                 )
                 Text(
                     text = "COMPLETE",
-                    fontSize = 9.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = WisdomMuted,
                     letterSpacing = 1.6.sp
@@ -829,7 +829,7 @@ private fun PillOption(label: String, selected: Boolean, accent: Color, onClick:
 private fun FieldLabel(text: String) {
     Text(
         text = text,
-        fontSize = 10.sp,
+        fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
         color = WisdomMuted,
         letterSpacing = 0.8.sp
@@ -887,7 +887,7 @@ private fun StepAccordionCard(
 
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(text = title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text(text = subtitle, fontSize = 10.5.sp, color = WisdomMuted)
+                    Text(text = subtitle, fontSize = 12.sp, color = WisdomMuted)
                     Box(
                         modifier = Modifier
                             .padding(top = 4.dp)
@@ -901,7 +901,7 @@ private fun StepAccordionCard(
                     ) {
                         Text(
                             text = if (isFilled) "Filled" else unfilledLabel,
-                            fontSize = 9.5.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isFilled) WisdomAccentEmerald else WisdomAccentAmber
                         )
