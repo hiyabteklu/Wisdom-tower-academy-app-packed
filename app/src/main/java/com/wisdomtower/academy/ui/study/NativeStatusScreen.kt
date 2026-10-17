@@ -58,6 +58,7 @@ import com.wisdomtower.academy.data.content.ProgressRow
 import com.wisdomtower.academy.data.content.ResourceScopeIndex
 import com.wisdomtower.academy.data.content.StudentProgressReader
 import com.wisdomtower.academy.ui.theme.AtmosphereBackground
+import com.wisdomtower.academy.ui.theme.WisdomMessageCard
 
 private val StSky = Color(0xFF38BDF8)
 private val StCyan = Color(0xFF22D3EE)
@@ -279,37 +280,20 @@ fun NativeStatusScreen(
 
             // States: signed out, loading, failed
             if (!isLoggedIn) {
-                StPanel(borderColor = Color.White.copy(alpha = 0.10f)) {
-                    Text(
-                        "Sign in or create an account to sync your study notes, targets, and course progress.",
-                        fontSize = 13.sp,
-                        color = StSlate300,
-                        lineHeight = 19.sp
-                    )
-                    com.wisdomtower.academy.ui.auth.SignInPill() // UX-CONSISTENCY-2026-10-17
-                }
+                WisdomMessageCard( // S6-msgcard-status
+                    message = "Sign in or create an account to sync your study notes, targets, and course progress.",
+                    showSignIn = true
+                )
             } else if (loading) {
                 Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = StCyan, modifier = Modifier.size(28.dp))
                 }
             } else if (failed || summary == null) {
-                StPanel(borderColor = StRose.copy(alpha = 0.30f)) {
-                    Text(
-                        errorText ?: "Could not load your study records. Check your internet connection and try again.",
-                        fontSize = 13.sp,
-                        color = StSlate300,
-                        lineHeight = 19.sp
-                    )
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(Color.White)
-                            .clickable { reloadKey += 1 }
-                            .padding(horizontal = 20.dp, vertical = 8.dp)
-                    ) {
-                        Text("Retry", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF020617))
-                    }
-                }
+                WisdomMessageCard( // S6-msgcard-status
+                    message = errorText ?: "Could not load your study records. Check your internet connection and try again.",
+                    isError = true,
+                    onRetry = { reloadKey += 1 }
+                )
             } else {
                 // 2. HUD cards
                 val streakAccent = when {
