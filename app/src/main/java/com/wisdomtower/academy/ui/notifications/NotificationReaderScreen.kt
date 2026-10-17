@@ -155,7 +155,7 @@ fun NotificationReaderScreen(
                     Text(
                         categoryLabel(category).uppercase(),
                         color = accent,
-                        fontSize = 10.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }

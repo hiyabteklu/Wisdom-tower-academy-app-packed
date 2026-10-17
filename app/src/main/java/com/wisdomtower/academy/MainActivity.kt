@@ -4077,7 +4077,7 @@ fun MainScreen(
                             Text(
                                 text = "TOOLS",
                                 color = Accent.copy(alpha = 0.8f),
-                                fontSize = 9.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.sp,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
@@ -4164,7 +4164,7 @@ fun MainScreen(
                             Text(
                                 text = "SUPPORT & ABOUT",
                                 color = Accent.copy(alpha = 0.8f),
-                                fontSize = 9.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.sp,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
@@ -4200,7 +4200,7 @@ fun MainScreen(
                         Text(
                             text = "Wisdom Tower Academy • Native Shell",
                             color = Muted.copy(alpha = 0.45f),
-                            fontSize = 10.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Normal,
                             modifier = Modifier.fillMaxWidth(),
                             textAlign = TextAlign.Center

@@ -276,7 +276,7 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 .border(BorderStroke(1.dp, Color(0xFF22D3EE).copy(alpha = 0.30f)), RoundedCornerShape(50))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            Text("Minute-Accurate", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF67E8F9), maxLines = 1)
+                            Text("Minute-Accurate", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF67E8F9), maxLines = 1)
                         }
                     }
                     Text(
@@ -354,7 +354,7 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                         .background(if (selected) Color(0xFF0F172A).copy(alpha = 0.30f) else Color.White.copy(alpha = 0.10f))
                                         .padding(horizontal = 6.dp, vertical = 1.dp)
                                 ) {
-                                    Text("$count", fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = if (selected) Color(0xFF020617) else Color(0xFFCBD5E1))
+                                    Text("$count", fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = if (selected) Color(0xFF020617) else Color(0xFFCBD5E1))
                                 }
                             }
                         }
@@ -382,7 +382,7 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                             .border(BorderStroke(0.5.dp, Color.White.copy(alpha = 0.15f))),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("GMT+3", fontSize = 9.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
+                        Text("GMT+3", fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8))
                     }
                     visibleDays.forEach { d ->
                         val isToday = d == today
@@ -396,7 +396,7 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(PLANNER_DAYS[d].first, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (isToday) Color(0xFF67E8F9) else Color.White)
-                            Text("${blocks.count { it.day == d }}", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF94A3B8))
+                            Text("${blocks.count { it.day == d }}", fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF94A3B8))
                         }
                     }
                 }
@@ -409,7 +409,7 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 modifier = Modifier.fillMaxWidth().height(HOUR_HEIGHT).padding(end = 3.dp),
                                 contentAlignment = Alignment.CenterEnd
                             ) {
-                                Text(plannerHourLabel(h), fontSize = 9.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), maxLines = 1)
+                                Text(plannerHourLabel(h), fontSize = 12.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, color = Color(0xFF94A3B8), maxLines = 1)
                                 Box(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.08f)))
                             }
                         }
@@ -470,7 +470,7 @@ fun NativePlannerScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                         .padding(horizontal = 3.dp, vertical = 2.dp),
                                     contentAlignment = Alignment.CenterStart
                                 ) {
-                                    Text(b.title, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(b.title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 }
                             }
                         }
@@ -736,6 +736,6 @@ private fun PlannerTimeField(label: String, value: String, modifier: Modifier = 
         ) {
             Text(value, fontSize = 14.sp, fontFamily = FontFamily.Monospace, color = Color.White)
         }
-        Text(plannerFormat12(value), fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF67E8F9), modifier = Modifier.padding(top = 4.dp))
+        Text(plannerFormat12(value), fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = Color(0xFF67E8F9), modifier = Modifier.padding(top = 4.dp))
     }
 }

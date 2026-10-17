@@ -341,7 +341,7 @@ fun GpaCalculatorCard() {
                                 Column {
                                     Text(
                                         text = "TOTAL CREDITS",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = WisdomMuted,
                                         letterSpacing = 0.8.sp
@@ -356,7 +356,7 @@ fun GpaCalculatorCard() {
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
                                         text = "SEMESTER GPA",
-                                        fontSize = 10.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = WisdomMuted,
                                         letterSpacing = 0.8.sp
@@ -389,10 +389,10 @@ private fun GpaScaleTable() {
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
-            Text("Interval %", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, modifier = Modifier.weight(1.2f))
-            Text("Letter", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, modifier = Modifier.weight(0.6f))
-            Text("Points", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, modifier = Modifier.weight(0.7f))
-            Text("Status", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, modifier = Modifier.weight(1.5f))
+            Text("Interval %", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, modifier = Modifier.weight(1.2f))
+            Text("Letter", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, modifier = Modifier.weight(0.6f))
+            Text("Points", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, modifier = Modifier.weight(0.7f))
+            Text("Status", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, modifier = Modifier.weight(1.5f))
         }
         GPA_GRADE_BANDS.forEach { b ->
             val interval = "[${b.min.toInt()}, ${b.maxExclusive.toInt()}${if (b.includeMax) "]" else ")"}"

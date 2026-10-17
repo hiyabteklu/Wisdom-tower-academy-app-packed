@@ -62,7 +62,7 @@ internal fun HubGateDialog(
             if (badge != null) {
                 Text(
                     text = badge.uppercase(),
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFCD34D),
                     letterSpacing = 1.sp,

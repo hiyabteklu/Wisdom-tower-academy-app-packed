@@ -547,7 +547,7 @@ private fun ItemRow(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "NEW",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Black,
                             color = Color(0xFFFECDD3)
                         )

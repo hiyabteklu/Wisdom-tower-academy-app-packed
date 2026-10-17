@@ -259,7 +259,7 @@ fun SettingsScreen(
                                         ) {
                                             Text(
                                                 text = "VERIFIED",
-                                                fontSize = 8.5.sp,
+                                                fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = Color.White
                                             )
@@ -334,7 +334,7 @@ fun SettingsScreen(
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
                                 text = "DAILY STUDY TARGET (MINUTES PER DAY)",
-                                fontSize = 10.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = WisdomMuted,
                                 letterSpacing = 0.5.sp
@@ -409,7 +409,7 @@ fun SettingsScreen(
 
                         Text(
                             text = "PREFERRED DAILY STUDY WINDOW",
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = WisdomMuted,
                             letterSpacing = 0.5.sp
@@ -440,7 +440,7 @@ fun SettingsScreen(
                                 ) {
                                     Column {
                                         Text(text = pair.first, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text(text = pair.second, fontSize = 9.sp, color = WisdomMuted)
+                                        Text(text = pair.second, fontSize = 12.sp, color = WisdomMuted)
                                     }
                                 }
                             }
@@ -464,7 +464,7 @@ fun SettingsScreen(
                                 ) {
                                     Column {
                                         Text(text = pair.first, fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text(text = pair.second, fontSize = 9.sp, color = WisdomMuted)
+                                        Text(text = pair.second, fontSize = 12.sp, color = WisdomMuted)
                                     }
                                 }
                             }
@@ -522,7 +522,7 @@ fun SettingsScreen(
 
                             Text(
                                 text = "Reflected in analytics",
-                                fontSize = 9.5.sp,
+                                fontSize = 12.sp,
                                 color = WisdomMuted,
                                 fontFamily = FontFamily.Monospace
                             )
@@ -701,7 +701,7 @@ fun SettingsScreen(
                     onToggle = { openDisplay = !openDisplay }
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        Text(text = "1. FONT SIZE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
+                        Text(text = "1. FONT SIZE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf(
@@ -726,13 +726,13 @@ fun SettingsScreen(
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(text = pair.first, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = wisdomAnimatedColor(isSelected, Color.Black, Color.White))
-                                        Text(text = pair.second, fontSize = 10.sp, color = wisdomAnimatedColor(isSelected, Color.DarkGray, WisdomMuted))
+                                        Text(text = pair.second, fontSize = 12.sp, color = wisdomAnimatedColor(isSelected, Color.DarkGray, WisdomMuted))
                                     }
                                 }
                             }
                         }
 
-                        Text(text = "2. TYPOGRAPHY STYLE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
+                        Text(text = "2. TYPOGRAPHY STYLE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -755,7 +755,7 @@ fun SettingsScreen(
 
                         // Live Sample Preview (website texts and px sizes)
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(text = "LIVE SAMPLE PREVIEW", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
+                            Text(text = "LIVE SAMPLE PREVIEW", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = WisdomMuted, letterSpacing = 0.5.sp)
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -787,7 +787,7 @@ fun SettingsScreen(
                                     )
                                     Text(
                                         text = "PREVIEW",
-                                        fontSize = 9.sp,
+                                        fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = WisdomMuted,
                                         letterSpacing = 0.5.sp
@@ -950,9 +950,9 @@ fun SettingsScreen(
                                     Text(text = "Account Security Notice", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
                                     Text(
                                         text = "Your password will be updated and your next login will require this new password. Please make sure you record it securely.",
-                                        fontSize = 10.5.sp,
+                                        fontSize = 12.sp,
                                         color = Color.White,
-                                        lineHeight = 14.sp
+                                        lineHeight = 15.sp
                                     )
                                 }
                             }
@@ -1177,7 +1177,7 @@ private fun SettingsAccordionCard(
                                         .border(BorderStroke(1.dp, WisdomBorderWhite), CircleShape)
                                         .padding(horizontal = 6.dp, vertical = 1.dp)
                                 ) {
-                                    Text(text = badgeText, fontSize = 8.5.sp, color = WisdomMuted)
+                                    Text(text = badgeText, fontSize = 12.sp, color = WisdomMuted)
                                 }
                             }
                         }
@@ -1233,7 +1233,7 @@ private fun ToggleRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = title, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text(text = subtitle, fontSize = 10.5.sp, color = WisdomMuted, lineHeight = 14.sp)
+            Text(text = subtitle, fontSize = 12.sp, color = WisdomMuted, lineHeight = 15.sp)
         }
 
         Switch(

@@ -279,7 +279,7 @@ fun NativeNotebookScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 ) {
                                     Text(
                                         "${folder.sheets.size}",
-                                        fontSize = 10.sp,
+                                        fontSize = 12.sp,
                                         color = if (active) Color(0xFF0F172A) else Color(0xFF94A3B8)
                                     )
                                 }
@@ -372,7 +372,7 @@ fun NativeNotebookScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    Text(NativeNotebookState.displayDate(sheet.updatedAt), fontSize = 10.sp, color = Color(0xFF94A3B8))
+                                    Text(NativeNotebookState.displayDate(sheet.updatedAt), fontSize = 12.sp, color = Color(0xFF94A3B8))
                                 }
                                 if ((currentFolder?.sheets?.size ?: 0) > 1) {
                                     Box(

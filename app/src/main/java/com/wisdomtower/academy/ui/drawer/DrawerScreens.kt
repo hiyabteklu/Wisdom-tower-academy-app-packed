@@ -132,7 +132,7 @@ fun DrawerHeaderBar(
 private fun Eyebrow(text: String, color: Color = WisdomCyan) {
     Text(
         text = text.uppercase(),
-        fontSize = 10.sp,
+        fontSize = 11.sp,
         fontWeight = FontWeight.Bold,
         color = color,
         letterSpacing = 1.2.sp
@@ -173,8 +173,8 @@ private fun AboutTextCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(topLeft.orEmpty(), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
-                    Text(topRight.orEmpty(), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = WisdomMuted)
+                    Text(topLeft.orEmpty(), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = WisdomAccentAmber)
+                    Text(topRight.orEmpty(), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = WisdomMuted)
                 }
             }
             Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White, lineHeight = 19.sp)
@@ -842,7 +842,7 @@ private fun LegalDocumentScreen(
                         Text(doc.effective, fontSize = 11.sp, color = WisdomMuted)
                         Text(doc.title, fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color.White, lineHeight = 28.sp)
                         Text(doc.intro, fontSize = 12.sp, color = WisdomMuted, lineHeight = 17.sp)
-                        Text(doc.meta, fontSize = 10.5.sp, color = WisdomMuted)
+                        Text(doc.meta, fontSize = 12.sp, color = WisdomMuted)
                     }
                 }
             }
