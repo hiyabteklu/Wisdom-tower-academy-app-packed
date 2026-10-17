@@ -1,5 +1,7 @@
 # Instructions for Claude agents
 
+**PLAY STORE PREPARATION (owner order 2026-10-17, the current priority): read `docs/PLAY_STORE_UI_PLAN.md` (release risks and UI slices S0 to S10, status table in its section 3). One slice per chat; the owner says "do S<n>", otherwise do the next open slice. First make sure the patch `scripts/patch_ux_consistency_fixes.py` was run and merged (see the plan, section 1).**
+
 **FIRST, OWNER RULE 2026-10-16: read `docs/OWNER_RULE_WRITTEN_IS_DONE.md`. Written and pushed code counts as DONE (builds are green, the owner has confirmed it works). It overrides every `[~]`, "CI NOT seen" and "not seen on a device" label in the older docs. Report only what is genuinely not done.**
 
 **UI MOTION (owner order 2026-10-16, third live task): read `docs/UI_MOTION_PLAN.md` (root causes, motion language, area inventory, slices M1 to M11, status table in its section 7). It overrides the "do not work on UI polishing" lines below for MOTION AND TRANSITIONS ONLY (bottom nav pill, tab and screen transitions, card entrance, Settings accordions and the rest of the plan). Everything else archived stays closed. One slice per chat; the owner says "do M<n>", otherwise do the next open slice.**
