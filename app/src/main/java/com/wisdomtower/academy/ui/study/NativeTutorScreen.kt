@@ -27,23 +27,27 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Menu
 import com.wisdomtower.academy.ui.theme.wisdomDialogEnter
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -61,9 +65,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -81,7 +90,6 @@ import com.wisdomtower.academy.ui.theme.WisdomAccentAmber
 import com.wisdomtower.academy.ui.theme.WisdomCyan
 import com.wisdomtower.academy.ui.theme.WisdomGlassBorder
 import com.wisdomtower.academy.ui.theme.WisdomGlassFill
-import com.wisdomtower.academy.ui.theme.WisdomGlassFillStrong
 import com.wisdomtower.academy.ui.theme.WisdomMuted
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -95,6 +103,10 @@ private const val CALM_BUSY =
     "The Wisdom Tower AI Tutor is currently experiencing high demand. Please wait a moment and try asking your question again."
 private const val STOPPED = "Response stopped. What would you like to explore instead?"
 private const val CUT_NOTICE = "\n\n*(Response stopped due to high server demand. You can ask to continue.)*"
+
+/** Glass tints of the floating controls (translucent so the chat shows through). */
+private val FloatFill = Color(0x66050A14)
+private val FloatEdge = Color(0x26FFFFFF)
 
 /** Marks a failed stream (thrown inside the collector, caught by the sender). */
 private class TutorStreamFailure : Exception()
@@ -116,35 +128,26 @@ private class TutorStreamHolder {
  *  - Answers: streamed from the website route through [AiTutorRepository]; the message list is drawn by the local
  *    page `assets/notes/tutor.html` with the shared KaTeX renderer (math, tables, ==highlights== as in the notes).
  *  - Texts (welcome, prompts, placeholders, error and stop notices, follow-up chips) copied from `AiTutor.tsx`.
- *  - Message box (U2 change 1): multi-line, grows up to 4 lines, send / stop buttons 56 dp and kept at the bottom.
- *  - Toolbar (U2 change 2): bigger touch targets and text; the trash button asks "Clear this chat?" first (that
- *    dialog text is NEW, not from the website).
  *  - Chats list (U2 change 5): opens as a side panel from the right over the chat (dimmed area closes it); the chat
  *    page stays alive underneath, so nothing reloads when the list is opened or closed.
  * Differences from the website: no avatar picture on the welcome screen and answers.
  *
- * Scroll freeze fix (owner report 2026-10-13: "same bug as the notes reader, a quick swipe does nothing unless the
- * finger rests first"): the tutor page `tutor.html` is a local WebView exactly like the notes page, but this screen
- * never called [PauseShellWhileShown], which is what gives local pages the touch fix (parents may not intercept the
- * gesture, no over-scroll, no zoom detector) and quiets the hidden website WebView. It is called now, first thing.
- * Hypothesis: same cause as the notes report; NOT proven on a device.
+ * Scroll freeze fix (owner report 2026-10-13): this screen calls [PauseShellWhileShown], which gives the local
+ * WebView page the touch fix and quiets the hidden website WebView.
  *
- * Glass polish (2026-10-13): toolbar buttons, message box and chat list use the glass tokens of `WisdomGlass.kt`
- * (white 4 to 8 percent fills and edges) and the chat list panel has a navy gradient with rounded left corners,
- * like the drawer. No layout or behaviour change.
+ * C10 (owner decision 2026-10-15): while a RANKED competition exam is open (ExamLockdown.active) this screen draws
+ * nothing, shows a short notice and calls onBack. The calculator is a different screen and is never blocked.
  *
- * C10 (session C10-C, owner decision 2026-10-15: "Ai tutor is prohibited, and calculator is allowed always"):
- * while a RANKED competition exam is open (ExamLockdown.active) this screen draws nothing, shows a short notice and
- * calls onBack, so EVERY caller is covered: the Learning tab and the global tool overlay of MainActivity.kt
- * (the one that renders the tutor for the drawer row and website links). If the exam starts while the tutor is
- * open, it closes the same way. The calculator is a different screen and is never blocked.
+ * Custom background (owner request 2026-10-16): if `assets/backgrounds/tutor_bg.jpg` exists it is drawn full screen
+ * with a dark scrim, the chat WebView is see-through and `tutor.html` gets the class `bgimg`.
  *
- * Custom background (owner request 2026-10-16: "the Ai tutor background looks to solid color and ugly ... custom
- * background image ... a little smooth blur ... so texts overlay cleanly"): if the file
- * `assets/backgrounds/tutor_bg.jpg` exists, it is drawn full screen (behind the toolbar, the chat and the message
- * box) with a dark scrim, the chat WebView is made see-through and `tutor.html` gets the class `bgimg` (softer
- * glass bubbles). If the file is missing or unreadable nothing changes: same opaque dark look as before. The blur
- * is part of the picture itself (prepare it soft and dark), so scrolling costs nothing extra.
+ * FULL-SCREEN LAYOUT (owner request 2026-10-17: "double header and footers make the usable screen small"): there is no
+ * toolbar row and no composer row any more. The chat page fills the whole area; the controls float on top of it:
+ *  - top left: ONE small translucent menu bar holding Back, Chats (with the count), New and Clear. No title text.
+ *  - bottom: a slim translucent message pill (44 dp high, grows to 4 lines) with a round Send / Stop button.
+ * The page gets matching top and bottom padding through JavaScript (see [applyInsets]) so the first and the last
+ * message are never hidden under the controls, but everything scrolls underneath them. `tutor.html` is unchanged.
+ * The app's own header and bottom bar belong to the shell (MainActivity) and are not touched here.
  *
  * STATUS: written, NOT compiled, NOT tested on a device.
  */
@@ -170,6 +173,7 @@ fun NativeTutorScreen(
     PauseShellWhileShown()
 
     val context = LocalContext.current
+    val density = LocalDensity.current
     val scope = rememberCoroutineScope()
 
     // Optional custom background picture (null when assets/backgrounds/tutor_bg.jpg is not there).
@@ -186,6 +190,7 @@ fun NativeTutorScreen(
     var isThinking by remember { mutableStateOf(false) }
     var isStreaming by remember { mutableStateOf(false) }
     var pageReady by remember { mutableStateOf(false) }
+    var composerPx by remember { mutableStateOf(0) }
     val holder = remember { TutorStreamHolder() }
     val webRef = remember { arrayOfNulls<WebView>(1) }
     val latestSessions by rememberUpdatedState(sessions)
@@ -426,18 +431,17 @@ fun NativeTutorScreen(
         }
     }
 
+    // ---- keep the first and last message clear of the floating controls (the page itself fills the screen) ----
+
+    LaunchedEffect(pageReady, composerPx) {
+        if (pageReady) {
+            val bottomDp = with(density) { composerPx.toDp().value }
+            applyInsets(webRef[0], topDp = TOP_INSET_DP, bottomDp = bottomDp)
+        }
+    }
+
     BackHandler(enabled = showHistory) { showHistory = false }
     BackHandler(enabled = !showHistory) { onBack() }
-
-    val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = WisdomCyan.copy(alpha = 0.7f),
-        unfocusedBorderColor = WisdomGlassBorder,
-        focusedTextColor = Color.White,
-        unfocusedTextColor = Color.White,
-        cursorColor = WisdomCyan,
-        focusedContainerColor = WisdomGlassFillStrong,
-        unfocusedContainerColor = WisdomGlassFill
-    )
 
     Box(modifier = modifier.fillMaxSize()) {
         AtmosphereBackground(modifier = Modifier.fillMaxSize())
@@ -457,92 +461,104 @@ fun NativeTutorScreen(
             )
         }
 
-        Column(modifier = Modifier.fillMaxSize().imePadding()) {
-            // Toolbar: back, Chats, title, New, clear (asks first)
+        // Chat page fills everything; the controls float on top of it.
+        Box(modifier = Modifier.fillMaxSize().imePadding()) {
+            TutorWebView(
+                bridge = bridge,
+                webRef = webRef,
+                transparent = backdrop != null,
+                onReady = { pageReady = true },
+                onGone = { pageReady = false },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Top left: one small translucent menu bar with every control inside, nothing else.
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .align(Alignment.TopStart)
+                    .padding(start = 8.dp, top = 8.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(FloatFill)
+                    .border(BorderStroke(1.dp, FloatEdge), RoundedCornerShape(24.dp))
+                    .padding(horizontal = 4.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                ScreenBackButton(onBack)
-                HeaderPill(text = "Chats  ${sessions.size}", accent = showHistory) { showHistory = !showHistory }
-                Text(
-                    text = if (activeSession.title != "New chat") activeSession.title else "AI Tutor",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFCBD5E1),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                HeaderPill(text = "+ New", accent = true) { newChat() }
-                Box(
+                MenuIcon(Icons.AutoMirrored.Filled.ArrowBack, "Back") { onBack() }
+                Row(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(WisdomGlassFillStrong)
-                        .border(BorderStroke(1.dp, WisdomGlassBorder), RoundedCornerShape(12.dp))
-                        .clickable { showClearConfirm = true },
-                    contentAlignment = Alignment.Center
+                        .height(38.dp)
+                        .clip(RoundedCornerShape(19.dp))
+                        .background(if (showHistory) WisdomCyan.copy(alpha = 0.22f) else Color.Transparent)
+                        .clickable { showHistory = !showHistory }
+                        .padding(horizontal = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Clear chat",
-                        tint = WisdomMuted,
-                        modifier = Modifier.size(18.dp)
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Chats",
+                        tint = if (showHistory) Color(0xFFA5F3FC) else Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "${sessions.size}",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (showHistory) Color(0xFFA5F3FC) else Color.White
                     )
                 }
+                MenuIcon(Icons.Default.Add, "New chat", Color(0xFFA5F3FC)) { newChat() }
+                MenuIcon(Icons.Default.Delete, "Clear chat", Color(0xFFCBD5E1)) { showClearConfirm = true }
             }
 
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                TutorWebView(
-                    bridge = bridge,
-                    webRef = webRef,
-                    transparent = backdrop != null,
-                    onReady = { pageReady = true },
-                    onGone = { pageReady = false },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-
-            // Composer: the box grows up to 4 lines; the buttons stay at the bottom edge
+            // Bottom: slim translucent message pill + round send / stop button, floating over the chat.
             Row(
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .onSizeChanged { composerPx = it.height }
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedTextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 44.dp)
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(FloatFill)
+                        .border(BorderStroke(1.dp, FloatEdge), RoundedCornerShape(22.dp))
+                        .padding(horizontal = 16.dp, vertical = 11.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    if (input.isEmpty()) {
                         Text(
-                            text = if (busy) "AI Tutor is responding (click Stop to cancel)..." else "Ask a concept, formula, or problem…",
-                            fontSize = 12.sp,
+                            text = if (busy) "AI Tutor is responding…" else "Ask a concept, formula, or problem…",
+                            fontSize = 14.sp,
                             color = WisdomMuted,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                    },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = fieldColors,
-                    singleLine = false,
-                    minLines = 1,
-                    maxLines = 4,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = { send(null) })
-                )
+                    }
+                    BasicTextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        textStyle = TextStyle(color = Color.White, fontSize = 14.sp, lineHeight = 20.sp),
+                        cursorBrush = SolidColor(WisdomCyan),
+                        maxLines = 4,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                        keyboardActions = KeyboardActions(onSend = { send(null) })
+                    )
+                }
                 if (busy) {
                     Box(
                         modifier = Modifier
-                            .height(56.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(WisdomAccentAmber.copy(alpha = 0.22f))
-                            .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.4f)), RoundedCornerShape(20.dp))
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(WisdomAccentAmber.copy(alpha = 0.3f))
+                            .border(BorderStroke(1.dp, WisdomAccentAmber.copy(alpha = 0.45f)), RoundedCornerShape(22.dp))
                             .clickable { stop() }
                             .padding(horizontal = 18.dp),
                         contentAlignment = Alignment.Center
@@ -552,17 +568,18 @@ fun NativeTutorScreen(
                 } else {
                     Box(
                         modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(WisdomCyan.copy(alpha = if (input.isBlank()) 0.35f else 1f))
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(WisdomCyan.copy(alpha = if (input.isBlank()) 0.22f else 0.65f))
+                            .border(BorderStroke(1.dp, FloatEdge), CircleShape)
                             .clickable { send(null) },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = "Send question",
-                            tint = Color(0xFF020617),
-                            modifier = Modifier.size(22.dp)
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -626,6 +643,43 @@ fun NativeTutorScreen(
                 }
             )
         }
+    }
+}
+
+/** Height reserved at the top of the chat page for the floating menu bar (38 dp buttons + paddings + a little air). */
+private const val TOP_INSET_DP = 60f
+
+/**
+ * Sets the padding of the page's `#root` (top = floating menu bar, bottom = floating message pill) and lifts the round
+ * "jump to latest" arrow above the pill. CSS pixels in the WebView equal dp. `tutor.html` itself is not edited.
+ */
+private fun applyInsets(web: WebView?, topDp: Float, bottomDp: Float) {
+    if (web == null) return
+    val bottom = bottomDp + 6f
+    web.evaluateJavascript(
+        "(function(){var r=document.getElementById('root');if(r){r.style.paddingTop='" + topDp.toInt() +
+            "px';r.style.paddingBottom='" + bottom.toInt() + "px';}" +
+            "var j=document.getElementById('jump');if(j){j.style.bottom='" + (bottom + 8f).toInt() + "px';}})();",
+        null
+    )
+}
+
+/** Small round icon button of the floating menu bar. */
+@Composable
+private fun MenuIcon(icon: ImageVector, description: String, tint: Color = Color.White, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(CircleShape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            tint = tint,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 
@@ -700,29 +754,6 @@ private fun TutorWebView(
             onGone()
         }
     )
-}
-
-@Composable
-private fun HeaderPill(text: String, accent: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (accent) WisdomCyan.copy(alpha = 0.18f) else WisdomGlassFillStrong)
-            .border(
-                BorderStroke(1.dp, if (accent) WisdomCyan.copy(alpha = 0.4f) else WisdomGlassBorder),
-                RoundedCornerShape(12.dp)
-            )
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 11.dp)
-    ) {
-        Text(
-            text = text,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (accent) Color(0xFFA5F3FC) else Color.White,
-            maxLines = 1
-        )
-    }
 }
 
 /** The list of saved chats ("Study Chats" of the website's side sheet). */
