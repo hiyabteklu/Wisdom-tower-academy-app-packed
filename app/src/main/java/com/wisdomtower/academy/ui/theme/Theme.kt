@@ -20,6 +20,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -28,7 +29,15 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
-// Night: exactly the six values the app always had (the approved look).
+// Night: the six values the app always had (the approved look), plus (BG-THEME, 2026-10-17, owner: background literally
+// everywhere, no pop up left) the Material "surface container" roles. Every default pop-up (AlertDialog, DropdownMenu,
+// TimePicker / clock, DatePicker, ModalBottomSheet, ExposedDropdown, Snackbar-like surfaces) takes its fill from these, so ONE
+// place makes all of them see-through: 70 percent navy for dialogs, menus and sheets, white glass for the clock dial and
+// other "highest" chips. A pop-up that writes its own containerColor in code is handled by the native sweep script instead.
+private val PopupGlassNavy = Color(0xB30F1829)
+private val PopupGlassNavyLow = Color(0x990F1829)
+private val PopupGlassChip = Color(0x33FFFFFF)
+
 private val DarkColorScheme =
   darkColorScheme(
     primary = WisdomDarkPalette.cyan,
@@ -36,7 +45,14 @@ private val DarkColorScheme =
     surface = WisdomDarkPalette.card,
     onPrimary = WisdomDarkPalette.onCyan,
     onBackground = WisdomDarkPalette.textPrimary,
-    onSurface = WisdomDarkPalette.textPrimary
+    onSurface = WisdomDarkPalette.textPrimary,
+    surfaceContainerLowest = PopupGlassNavyLow,
+    surfaceContainerLow = PopupGlassNavyLow,
+    surfaceContainer = PopupGlassNavy,
+    surfaceContainerHigh = PopupGlassNavy,
+    surfaceContainerHighest = PopupGlassChip,
+    surfaceBright = PopupGlassChip,
+    surfaceDim = PopupGlassNavy
   )
 
 // Day (L1, docs/DAY_NIGHT_PLAN.md): a real light scheme. Built from the same palette the tokens in Color.kt use.
